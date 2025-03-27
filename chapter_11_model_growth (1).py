@@ -23,8 +23,6 @@ import re
 
 from pysolve.model import Model
 from pysolve.utils import is_close,round_solution
-import logging # Added for logging
-import copy # Added for copy
 
 # Simple function to close matplotlib figures
 def plot_and_close(fig, caption=None):
@@ -574,6 +572,8 @@ if __name__ == "__main__":
     baseline.set_values(growth_exogenous)
     baseline.set_values(growth_variables)
 
+    for _ in range(100):
+        baseline.solve(iterations=200, threshold=1e-6)
 
     print("Baseline model solved successfully")
 
@@ -583,9 +583,5 @@ baseline.set_values(growth_parameters)
 baseline.set_values(growth_exogenous)
 baseline.set_values(growth_variables)
 
-
-# Restore initial solve loop to pre-calculate baseline state on import
 for _ in range(100):
     baseline.solve(iterations=200, threshold=1e-6)
-
-# Ensure no initial solve loop runs on import

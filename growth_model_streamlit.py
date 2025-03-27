@@ -1,35 +1,48 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import copy
 import sys
 import io
+# import matplotlib.pyplot as plt # No longer needed
 from contextlib import redirect_stdout
-from chapter_11_model_growth import create_growth_model, growth_parameters, growth_exogenous, growth_variables
-from pysolve.model import SolutionNotFoundError
-import plotly.graph_objects as go
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
+import logging
+# Import the necessary components from the model definition file
+from chapter_11_model_growth import (
+    create_growth_model, growth_parameters, growth_exogenous,
+    growth_variables, baseline # baseline is now just the definition + initial values
+)
+from pysolve.model import SolutionNotFoundError, Model
+# Import game mechanics functions
+from game_mechanics import (
+    create_deck, draw_cards, check_for_events, apply_effects # Removed POLICY_CARDS, ECONOMIC_EVENTS
+)
+# Import card and event definitions
+from cards import POLICY_CARDS
 
-# Suppress PDF generation output from the growth model
+from events import ECONOMIC_EVENTS
+# Import matrix display functions
+from matrix_display import (
+    format_value,
+    display_balance_sheet_matrix, display_revaluation_matrix,
+    display_transaction_flow_matrix
+)
+
+# Suppress extraneous output during model solving
 class NullIO(io.StringIO):
     def write(self, txt):
         pass
 
-st.set_page_config(page_title="Growth Model Explorer", layout="wide")
+# --- Logging Setup ---
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# --- Constants ---
+INITIAL_HAND_SIZE = 5
+CARDS_TO_DRAW_PER_YEAR = 2
+MAX_CARDS_PER_ROW = 4 # For card display layout
+# INITIAL_STABILIZATION_PERIODS = 10 # Removed
 
-# Set up the page
-st.title("Growth Model Explorer")
-st.markdown("""
-This app allows you to experiment with exogenous variables in the monetary growth model from Chapter 11.
-You can modify key parameters and compare the resulting model behavior against the baseline simulation.
-""")
-
-# Create sidebar for parameter selection
-st.sidebar.header("Model Parameters")
-st.sidebar.markdown("Adjust the exogenous variables below and click 'Run Simulation' to see the effects")
-
-# Define categories of parameters for better organization
+# --- Parameter Categories Definition (Re-added) ---
+# Define categories of parameters for the initial setup sliders
 parameter_categories = {
     "Growth Parameters": [
         ("gamma0", "Base growth rate of real capital stock (gamma0)", 0.00122, 0.0, 0.01),
@@ -58,14 +71,12 @@ parameter_categories = {
     ],
     "Labor Market Parameters": [
         ("omega0", "Parameter affecting target real wage (omega0)", -0.20594, -0.5, 0.0),
- 
         ("omega1", "Parameter in wage equation (omega1)", 1.005, 0.9, 1.1),
- # Default updated
         ("omega2", "Parameter in wage equation (omega2)", 2.0, 1.0, 3.0),
         ("omega3", "Speed of wage adjustment (omega3)", 0.45621, 0.1, 0.9),
         ("GRpr", "Growth rate of productivity (GRpr)", 0.03, 0.0, 0.1),
-        ("BANDt", "Upper band of flat Phillips curve (BANDt)", 0.07, 0.0, 0.1), # Default updated
-        ("BANDb", "Lower band of flat Phillips curve (BANDb)", 0.05, 0.0, 0.1), # Default updated
+        ("BANDt", "Upper band of flat Phillips curve (BANDt)", 0.07, 0.0, 0.1),
+        ("BANDb", "Lower band of flat Phillips curve (BANDb)", 0.05, 0.0, 0.1),
         ("etan", "Speed of employment adjustment (etan)", 0.6, 0.1, 1.0),
         ("Nfe", "Full employment level (Nfe)", 94.76, 80.0, 110.0),
     ],
@@ -93,838 +104,859 @@ parameter_categories = {
     ],
 }
 
-# Add a reset all button
-if st.sidebar.button("Reset All Parameters", key="reset_all"):
-    # Reset all parameters across all categories
-    for category, params in parameter_categories.items():
-        for param_key, param_name, default_val, min_val, max_val in params:
-            # Reset to default value
-            st.session_state[f"slider_{param_key}"] = float(default_val)
 
-# Create a dictionary to store the selected parameters
-selected_params = {}
+# --- Helper Functions (Remaining) ---
+def format_percent(value):
+    """Formats a float as a percentage string."""
+    # Check for NaN or infinite values
+    if not np.isfinite(value):
+        return "N/A"
+    return f"{value*100:.2f}%"
 
-# Create expandable sections for each parameter category
-for category, params in parameter_categories.items():
-    with st.sidebar.expander(category):
-        # Add a reset button at the top of each category
-        if st.button(f"Reset {category} to defaults", key=f"reset_{category}"):
-            # Reset all parameters in this category to their default values
-            for param_key, param_name, default_val, min_val, max_val in params:
-                # Store the default value in session state
-                st.session_state[f"slider_{param_key}"] = float(default_val)
-        
-        # Display sliders for each parameter
-        for param_key, param_name, default_val, min_val, max_val in params:
-            # Calculate an appropriate step size based on the range
-            range_magnitude = max_val - min_val
-            if range_magnitude <= 0.01:
-                step_size = 0.0001  # Very fine control for tiny ranges
-            elif range_magnitude <= 0.1:
-                step_size = 0.0005  # Fine control for small ranges
-            elif range_magnitude <= 1.0:
-                step_size = 0.001   # Medium precision for moderate ranges
-            elif range_magnitude <= 10.0:
-                step_size = 0.005   # Less precision for larger ranges
-            else:
-                step_size = 0.01    # Coarse precision for very large ranges
-                
-            # Format the display to show appropriate decimal places
-            if step_size < 0.001:
-                format_spec = "%.5f"
-            elif step_size < 0.01:
-                format_spec = "%.4f"
-            elif step_size < 0.1:
-                format_spec = "%.3f"
-            else:
-                format_spec = "%.2f"
-            
-            # Initialize session state if not already done
-            if f"slider_{param_key}" not in st.session_state:
-                st.session_state[f"slider_{param_key}"] = float(default_val)
-                
-            # Use the slider without specifying value from session_state in the slider itself
-            value = st.slider(
-                param_name, 
-                min_value=float(min_val), 
-                max_value=float(max_val), 
-                step=step_size,
-                format=format_spec,
-                key=f"slider_{param_key}"
-            )
-            
-            # Update selected_params with the current value
-            selected_params[param_key] = value
+# format_value moved to matrix_display.py
 
-# Simulation settings
-st.sidebar.header("Simulation Settings")
-simulation_periods = st.sidebar.slider("Simulation Periods", 1, 30, 10)
-# Remove warmup period slider and hardcode to 0
-warmup_periods = 0
+def get_delta(current_val, prev_val):
+    """ Helper to calculate delta string for st.metric """
+    if prev_val is None or not np.isfinite(current_val) or not np.isfinite(prev_val) or np.isclose(current_val, prev_val): # Use isclose for float comparison
+        return None # No change or no previous data
+    diff = current_val - prev_val
+    # Format delta similar to main value
+    if abs(diff) >= 1000:
+         return f"{diff:,.0f}"
+    elif abs(diff) < 1 and diff != 0:
+         return f"{diff:.3f}"
+    else:
+         return f"{diff:.2f}"
 
-# Run simulation button
-run_simulation = st.sidebar.button("Run Simulation")
 
-# Function to run the model with selected parameters
-def run_model(custom_params=None):
-    # Create a clean model
-    model = create_growth_model()
-    
-    # Set default parameters
-    model.set_values(growth_parameters)
-    model.set_values(growth_exogenous)
-    model.set_values(growth_variables)
-    
-    # If custom parameters provided, override the defaults
-    if custom_params:
-        model.set_values(custom_params)
-    
-    # Suppress output from the model
-    old_stdout = sys.stdout
-    sys.stdout = NullIO()
-    
-    try:
-        # No warmup periods ever - removed the warmup loop and run directly for simulation periods
-        for _ in range(simulation_periods):
-            model.solve(iterations=1000, threshold=1e-6)
-    except SolutionNotFoundError as e:
-        # Restore stdout before raising the exception
-        sys.stdout = old_stdout
-        # Re-raise the exception so it can be caught at a higher level
-        raise e
-    finally:
-        # Restore stdout
-        sys.stdout = old_stdout
-    
-    return model
+def get_delta_percent(current_val, prev_val):
+     """ Helper to calculate delta string for percentage st.metric """
+     if prev_val is None or not np.isfinite(current_val) or not np.isfinite(prev_val) or np.isclose(current_val, prev_val): # Use isclose for float comparison
+         return None
+     delta = (current_val - prev_val) * 100
+     return f"{delta:.2f}%" # Difference in percentage points
 
-# Create tabs for different outputs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Main Variables", "Advanced Charts", "Data Table", 
-                               "Balance Sheet Matrix", "Revaluation Matrix", "Transaction Flow Matrix"])
+# --- Matrix Display Functions (Moved to matrix_display.py) ---
+# display_balance_sheet_matrix, display_revaluation_matrix, display_transaction_flow_matrix removed
 
-# Model state management
-if "baseline_model" not in st.session_state:
-    with st.spinner("Running baseline simulation..."):
-        try:
-            st.session_state.baseline_model = run_model()
-            st.success("Baseline model initialized!")
-        except SolutionNotFoundError as e:
-            st.error(f"Baseline model failed to converge. Error: {str(e)}")
 
-if run_simulation:
-    with st.spinner("Running custom simulation..."):
-        try:
-            st.session_state.custom_model = run_model(selected_params)
-            st.success("Custom simulation complete!")
-        except SolutionNotFoundError as e:
-            st.error(f"The model failed to converge with the selected parameters. Try different values. Error: {str(e)}")
+# --- Page Configuration ---
+st.set_page_config(page_title="SFC Economic Strategy Game", layout="wide")
 
-# Helper function to get model data
-def get_model_data(model, variable):
-    data = []
-    for solution in model.solutions:
-        data.append(solution.get(variable))
-    return data
-
-# Create comparison charts
-if run_simulation and "custom_model" in st.session_state:
-    baseline_model = st.session_state.baseline_model
-    custom_model = st.session_state.custom_model
-    
-    # Create time range for x-axis
-    time_range = list(range(len(baseline_model.solutions)))
-    
-    with tab1:
-        st.header("Comparison of Key Variables")
-        
-        # Create 2x3 grid of plots for main variables
-        col1, col2 = st.columns(2)
-        
-        # Plot variables in columns
-        with col1:
-            # Real Output
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = get_model_data(baseline_model, 'Yk')
-            custom_data = get_model_data(custom_model, 'Yk')
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Real Output (Yk)')
-            ax.set_ylabel('Value')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Real Consumption
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = get_model_data(baseline_model, 'Ck')
-            custom_data = get_model_data(custom_model, 'Ck')
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Real Consumption (Ck)')
-            ax.set_ylabel('Value')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Unemployment Rate (1-ER)
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_er = get_model_data(baseline_model, 'ER')
-            custom_er = get_model_data(custom_model, 'ER')
-            # Convert to unemployment rate (percentage)
-            baseline_ur = [(1-er)*100 for er in baseline_er]
-            custom_ur = [(1-er)*100 for er in custom_er]
-            
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_ur), len(custom_ur), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_ur[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_ur[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Unemployment Rate (1-ER)')
-            ax.set_ylabel('Rate (%)')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-        
-        with col2:
-            # Price Inflation
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = [d*100 for d in get_model_data(baseline_model, 'PI')]
-            custom_data = [d*100 for d in get_model_data(custom_model, 'PI')]
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Price Inflation (PI)')
-            ax.set_ylabel('Inflation Rate (%)')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Real Investment
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = get_model_data(baseline_model, 'Ik')
-            custom_data = get_model_data(custom_model, 'Ik')
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Real Investment (Ik)')
-            ax.set_ylabel('Value')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Growth Rate of Capital
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = [d*100 for d in get_model_data(baseline_model, 'GRk')]
-            custom_data = [d*100 for d in get_model_data(custom_model, 'GRk')]
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Growth Rate of Capital (GRk)')
-            ax.set_ylabel('Growth Rate (%)')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-    
-    with tab2:
-        st.header("Advanced Financial and Fiscal Indicators")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Interest Rates
-            fig, ax = plt.subplots(figsize=(10, 6))
-            min_len = min(len(time_range), len(get_model_data(baseline_model, 'Rb')), 
-                           len(get_model_data(custom_model, 'Rb')))
-            time_range_x = time_range[:min_len]
-            
-            # Show baseline rates
-            for rate_var, label, style in [('Rb', 'Bill Rate', '-'), ('Rl', 'Loan Rate', '--'), 
-                                          ('Rm', 'Deposit Rate', ':')]:
-                baseline_data = [d*100 for d in get_model_data(baseline_model, rate_var)]
-                custom_data = [d*100 for d in get_model_data(custom_model, rate_var)]
-                # Ensure consistency in array lengths
-                var_min_len = min(min_len, len(baseline_data), len(custom_data))
-                ax.plot(time_range_x[:var_min_len], baseline_data[:var_min_len], style, color='r', linewidth=1.5, 
-                       label=f'{label} (Baseline)')
-                ax.plot(time_range_x[:var_min_len], custom_data[:var_min_len], style, color='b', linewidth=2, 
-                       label=f'{label} (Modified)')
-            
-            ax.set_title('Interest Rates')
-            ax.set_ylabel('Rate (%)')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Government Deficit (PSBR)
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = get_model_data(baseline_model, 'PSBR')
-            custom_data = get_model_data(custom_model, 'PSBR')
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Government Deficit (PSBR)')
-            ax.set_ylabel('Value')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Government Deficit to GDP Ratio
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_psbr = get_model_data(baseline_model, 'PSBR')
-            baseline_y = get_model_data(baseline_model, 'Y')
-            baseline_ratio = [psbr/y if y != 0 else 0 for psbr, y in zip(baseline_psbr, baseline_y)] # Avoid division by zero
-            
-            custom_psbr = get_model_data(custom_model, 'PSBR')
-            custom_y = get_model_data(custom_model, 'Y')
-            custom_ratio = [psbr/y if y != 0 else 0 for psbr, y in zip(custom_psbr, custom_y)] # Avoid division by zero
-            
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_ratio), len(custom_ratio), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_ratio[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_ratio[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Government Deficit to GDP Ratio')
-            ax.set_ylabel('Ratio')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Government Debt to GDP Ratio 
-            fig, ax = plt.subplots(figsize=(10, 6))
-            
-            # Debt to GDP ratio
-            baseline_gd = get_model_data(baseline_model, 'GD')
-            baseline_y = get_model_data(baseline_model, 'Y')
-            baseline_ratio = [gd/y if y != 0 else 0 for gd, y in zip(baseline_gd, baseline_y)] # Avoid division by zero
-            
-            custom_gd = get_model_data(custom_model, 'GD')
-            custom_y = get_model_data(custom_model, 'Y')
-            custom_ratio = [gd/y if y != 0 else 0 for gd, y in zip(custom_gd, custom_y)] # Avoid division by zero
-            
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_ratio), len(custom_ratio), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_ratio[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_ratio[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Government Debt to GDP Ratio')
-            ax.set_ylabel('Ratio')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-        
-        with col2:
-            # Tobin's Q
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = get_model_data(baseline_model, 'Q')
-            custom_data = get_model_data(custom_model, 'Q')
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title("Tobin's Q Ratio")
-            ax.set_ylabel('Value')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-            
-            # Burden of Personal Debt
-            fig, ax = plt.subplots(figsize=(10, 6))
-            baseline_data = get_model_data(baseline_model, 'BUR')
-            custom_data = get_model_data(custom_model, 'BUR')
-            # Ensure both arrays are the same length
-            min_len = min(len(baseline_data), len(custom_data), len(time_range))
-            
-            ax.plot(time_range[:min_len], baseline_data[:min_len], 'r--', linewidth=2, label='Baseline')
-            ax.plot(time_range[:min_len], custom_data[:min_len], 'b-', linewidth=2, label='Modified')
-            ax.set_title('Burden of Personal Debt (BUR)')
-            ax.set_ylabel('Value')
-            ax.set_xlabel('Time Period')
-            ax.legend()
-            st.pyplot(fig)
-    
-    with tab3:
-        st.header("Data Table")
-        
-        # Select which variables to display
-        selected_vars = st.multiselect(
-            "Select variables to display", 
-            ['Yk', 'Ck', 'ER', 'PI', 'Ik', 'GRk', 'Rb', 'Rl', 'Rm', 'Q', 'BUR', 'GD', 'PSBR'],
-            default=['Yk', 'Ck', 'ER', 'PI', 'Ik', 'GRk']
-        )
-        
-        if selected_vars:
-            # Create DataFrame for data table
-            data_dict = {}
-            
-            for var in selected_vars:
-                baseline_data = get_model_data(baseline_model, var)
-                custom_data = get_model_data(custom_model, var)
-                
-                # Ensure all arrays have the same length
-                min_len = min(len(baseline_data), len(custom_data), len(time_range))
-                
-                # Format based on variable type
-                if var == 'PI':
-                    baseline_data = [d*100 for d in baseline_data[:min_len]]  # Convert to percentage
-                    custom_data = [d*100 for d in custom_data[:min_len]]
-                    data_dict[f'{var}_baseline (%)'] = baseline_data
-                    data_dict[f'{var}_modified (%)'] = custom_data
-                elif var in ['Rb', 'Rl', 'Rm', 'GRk']:
-                    baseline_data = [d*100 for d in baseline_data[:min_len]]  # Convert to percentage
-                    custom_data = [d*100 for d in custom_data[:min_len]]
-                    data_dict[f'{var}_baseline (%)'] = baseline_data
-                    data_dict[f'{var}_modified (%)'] = custom_data
-                else:
-                    data_dict[f'{var}_baseline'] = baseline_data[:min_len]
-                    data_dict[f'{var}_modified'] = custom_data[:min_len]
-                
-                # Add ratio where appropriate
-                if var not in ['PI', 'Rb', 'Rl', 'Rm', 'GRk']:
-                    # Avoid division by zero for ratio calculation
-                    relative_data = [c/b if b != 0 else 0 for c, b in zip(custom_data[:min_len], baseline_data[:min_len])]
-                    data_dict[f'{var}_ratio'] = relative_data
-            
-            df = pd.DataFrame(data_dict)
-            df.index = time_range[:min_len]
-            
-            # Display the data table
-            st.dataframe(df)
-            
-            # Download button
-            csv = df.to_csv().encode('utf-8')
-            st.download_button(
-                label="Download data as CSV",
-                data=csv,
-                file_name="growth_model_data.csv",
-                mime="text/csv",
-            )
-else:
-    with tab1:
-        st.info("👈 Adjust parameters in the sidebar and click 'Run Simulation' to see results.")
-    
-    with tab2:
-        st.info("👈 Adjust parameters in the sidebar and click 'Run Simulation' to see results.")
-    
-    with tab3:
-        st.info("👈 Adjust parameters in the sidebar and click 'Run Simulation' to see results.")
-
-# Add an explanation section at the bottom
+# --- Custom CSS Injection ---
+# Basic retro theme attempt
 st.markdown("""
-## About the Growth Model
+<style>
+    /* Import a monospace font (adjust path or use web font if needed) */
+    /* @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'); */
 
-This interactive app uses the GROWTH model from Chapter 11 of Monetary Economics, which is a Stock-Flow Consistent (SFC) model 
-of a modern monetary economy. The model includes:
+    html, body, [class*="st-"], button, input, textarea, select {
+        /* font-family: 'Press Start 2P', monospace; */ /* Example pixel font */
+        font-family: 'Consolas', 'Courier New', monospace !important; /* More common monospace */
+        color: #E0E0E0; /* Light gray text */
+    }
 
-- Firms that make production and pricing decisions
-- Households that consume, save, and make portfolio allocation decisions
-- A government sector with fiscal policy
-- A banking sector that sets interest rates and manages loans
-- A central bank that sets the policy rate
+    /* Main background */
+    .stApp {
+        background-color: #1E1E1E; /* Dark background */
+    }
 
-### Key Exogenous Variables
+    /* Containers for metrics and cards */
+    div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
+        background-color: #2A2A2A; /* Slightly lighter dark */
+        border: 1px solid #444;
+        border-radius: 5px;
+        padding: 10px !important; /* Use important to override default */
+        margin-bottom: 10px;
+    }
+    /* Target card containers specifically in POLICY phase */
+    /* This selector might be fragile and depend on Streamlit's internal structure */
+    /* It targets containers within columns within the main block */
+    div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] {
+         box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+         background-color: #333; /* Darker background for cards */
+         border: 1px solid #555;
+    }
 
-The parameters you can adjust in the sidebar represent exogenous variables in the model:
 
-- **Growth Parameters**: Control the baseline growth rate of capital and how it responds to utilization and interest rates
-- **Consumption Parameters**: Determine how households consume out of income and wealth
-- **Government Parameters**: Set fiscal policy through government spending growth and taxation
-- **Bank/Monetary Parameters**: Influence interest rates and banking sector behavior
-- **Labor Market Parameters**: Affect wage setting and employment dynamics
-- **Personal Loan Parameters**: Determine household borrowing behavior
+    /* Metric labels */
+    [data-testid="stMetricLabel"] > div {
+        color: #AAAAAA !important; /* Dimmer label */
+        font-size: 0.9em !important;
+    }
 
-### Interpreting Results
+    /* Metric values */
+    [data-testid="stMetricValue"] {
+        color: #00FF7F !important; /* Green accent */
+        font-size: 1.5em !important;
+    }
 
-The charts show how changing these parameters affects the economy compared to the baseline scenario:
-- Values above 1.0 on relative charts indicate an increase compared to baseline
-- Values below 1.0 indicate a decrease
-- The red dashed line represents the baseline value
-""")
+    /* Metric delta (positive) */
+    [data-testid="stMetricDelta"] svg {
+        fill: #00FF7F !important; /* Green arrow */
+    }
+    [data-testid="stMetricDelta"] div {
+         color: #00FF7F !important; /* Green text */
+    }
 
-# --- Refactored display_balance_sheet_matrix function using Pandas ---
-def display_balance_sheet_matrix():
-    st.markdown("""
-    ## Table 11.1: The balance sheet of Model GROWTH
-    
-    This matrix displays the assets (+) and liabilities (-) of each sector in the economy.
-    """)
-    
-    # Helper function to format values
-    def format_value(val, include_sign=True):
-        if abs(val) < 0.1: return "0"
-        sign = "+" if val > 0 else "-"
-        return f"{sign}{abs(val):,.0f}" if include_sign else f"{val:,.0f}"
+     /* Metric delta (negative) */
+    [data-testid="stMetricDelta"][aria-label*="Decrease"] svg {
+         fill: #FF6347 !important; /* Red arrow */
+    }
+     [data-testid="stMetricDelta"][aria-label*="Decrease"] div {
+         color: #FF6347 !important; /* Red text */
+    }
 
-    # Use actual model if available, otherwise use initial values
-    if "custom_model" in st.session_state:
-        model = st.session_state.custom_model
-        periods = len(model.solutions)
-        
-        available_periods = list(range(1, periods + 1))
-        selected_period = st.selectbox(
-            "Select period to display:", 
-            available_periods,
-            index=len(available_periods) - 1,
-            key="balance_sheet_period_pd" # Use a different key
-        )
-        solution = model.solutions[selected_period - 1]
-        
-        # Extract values
-        IN_val = round(solution.get('IN', 0.0), 0)
-        K_val = round(solution.get('K', 0.0), 0)
-        Hh_val = round(solution.get('Hhd', 0.0), 0)
-        H_val = round(solution.get('Hs', 0.0), 0)
-        Hb_val = round(solution.get('Hbd', 0.0), 0)
-        M_val = round(solution.get('Md', 0.0), 0)
-        Bh_val = round(solution.get('Bhd', 0.0), 0)
-        B_val = round(solution.get('Bs', 0.0), 0)
-        Bcb_val = round(solution.get('Bcbd', 0.0), 0)
-        Bb_val = round(solution.get('Bbd', 0.0), 0)
-        BL_val = round(solution.get('BLd', 0.0), 0)
-        Pbl_val = round(solution.get('Pbl', 0.0), 0)
-        BL_Pbl_val = round(BL_val * Pbl_val, 0)
-        Lh_val = round(solution.get('Lhd', 0.0), 0)
-        Lf_val = round(solution.get('Lfd', 0.0), 0)
-        L_val = round(solution.get('Lfs', 0.0) + solution.get('Lhs', 0.0), 0)
-        e_val = round(solution.get('Ekd', 0.0), 0)
-        Pe_val = round(solution.get('Pe', 0.0), 0)
-        e_Pe_val = round(e_val * Pe_val, 0)
-        OFb_val = round(solution.get('OFb', 0.0), 0)
-        
-        st.write(f"Showing balance sheet for period {selected_period} of {periods}")
-    else:
-        # Use initial values 
-        IN_val, K_val, Hh_val, Hb_val, H_val, M_val, Bh_val, B_val, Bcb_val, Bb_val, BL_val, Pbl_val, BL_Pbl_val, Lh_val, Lf_val, L_val, e_val, Pe_val, e_Pe_val, OFb_val = (11585400, 127444000, 2630150, 2025540, 4655690, 40510800, 33396900, 42484800, 4655690, 4388930, 840742, 18.182, 15286984, 21606600, 15962900, 37569500, 5112.6001, 17937, 91704168, 3473280)
-        st.write("Showing initial balance sheet values")
-    
-    # Calculate net worth
-    h_assets = Hh_val + M_val + Bh_val + BL_Pbl_val + e_Pe_val + OFb_val
-    h_liabilities = Lh_val
-    h_net_worth = h_assets - h_liabilities
-    f_assets = IN_val + K_val
-    f_liabilities = Lf_val + e_Pe_val
-    f_net_worth = f_assets - f_liabilities
-    g_liabilities = B_val + BL_Pbl_val
-    g_net_worth = -g_liabilities
-    total_real_assets = IN_val + K_val
+    /* Subheaders inside containers */
+    div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] h5 {
+        color: #00FF7F; /* Green accent for subheaders inside containers */
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+        font-size: 1em; /* Slightly smaller subheader */
+    }
 
-    # Define index and columns in correct order
-    index = [
-        "Inventories", "Fixed capital", "HPM", "Money", "Bills", 
-        "Bonds", "Loans", "Equities", "Bank capital", "Balance", "Σ"
-    ]
-    columns = ["Households", "Firms", "Govt.", "Central bank", "Banks", "Σ"]
 
-    # Create data array in the correct order
-    data_array = [
-        # Households, Firms, Govt., CB, Banks, Σ
-        ["", format_value(IN_val), "", "", "", format_value(IN_val)],                     # Inventories
-        ["", format_value(K_val), "", "", "", format_value(K_val)],                      # Fixed capital
-        [format_value(Hh_val), "", "", format_value(-H_val), format_value(Hb_val), "0"],      # HPM
-        [format_value(M_val), "", "", "", format_value(-M_val), "0"],                      # Money
-        [format_value(Bh_val), "", format_value(-B_val), format_value(Bcb_val), format_value(Bb_val), "0"], # Bills
-        [format_value(BL_Pbl_val), "", format_value(-BL_Pbl_val), "", "", "0"],             # Bonds
-        [format_value(-Lh_val), format_value(-Lf_val), "", "", format_value(L_val), "0"],      # Loans
-        [format_value(e_Pe_val), format_value(-e_Pe_val), "", "", "", "0"],                 # Equities
-        [format_value(OFb_val), "", "", "", format_value(-OFb_val), "0"],                 # Bank capital
-        [format_value(-h_net_worth), format_value(-f_net_worth), format_value(g_net_worth), "0", "0", format_value(-total_real_assets)], # Balance (Net Worth)
-        ["0", "0", "0", "0", "0", "0"]                                              # Sum
-    ]
+</style>
+""", unsafe_allow_html=True)
 
-    # Create DataFrame
-    df = pd.DataFrame(data_array, index=index, columns=columns)
 
-    # Display using st.dataframe
-    st.dataframe(df)
+# --- Game Title ---
+st.title("SFC Economic Strategy Game")
+st.markdown("Manage the economy through yearly turns using policy cards and responding to events.")
 
-# --- Refactored display_revaluation_matrix function using Pandas ---
-def display_revaluation_matrix():
-    st.markdown("""
-    ## Table 11.2: The revaluation account (matrix) of Model GROWTH
-    
-    This matrix displays capital gains or losses due to changes in asset prices between periods.
-    """)
-    
-    # Helper function to format values
-    def format_value(val, include_sign=True):
-        if abs(val) < 0.1: return "0"
-        sign = "+" if val > 0 else "-"
-        return f"{sign}{abs(val):,.0f}" if include_sign else f"{val:,.0f}"
+# --- Game State Initialization ---
+if "game_initialized" not in st.session_state:
+    st.session_state.game_initialized = True
+    st.session_state.current_year = 0
+    st.session_state.game_phase = "YEAR_START"
 
-    # Check if we have a model with solutions
-    if "custom_model" in st.session_state:
-        model = st.session_state.custom_model
-        periods = len(model.solutions)
-        
-        # Need at least 2 periods to show revaluation
-        if periods >= 2:
-            available_periods = list(range(2, periods + 1))
-            selected_period = st.selectbox(
-                "Select period to display:", 
-                available_periods,
-                index=len(available_periods) - 1,
-                key="revaluation_period_pd" # Use different key
-            )
-            
-            solution = model.solutions[selected_period - 1]
-            prev_solution = model.solutions[selected_period - 2]
-            
-            st.write(f"Showing revaluation matrix for period {selected_period} (changes from period {selected_period-1})")
-            
-            # Extract and calculate values
-            Pbl_curr = solution.get('Pbl', 0.0)
-            Pbl_prev = prev_solution.get('Pbl', 0.0)
-            delta_Pbl = Pbl_curr - Pbl_prev
-            BLd_curr = solution.get('BLd', 0.0)
-            Pe_curr = solution.get('Pe', 0.0)
-            Pe_prev = prev_solution.get('Pe', 0.0)
-            delta_Pe = Pe_curr - Pe_prev
-            Ekd_curr = solution.get('Ekd', 0.0)
-            Eks_curr = solution.get('Eks', 0.0)
-            
-            bonds_hl = BLd_curr * delta_Pbl
-            equity_hl = Ekd_curr * delta_Pe
-            total_h = bonds_hl + equity_hl
-            equity_fl = -Eks_curr * delta_Pe
-            bonds_gl = -BLd_curr * delta_Pbl
-            
-            # Define index and columns
-            index = ["Bonds", "Equities", "Bank equity", "Fixed capital", "Balance", "Σ"]
-            # Note: First column header is intentionally blank for alignment in st.dataframe
-            columns = ["", "Households", "Firms", "Govt.", "Central bank", "Banks", "Σ"] 
+    # --- Construct Initial State (t=0) Dictionary ---
+    # --- Create and Initialize Model Object ---
+    # Reverting to initial solve approach
+    try:
+        # Construct dictionary first
+        logging.info("Constructing initial t=0 state dictionary...")
+        initial_state_dict = {}
+        initial_state_dict.update(growth_parameters)
+        # Need to define these sets before using them
+        defined_param_names = set(growth_parameters.keys())
+        defined_variable_names = set(v[0] for v in growth_variables)
+        for key, value in growth_exogenous:
+            try:
+                if key in defined_param_names or key in defined_variable_names:
+                     initial_state_dict[key] = float(value)
+            except (TypeError, ValueError):
+                 if isinstance(value, str):
+                     initial_state_dict[key] = value # Keep string ref
+                 else:
+                     logging.warning(f"Could not convert exogenous value {key}={value} to float. Skipping.")
+        for key, value in growth_variables:
+             try:
+                 if isinstance(value, str):
+                     initial_state_dict[key] = value # Keep string ref
+                 else:
+                     initial_state_dict[key] = float(value)
+             except (TypeError, ValueError):
+                 logging.warning(f"Could not convert variable value {key}={value} to float. Skipping.")
+        logging.info(f"Initial t=0 state dictionary constructed with {len(initial_state_dict)} entries.")
 
-            # Format data for display
-            data_array = [
-                ["Bonds", format_value(bonds_hl), "", format_value(bonds_gl), "", "", "0"],
-                ["Equities", format_value(equity_hl), format_value(equity_fl), "", "", "", "0"],
-                ["Bank equity", "0", "", "", "", "0", "0"], # Bank equity revaluation not modeled
-                ["Fixed capital", "", "0", "", "", "", "0"], # Fixed capital revaluation not modeled
-                ["Balance", format_value(-total_h), format_value(-equity_fl), format_value(-bonds_gl), "0", "0", "0"], # Balance
-                ["Σ", "0", "0", "0", "0", "0", "0"] # Sum
-            ]
-            
-            # Create DataFrame
-            df = pd.DataFrame(data_array, columns=columns)
-            df = df.set_index(columns[0]) # Set first column as index
+        # Create fresh model and set values
+        initial_model_object = create_growth_model()
+        initial_model_object.set_values(initial_state_dict)
 
-            # Display using st.dataframe
-            st.dataframe(df)
-            
+        # Perform the initial solve
+        logging.info("Attempting initial solve step (t=0 calculation)...")
+        initial_model_object.solve(iterations=1000, threshold=1e-6)
+        logging.info("Initial solve step completed.")
+
+        # Store the *solved* t=0 state
+        solved_t0_state = copy.copy(initial_model_object.solutions[-1])
+
+        # Reset the model's history to only contain the solved t=0 state
+        initial_model_object.solutions = [solved_t0_state]
+        initial_model_object.current_solution = solved_t0_state
+
+        # Store the fully initialized model object in session state
+        st.session_state.sfc_model_object: Model = initial_model_object
+        logging.info("Initialized model object stored in session state.")
+
+    except SolutionNotFoundError as e:
+        st.error(f"Fatal Error: Initial model state failed to converge. Cannot start game. Error: {e}")
+        logging.exception("Initial model solve failed.")
+        st.stop()
+    except Exception as e:
+        st.error(f"Fatal Error: An unexpected error occurred during model initialization: {e}")
+        logging.exception("Unexpected error during model initialization.")
+        st.stop()
+    # --- End of Model Initialization ---
+
+    # Initialize deck, hand, history, etc.
+    st.session_state.deck = create_deck()
+    st.session_state.player_hand = []
+    st.session_state.deck, st.session_state.player_hand = draw_cards(
+        st.session_state.deck, st.session_state.player_hand, INITIAL_HAND_SIZE
+    )
+    st.session_state.active_events_this_year = []
+    st.session_state.cards_selected_this_year = []
+    st.session_state.history = []
+    st.session_state.initial_params = {}
+
+    st.info("Game Initialized. Ready to start Year 1.")
+    st.rerun() # Rerun to ensure state is fully set before proceeding
+
+
+# --- Sidebar ---
+st.sidebar.header("Game Information")
+
+# Display Hand and Events
+st.sidebar.header("Player Hand")
+if not st.session_state.player_hand:
+    st.sidebar.write("Hand is empty.")
+else:
+    st.sidebar.caption("Cards in hand (Select in Policy Phase):")
+    for card_name in st.session_state.player_hand:
+         st.sidebar.markdown(f"- {card_name}")
+
+st.sidebar.header("Active Events")
+if not st.session_state.active_events_this_year:
+    st.sidebar.write("No active events.")
+else:
+    st.sidebar.caption("Events affecting this year:")
+    for event_name in st.session_state.active_events_this_year:
+        if event_name in ECONOMIC_EVENTS:
+            st.sidebar.markdown(f"- **{event_name}**: {ECONOMIC_EVENTS[event_name]['desc']}")
         else:
-            st.info("Revaluation matrix requires at least two periods of data. Run a simulation with multiple periods to view revaluation effects.")
+            st.sidebar.markdown(f"- {event_name}") # Fallback if not found
+st.sidebar.divider()
+
+
+# --- Main App Logic ---
+
+# --- Game Mode UI ---
+st.header(f"Year: {st.session_state.current_year}")
+st.subheader(f"Phase: {st.session_state.game_phase.replace('_', ' ').title()}")
+
+# --- Phase Logic ---
+if st.session_state.game_phase == "YEAR_START":
+    st.write("Review the economic situation. New cards drawn and events checked.")
+
+    # --- Initial Parameter Adjustment (Year 0 Only) ---
+    # This section might need adjustment if initial params should affect the stabilization run
+    if st.session_state.current_year == 0 and "initial_params_set" not in st.session_state:
+         # Ensure solutions list is not empty before accessing
+         if not st.session_state.sfc_model_object.solutions:
+             st.error("Model state has no solutions for initial parameter adjustment.")
+             st.stop()
+         with st.expander("Advanced: Set Initial Economic Conditions"):
+             st.caption("Adjust the starting parameters for the economy. These settings are locked once you start the Policy Phase.")
+             initial_params_changed = False
+             initial_params_to_set = {}
+             # Get the latest solution state from the initial model object *after manual init*
+             latest_solution = st.session_state.sfc_model_object.solutions[-1] # Should be index 0
+
+             # Need defined_param_names here for the check below
+             defined_param_names = set(growth_parameters.keys())
+
+             # Use parameter_categories defined in this file
+             for category, params in parameter_categories.items():
+                 st.markdown(f"**{category}**")
+                 for param_key, param_name, default_val, min_val, max_val in params:
+                     # Use current value from the latest solution object as the default
+                     # Provide default_val as fallback if key not in solution (e.g., for params not vars)
+                     current_model_val = latest_solution.get(param_key, default_val)
+                     slider_key = f"initial_slider_{param_key}"
+
+                     # Slider setup
+                     range_magnitude = max_val - min_val
+                     step_size = 0.01 # Default step
+                     if range_magnitude <= 0.01: step_size = 0.0001
+                     elif range_magnitude <= 0.1: step_size = 0.0005
+                     elif range_magnitude <= 1.0: step_size = 0.001
+                     elif range_magnitude <= 10.0: step_size = 0.005
+
+                     format_spec = "%.2f" # Default format
+                     if step_size < 0.001: format_spec = "%.5f"
+                     elif step_size < 0.01: format_spec = "%.4f"
+                     elif step_size < 0.1: format_spec = "%.3f"
+
+                     # Use session state to store slider value temporarily to avoid immediate model update on every interaction
+                     if slider_key not in st.session_state.initial_params:
+                         # Try converting current_model_val to float safely
+                         try:
+                             initial_float_val = float(current_model_val)
+                         except (TypeError, ValueError):
+                             logging.warning(f"Could not convert initial value {param_key}={current_model_val} to float. Using default: {default_val}")
+                             initial_float_val = float(default_val)
+                         st.session_state.initial_params[slider_key] = initial_float_val
+
+
+                     new_value = st.slider(
+                         param_name,
+                         min_value=float(min_val),
+                         max_value=float(max_val),
+                         value=st.session_state.initial_params[slider_key], # Use value from temp state
+                         step=step_size,
+                         format=format_spec,
+                         key=slider_key
+                     )
+                     # Check if slider value changed
+                     # Use np.isclose for robust float comparison
+                     if not np.isclose(st.session_state.initial_params[slider_key], new_value):
+                          st.session_state.initial_params[slider_key] = new_value # Update temp state
+                          initial_params_changed = True
+
+                     # Store the potentially changed value for bulk update
+                     # We only store parameters here, as variables shouldn't be set by sliders
+                     if param_key in defined_param_names: # Check if it's a parameter
+                         initial_params_to_set[param_key] = new_value
+
+             # Apply changes if any slider was moved
+             if initial_params_changed:
+                 try:
+                     st.session_state.sfc_model_object.set_values(initial_params_to_set)
+                     # Update the manually created initial solution as well
+                     st.session_state.sfc_model_object.solutions[0].update(initial_params_to_set)
+                     st.session_state.sfc_model_object.current_solution.update(initial_params_to_set)
+                     st.success("Initial parameters updated in model state.")
+                 except Exception as e:
+                     st.error(f"Error applying initial parameters: {e}")
+                 # No rerun here, let user confirm by moving to next phase
+
+
+    # --- Draw Cards and Check Events (Run only once per YEAR_START phase, and only if year > 0) ---
+    if st.session_state.current_year > 0:
+        if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != st.session_state.current_year:
+
+            # Draw cards
+            st.session_state.deck, st.session_state.player_hand = draw_cards(
+                st.session_state.deck, st.session_state.player_hand, CARDS_TO_DRAW_PER_YEAR
+            )
+            st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.") # Use toast for less intrusive notification
+
+            # Check for events based on the *previous* year's state
+            previous_model_state = st.session_state.sfc_model_object # This holds the result of the last completed year
+            st.session_state.active_events_this_year = check_for_events(previous_model_state)
+            if st.session_state.active_events_this_year:
+                 st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
+
+            st.session_state.year_start_processed = st.session_state.current_year # Mark as processed for this year
+            st.session_state.cards_selected_this_year = [] # Clear selections from previous year
+            st.rerun() # Rerun to update sidebar display immediately
+
+    # --- Economic Dashboard ---
+    st.subheader("Economic Dashboard (Previous Year's Results)")
+    model_state = st.session_state.sfc_model_object # Represents state *after* the last completed year
+    # Ensure solutions list is not empty before accessing
+    if not model_state.solutions:
+         st.error("Model state has no solutions. Initialization might have failed.")
+         st.stop()
+    latest_solution = model_state.solutions[-1] # Get the latest solution for current values
+
+
+    # Get previous year's data for calculating changes (delta) if available
+    prev_year_data = None
+    if len(st.session_state.history) > 0:
+        target_year = st.session_state.current_year # The year that just finished
+        # History stores results *for* year N, model_state is *after* year N.
+        prev_year_data = next((item for item in reversed(st.session_state.history) if item['year'] == target_year), None)
+
+    # Display Metrics in Containers
+    with st.container(border=True):
+        st.markdown("##### Macroeconomic Indicators")
+        # Row 1: Core Macro Indicators
+        col1, col2, col3, col4 = st.columns(4)
+        yk_val = latest_solution.get('Yk', 0.0)
+        pi_val = latest_solution.get('PI', 0.0)
+        er_val = latest_solution.get('ER', 1.0) # Default to 1 (full employment) if not found
+        grk_val = latest_solution.get('GRk', 0.0)
+
+        # Use t=0 state from session state model for first year comparison
+        yk_prev = prev_year_data.get('Yk') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('Yk')
+        pi_prev = prev_year_data.get('PI') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('PI')
+        er_prev = prev_year_data.get('ER') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('ER')
+        grk_prev = prev_year_data.get('GRk') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('GRk')
+
+
+        col1.metric("Real GDP (Yk)", format_value(yk_val), delta=get_delta(yk_val, yk_prev))
+        col2.metric("Inflation (PI)", format_percent(pi_val), delta=get_delta_percent(pi_val, pi_prev))
+        col3.metric("Unemployment (1-ER)", format_percent(1-er_val), delta=get_delta_percent(1-er_val, (1-er_prev) if er_prev is not None else None))
+        col4.metric("Capital Growth (GRk)", format_percent(grk_val), delta=get_delta_percent(grk_val, grk_prev))
+
+    with st.container(border=True):
+        st.markdown("##### Financial Indicators")
+        # Row 2: Financial Indicators
+        col5, col6, col7, col8 = st.columns(4)
+        rb_val = latest_solution.get('Rb', 0.0) # Bill rate (Policy Rate)
+        rl_val = latest_solution.get('Rl', 0.0) # Loan rate
+        bur_val = latest_solution.get('BUR', 0.0) # Burden of personal debt
+        q_val = latest_solution.get('Q', 0.0) # Tobin's Q
+
+        # Use t=0 state from session state model for first year comparison
+        rb_prev = prev_year_data.get('Rb') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('Rb')
+        rl_prev = prev_year_data.get('Rl') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('Rl')
+        bur_prev = prev_year_data.get('BUR') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('BUR')
+        q_prev = prev_year_data.get('Q') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('Q')
+
+
+        col5.metric("Policy Rate (Rb)", format_percent(rb_val), delta=get_delta_percent(rb_val, rb_prev))
+        col6.metric("Loan Rate (Rl)", format_percent(rl_val), delta=get_delta_percent(rl_val, rl_prev))
+        col7.metric("Debt Burden (BUR)", format_value(bur_val), delta=get_delta(bur_val, bur_prev))
+        col8.metric("Tobin's Q", format_value(q_val), delta=get_delta(q_val, q_prev))
+
+    with st.container(border=True):
+        st.markdown("##### Government Indicators")
+        # Row 3: Government Indicators
+        col9, col10, col11, col12 = st.columns(4)
+        psbr_val = latest_solution.get('PSBR', 0.0)
+        gd_val = latest_solution.get('GD', 0.0)
+        y_val = latest_solution.get('Y', 0.0) # Nominal GDP for ratios
+        debt_ratio = (gd_val / y_val) if y_val else 0
+        deficit_ratio = (psbr_val / y_val) if y_val else 0
+
+        # Use t=0 state from session state model for first year comparison
+        psbr_prev = prev_year_data.get('PSBR') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('PSBR')
+        gd_prev = prev_year_data.get('GD') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('GD')
+        y_prev = prev_year_data.get('Y') if prev_year_data else st.session_state.sfc_model_object.solutions[0].get('Y')
+
+        debt_ratio_prev = (gd_prev / y_prev) if (y_prev and gd_prev is not None) else None
+        deficit_ratio_prev = (psbr_prev / y_prev) if (y_prev and psbr_prev is not None) else None
+
+        col9.metric("Gov Deficit (PSBR)", format_value(psbr_val), delta=get_delta(psbr_val, psbr_prev))
+        col10.metric("Gov Debt (GD)", format_value(gd_val), delta=get_delta(gd_val, gd_prev))
+        col11.metric("Deficit / GDP", format_percent(deficit_ratio), delta=get_delta_percent(deficit_ratio, deficit_ratio_prev))
+        col12.metric("Debt / GDP", format_percent(debt_ratio), delta=get_delta_percent(debt_ratio, debt_ratio_prev))
+
+
+    st.divider()
+
+    if st.button("Start Policy Phase"):
+        st.session_state.game_phase = "POLICY"
+        st.session_state.initial_params_set = True # Lock initial params
+        if "year_start_processed" in st.session_state: # Clean up flag
+             del st.session_state.year_start_processed
+        st.rerun()
+
+elif st.session_state.game_phase == "POLICY":
+    st.subheader("Select Policy Cards to Play")
+    st.write("Click on a card to select or deselect it.")
+
+    available_cards = st.session_state.player_hand
+    selected_cards_this_turn = st.session_state.cards_selected_this_year # This is a list
+
+    if not available_cards:
+        st.write("No cards in hand.")
     else:
-        st.info("No model data available. Run a simulation with multiple periods to view the revaluation matrix.")
+        # Create columns for card layout
+        num_cards = len(available_cards)
+        num_cols = min(num_cards, MAX_CARDS_PER_ROW)
+        cols = st.columns(num_cols)
 
-# --- Refactored display_transaction_flow_matrix function using Pandas ---
-def display_transaction_flow_matrix():
-    st.markdown("""
-    ## Table 11.3: The transaction flow matrix of Model GROWTH
-    
-    This matrix displays all the transactions between sectors in the economy for a given period.
-    """)
-    
-    # Helper function to format values
-    def format_value(val, include_sign=True):
-        if abs(val) < 0.1: return "0"
-        sign = "+" if val > 0 else "-"
-        return f"{sign}{abs(val):,.0f}" if include_sign else f"{val:,.0f}"
+        for i, card_name in enumerate(available_cards):
+            col_index = i % num_cols
+            with cols[col_index]:
+                card_info = POLICY_CARDS.get(card_name, {})
+                is_selected = card_name in selected_cards_this_turn
 
-    # Use actual model if available
-    if "custom_model" in st.session_state:
-        model = st.session_state.custom_model
-        periods = len(model.solutions)
-        
-        available_periods = list(range(1, periods + 1))
-        selected_period = st.selectbox(
-            "Select period to display:", 
-            available_periods,
-            index=len(available_periods) - 1,
-            key="transaction_flow_period_pd" # Use different key
-        )
-        
-        solution = model.solutions[selected_period - 1]
-        
-        if selected_period == 1:
-             st.info("Transaction Flow Matrix requires data from the previous period. Select period 2 or later.")
-             return 
-        prev_solution = model.solutions[selected_period - 2] 
+                # Use an expander or container for visual separation
+                # Apply a CSS class for card styling
+                with st.container(border=True): # Using border=True for now, CSS class can override
+                    st.markdown(f"**{card_name}** ({card_info.get('type', 'N/A')})")
+                    st.caption(card_info.get('desc', 'No description available.'))
+                    # REMOVED internal param details below:
+                    # st.markdown(f"<small>Param: {card_info.get('param', 'N/A')}, Effect: {card_info.get('effect', 'N/A')}</small>", unsafe_allow_html=True)
 
-        st.write(f"Showing transaction flow matrix for period {selected_period} of {periods}")
-        
-        # --- Extract values ---
-        C_val = round(solution.get('CONS', 0.0), 0)
-        G_val = round(solution.get('G', 0.0), 0)
-        I_val = round(solution.get('INV', 0.0), 0) 
-        WB_val = round(solution.get('WB', 0.0), 0)
-        T_val = round(solution.get('T', 0.0), 0)
-        r_val = solution.get('Rb', 0.0) 
-        rm_val = solution.get('Rm', 0.0)
-        rl_val = solution.get('Rl', 0.0)
-        Md_prev = prev_solution.get('Md', 0.0) 
-        Bhd_prev = prev_solution.get('Bhd', 0.0)
-        Bbd_prev = prev_solution.get('Bbd', 0.0)
-        Bcbd_prev = prev_solution.get('Bcbd', 0.0)
-        Bs_prev = prev_solution.get('Bs', 0.0)
-        Lhd_prev = prev_solution.get('Lhd', 0.0)
-        Lfd_prev = prev_solution.get('Lfd', 0.0)
-        IN_prev = prev_solution.get('IN', 0.0)
-        r_Bhd_val = round(r_val * Bhd_prev, 0)
-        r_Bbd_val = round(r_val * Bbd_prev, 0)
-        r_Bcbd_val = round(r_val * Bcbd_prev, 0)
-        r_Bs_val = round(r_val * Bs_prev, 0) 
-        rm_Md_val = round(rm_val * Md_prev, 0)
-        rl_Lhd_val = round(rl_val * Lhd_prev, 0)
-        rl_Lfd_val = round(rl_val * Lfd_prev, 0)
-        InvFinCost_val = round(rl_val * IN_prev, 0) 
-        BL_prev = prev_solution.get('BLs', 0.0) 
-        coupon_val = solution.get('Rbl', 0.0) 
-        coupons_val = round(coupon_val * BL_prev, 0)
-        Ff_val = round(solution.get('Ff', 0.0), 0) 
-        Fb_val = round(solution.get('Fb', 0.0), 0) 
-        Fcb_val = round(solution.get('Fcb', 0.0), 0) 
-        FDf_val = round(solution.get('FDf', 0.0), 0) 
-        FDb_val = round(solution.get('FDb', 0.0), 0) 
-        FUf_val = round(solution.get('FUf', 0.0), 0) 
-        FUb_val = round(solution.get('FUb', 0.0), 0) 
-        delta_H_h_val = round(solution.get('Hhd', 0.0) - prev_solution.get('Hhd', 0.0), 0)
-        delta_H_b_val = round(solution.get('Hbd', 0.0) - prev_solution.get('Hbd', 0.0), 0)
-        delta_H_val = round(solution.get('Hs', 0.0) - prev_solution.get('Hs', 0.0), 0)
-        delta_M_h_val = round(solution.get('Md', 0.0) - prev_solution.get('Md', 0.0), 0)
-        delta_M_b_val = round(solution.get('Ms', 0.0) - prev_solution.get('Ms', 0.0), 0)
-        delta_Bh_val = round(solution.get('Bhd', 0.0) - prev_solution.get('Bhd', 0.0), 0)
-        delta_Bb_val = round(solution.get('Bbd', 0.0) - prev_solution.get('Bbd', 0.0), 0)
-        delta_Bcb_val = round(solution.get('Bcbd', 0.0) - prev_solution.get('Bcbd', 0.0), 0)
-        delta_B_val = round(solution.get('Bs', 0.0) - prev_solution.get('Bs', 0.0), 0)
-        delta_BL_val = round(solution.get('BLs', 0.0) - prev_solution.get('BLs', 0.0), 0) 
-        Pbl_val = solution.get('Pbl', 0.0)
-        delta_BL_Pbl_val = round(delta_BL_val * Pbl_val, 0) 
-        delta_Lh_val = round(solution.get('Lhd', 0.0) - prev_solution.get('Lhd', 0.0), 0)
-        delta_Lf_val = round(solution.get('Lfd', 0.0) - prev_solution.get('Lfd', 0.0), 0)
-        delta_L_val = round((solution.get('Lhs', 0.0) - prev_solution.get('Lhs', 0.0)) + (solution.get('Lfs', 0.0) - prev_solution.get('Lfs', 0.0)), 0)
-        Pe_val = solution.get('Pe', 0.0) 
-        delta_e_val = round(solution.get('Ekd', 0.0) - prev_solution.get('Ekd', 0.0), 0) 
-        delta_e_Pe_val = round(delta_e_val * Pe_val, 0) 
-        NPL_val = round(solution.get('NPL', 0.0), 0) 
-        delta_IN_val = round(solution.get('IN', 0.0) - prev_solution.get('IN', 0.0), 0) 
+                    button_label = "Deselect" if is_selected else "Select"
+                    button_type = "primary" if is_selected else "secondary"
+                    # Use card name and index in key for uniqueness across reruns and turns
+                    button_key = f"select_{card_name}_{i}_{st.session_state.current_year}" # Added index i
 
-        # --- Define Multi-Level Headers ---
-        headers = pd.MultiIndex.from_tuples([
-            ("", ""), ("Households", ""), ("Firms", "Current"), ("Firms", "Capital"), 
-            ("Govt.", ""), ("Central bank", "Current"), ("Central bank", "Capital"), 
-            ("Banks", "Current"), ("Banks", "Capital"), ("Σ", "")
-        ], names=['Sector', 'Flow'])
-        
-        # --- Define Row Index ---
-        index = [
-            "Consumption", "Government expenditures", "Investment", "Inventory accumulation", 
-            "--- Income/Costs ---", 
-            "Wages", "Inventory financing cost", "Taxes", "Entrepreneurial Profits", "Bank profits", "Central bank profits", 
-            "--- Interest Flows ---", 
-            "Interest on bills", "Interest on deposits", "Interest on loans", "Bond coupon payments", 
-            "--- Change in Stocks ---", 
-            "ΔLoans", "ΔCash", "ΔMoney deposits", "ΔBills", "ΔBonds", "ΔEquities", "Loan defaults", 
-            "--- Balance Check ---", 
-            "Σ"
-        ]
+                    if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
+                        if is_selected:
+                            st.session_state.cards_selected_this_year.remove(card_name)
+                        else:
+                            # Optional: Limit number of cards playable per turn?
+                            # max_playable = 1
+                            # if len(st.session_state.cards_selected_this_year) < max_playable:
+                            st.session_state.cards_selected_this_year.append(card_name)
+                            # else:
+                            #     st.warning(f"You can only play {max_playable} card(s) per turn.")
+                        st.rerun() # Rerun to update button state
 
-        # --- Format data for display (10 columns) ---
-        # Using a dictionary for easier column mapping
-        data_dict = {
-            ("Households", ""): [
-                format_value(-C_val), "", "", "", "", 
-                format_value(WB_val), "", format_value(-T_val), format_value(FDf_val), format_value(FDb_val), "", "",
-                format_value(r_Bhd_val), format_value(rm_Md_val), format_value(-rl_Lhd_val), format_value(coupons_val), "",
-                format_value(delta_Lh_val), format_value(-delta_H_h_val), format_value(-delta_M_h_val), format_value(-delta_Bh_val), format_value(-delta_BL_Pbl_val), format_value(-delta_e_Pe_val), "", "",
-                "0"
-            ],
-            ("Firms", "Current"): [
-                format_value(C_val), format_value(G_val), "", format_value(delta_IN_val), "",
-                format_value(-WB_val), format_value(-InvFinCost_val), "", format_value(-Ff_val), "", "", "",
-                "", "", format_value(-rl_Lfd_val), "", "",
-                "", "", "", "", "", "", "", "",
-                "0"
-            ],
-            ("Firms", "Capital"): [
-                "", "", format_value(-I_val), format_value(-delta_IN_val), "",
-                "", "", "", format_value(FUf_val), "", "", "",
-                "", "", "", "", "",
-                format_value(delta_Lf_val), "", "", "", "", format_value(delta_e_Pe_val), format_value(NPL_val), "",
-                "0"
-            ],
-            ("Govt.", ""): [
-                "", format_value(-G_val), "", "", "",
-                "", "", format_value(T_val), "", "", format_value(Fcb_val), "",
-                format_value(-r_Bs_val), "", "", format_value(-coupons_val), "",
-                "", "", "", format_value(delta_B_val), format_value(delta_BL_Pbl_val), "", "", "",
-                "0"
-            ],
-            ("Central bank", "Current"): [
-                "", "", "", "", "",
-                "", "", "", "", "", format_value(-Fcb_val), "",
-                format_value(r_Bcbd_val), "", "", "", "",
-                "", "", "", "", "", "", "", "",
-                "0"
-            ],
-            ("Central bank", "Capital"): [
-                "", "", "", "", "",
-                "", "", "", "", "", "", "",
-                "", "", "", "", "",
-                "", format_value(-delta_H_val), "", format_value(-delta_Bcb_val), "", "", "", "",
-                "0"
-            ],
-            ("Banks", "Current"): [
-                "", "", "", "", "",
-                "", format_value(InvFinCost_val), "", "", format_value(-Fb_val), "", "",
-                format_value(r_Bbd_val), format_value(-rm_Md_val), format_value(rl_Lhd_val + rl_Lfd_val), "", "",
-                "", "", "", "", "", "", "", "",
-                "0"
-            ],
-            ("Banks", "Capital"): [
-                "", "", "", "", "",
-                "", "", "", "", format_value(FUb_val), "", "",
-                "", "", "", "", "",
-                format_value(-delta_L_val), format_value(-delta_H_b_val), format_value(delta_M_b_val), format_value(-delta_Bb_val), "", "", format_value(-NPL_val), "",
-                "0"
-            ],
-            ("Σ", ""): [ # Corrected Sum Column
-                "0", "0", "0", "0", "", 
-                "0", "0", "0", "0", "0", "0", "", 
-                "0", "0", "0", "0", "", 
-                "0", "0", "0", "0", "0", "0", "0", "", # All stock changes sum to 0
-                format_value(delta_IN_val)
-            ]
-        }
-        
-        # Create DataFrame
-        df = pd.DataFrame(data_dict, index=index) # Use index list directly
-        df.index.name = "Flow" # Name the index
+    st.divider()
 
-        # Display using st.dataframe
-        st.dataframe(df)
 
-    else:
-        st.info("No model data available. Run a simulation to view the transaction flow matrix.")
+    # Display summary of selected cards
+    if selected_cards_this_turn:
+        st.write("Selected for this turn:")
+        for card_name in selected_cards_this_turn:
+             st.markdown(f"- {card_name}")
+    else: # Corrected indentation
+        st.write("No cards selected for this turn.")
 
-# Display matrix tabs content even if simulation hasn't run (Correctly outside function)
-with tab4:
-    display_balance_sheet_matrix()
-    
-with tab5:
-    display_revaluation_matrix()
-    
-with tab6:
-    display_transaction_flow_matrix()
+    if st.button("Confirm Policies & Run Simulation"):
+        st.session_state.game_phase = "SIMULATION"
+        st.rerun()
+
+# --- Revised SIMULATION Phase Logic ---
+elif st.session_state.game_phase == "SIMULATION":
+    # Correctly placed log
+    logging.info(f"Entering SIMULATION phase for year {st.session_state.current_year + 1}")
+    st.write("Applying policies and simulating the year's economic activity...")
+
+    # Retrieve the current model state from session
+    current_model = st.session_state.sfc_model_object
+
+    # --- Prepare Inputs for Simulation Step ---
+    cards_to_play = st.session_state.cards_selected_this_year
+    events_active = st.session_state.active_events_this_year
+
+    # Get the complete solution dictionary from the end of the previous turn
+    if not current_model.solutions:
+        st.error("Cannot simulate: No previous model solution found in session state.")
+        st.stop()
+    # This dictionary contains all variables, including internal lagged ones (_var__1)
+    latest_solution_values = current_model.solutions[-1]
+
+    # Construct the base numerical parameters for this turn
+    # Start with the base parameters defined in the model file
+    base_numerical_params = copy.deepcopy(growth_parameters)
+    # Add exogenous parameters (filter from growth_exogenous list)
+    # Need to be careful here, growth_exogenous also contains initial *variable* values
+    # Let's assume parameters are those keys present in growth_parameters OR
+    # keys from growth_exogenous that are ALSO in the model's defined parameters
+    temp_model_for_param_check = create_growth_model() # Create a temp model just to access its defined param names
+    defined_param_names = set(temp_model_for_param_check.parameters.keys())
+    for key, value in growth_exogenous:
+        if key in defined_param_names:
+             # Ensure value is float, handle potential errors
+             try:
+                 base_numerical_params[key] = float(value)
+             except (TypeError, ValueError):
+                  logging.warning(f"Could not convert exogenous parameter {key}={value} to float during base param construction. Skipping.")
+    logging.debug(f"Base numerical parameters constructed for turn.")
+
+
+    # --- Calculate Final Parameters for the Turn using apply_effects ---
+    st.write("Applying effects...")
+    effect_log = io.StringIO()
+    final_numerical_params = {} # Initialize
+    try:
+        with redirect_stdout(effect_log): # Capture logs from apply_effects
+             final_numerical_params = apply_effects(
+                 base_params=base_numerical_params,
+                 latest_solution=latest_solution_values, # Pass previous solution for context if needed by effects
+                 cards_played=cards_to_play,
+                 active_events=events_active
+             )
+        logging.debug(f"Final numerical parameters after effects calculated.")
+    except Exception as e:
+        st.error(f"Error during apply_effects: {e}")
+        logging.exception("Error calling apply_effects:")
+        st.stop()
+
+    # Display the log of applied effects (which now comes from logging within apply_effects)
+    # We can still show the captured stdout if needed, or rely on terminal logs
+    # st.text_area("Applied Effects Log:", effect_log.getvalue(), height=100) # Optional: show captured stdout
+
+
+    # --- Initialize Fresh Model for Simulation ---
+    model_to_simulate = create_growth_model()
+    try:
+        # 1. Set default parameters/variables first (needed by pysolve structure)
+        model_to_simulate.set_values(growth_parameters)
+        model_to_simulate.set_values(growth_exogenous)
+        model_to_simulate.set_values(growth_variables)
+        logging.debug("Set default params/vars on fresh model instance.")
+
+        # 2. Set the final calculated numerical parameters for this turn (overrides defaults)
+        model_to_simulate.set_values(final_numerical_params)
+        logging.debug("Set final numerical parameters on fresh model instance.")
+
+
+        # 3. Copy the entire solutions history from the previous model object
+        #    and set the current solution pointer.
+        prev_model = st.session_state.sfc_model_object # Get the model from the previous state
+        model_to_simulate.solutions = copy.deepcopy(prev_model.solutions) # Deep copy the history
+        model_to_simulate.current_solution = model_to_simulate.solutions[-1] # Set pointer
+        logging.debug("Copied solutions history and set current_solution for the fresh model instance.")
+
+    except Exception as e:
+        st.error(f"Error setting initial state for simulation step: {e}")
+        logging.exception("Error during model initialization for simulation step:")
+        st.stop()
+
+
+    # --- Run the simulation for one year ---
+    try:
+        with st.spinner(f"Simulating Year {st.session_state.current_year + 1}..."):
+            # Suppress console output from pysolve
+            old_stdout = sys.stdout
+            sys.stdout = NullIO()
+
+
+
+            logging.debug(f"Attempting model.solve() for year {st.session_state.current_year + 1}...")
+            # Solve for the next step (1 year)
+            model_to_simulate.solve(iterations=1000, threshold=1e-6)
+            logging.debug(f"model.solve() completed for year {st.session_state.current_year + 1}.")
+
+
+            # --- DEBUG LOGGING: Post-Solve State ---
+            post_solve_solution = model_to_simulate.solutions[-1] # The newly added solution
+            logging.debug(f"--- Year {st.session_state.current_year + 1} POST-SOLVE ---")
+            logging.debug(f"  Yk: {post_solve_solution.get('Yk', 'N/A')}")
+            logging.debug(f"  Kk: {post_solve_solution.get('Kk', 'N/A')}")
+            logging.debug(f"  P:  {post_solve_solution.get('P', 'N/A')}")
+            logging.debug(f"  W:  {post_solve_solution.get('W', 'N/A')}")
+            logging.debug(f"  N:  {post_solve_solution.get('N', 'N/A')}")
+            logging.debug(f"  ER: {post_solve_solution.get('ER', 'N/A')}")
+            # Log etan *parameter value* after solve (should be unchanged by solve)
+            logging.debug(f"  etan (param): {model_to_simulate.parameters.get('etan', 'N/A')}")
+
+            # Store the updated model state (replace the old state)
+            st.session_state.sfc_model_object = model_to_simulate
+
+            # --- Record History (Include more vars for delta calculation) ---
+            latest_sim_solution = model_to_simulate.solutions[-1]
+            # Corrected closing brace placement
+            current_results = {
+                'year': st.session_state.current_year + 1,
+                'Yk': latest_sim_solution.get('Yk', np.nan),
+                'PI': latest_sim_solution.get('PI', np.nan),
+                'ER': latest_sim_solution.get('ER', np.nan),
+                # Add other key vars needed for dashboard deltas
+                'GRk': latest_sim_solution.get('GRk', np.nan),
+                'Rb': latest_sim_solution.get('Rb', np.nan),
+                'Rl': latest_sim_solution.get('Rl', np.nan),
+                'BUR': latest_sim_solution.get('BUR', np.nan),
+                'Q': latest_sim_solution.get('Q', np.nan),
+                'PSBR': latest_sim_solution.get('PSBR', np.nan),
+                'GD': latest_sim_solution.get('GD', np.nan),
+                'Y': latest_sim_solution.get('Y', np.nan),
+                'cards_played': list(cards_to_play), # Store as list
+                'events': list(events_active) # Store as list
+            }
+            st.session_state.history.append(current_results)
+
+            # --- Update Hand ---
+            # Remove played cards from hand
+            current_hand = st.session_state.player_hand
+            new_hand = [card for card in current_hand if card not in cards_to_play]
+            st.session_state.player_hand = new_hand
+
+            # Clear turn-specific state
+            st.session_state.cards_selected_this_year = []
+            st.session_state.active_events_this_year = []
+
+            # Move to the next phase
+            st.session_state.game_phase = "RESULTS"
+
+
+            # --- Comprehensive Post-Solve Logging ---
+            latest_solution_dict = model_to_simulate.solutions[-1]
+            logging.debug(f"--- Year {st.session_state.current_year + 1} POST-SOLVE (Full State) ---")
+            for key in sorted(latest_solution_dict.keys()):
+                logging.debug(f"  {key}: {latest_solution_dict[key]}")
+            # --- End Comprehensive Logging ---
+
+    except Exception as e: # Catch any other unexpected errors during solve/post-solve
+        st.error(f"An unexpected error occurred during simulation for Year {st.session_state.current_year + 1}: {str(e)}")
+        logging.exception(f"Unexpected error in SIMULATION phase for year {st.session_state.current_year + 1}:")
+        # Keep the phase as SIMULATION or move to a specific error state?
+        # For now, let the finally block handle rerun, but the phase won't be RESULTS.
+        # Optionally set a specific error phase:
+        # st.session_state.game_phase = "UNEXPECTED_SIMULATION_ERROR"
+
+    except SolutionNotFoundError as e:
+        st.error(f"Model failed to converge for Year {st.session_state.current_year + 1}. The economy is unstable! Error: {str(e)}")
+        # Do not update hand or clear state if simulation fails
+        st.session_state.game_phase = "SIMULATION_ERROR" # Enter an error state
+
+    finally:
+        # Restore console output
+        sys.stdout = old_stdout
+        # Correctly placed log before rerun
+        logging.info(f"SIMULATION phase end: Current game phase before rerun is '{st.session_state.game_phase}'")
+        # Rerun to display results or error
+        st.rerun()
+# --- End of Revised SIMULATION Phase Logic ---
+
+elif st.session_state.game_phase == "RESULTS":
+    st.write(f"Displaying results for Year {st.session_state.current_year + 1}.") # Year completed
+
+    # --- Display Key Results (using same layout as dashboard for consistency) ---
+    st.subheader("Economic Results")
+    model_state = st.session_state.sfc_model_object
+    latest_solution = model_state.solutions[-1] # Get the latest solution for current values
+
+    # Get previous year's data for delta calculation
+    prev_year_data = None
+    # History stores results *for* year N+1. model_state is *after* year N+1.
+    # To get delta for year N+1 results, we need results from year N.
+    if st.session_state.current_year > 0: # Need at least year 1 results to compare to year 0 (baseline)
+         target_year = st.session_state.current_year # Year that just finished
+         prev_year_data = next((item for item in reversed(st.session_state.history) if item['year'] == target_year), None)
+
+    # Define the source for t=0 comparison
+    # Use the first solution stored in the session state model object
+    t0_solution = st.session_state.sfc_model_object.solutions[0] if st.session_state.sfc_model_object.solutions else {}
+
+
+    # Display Metrics in Containers
+    with st.container(border=True):
+        st.markdown("##### Macroeconomic Indicators")
+        # Row 1: Core Macro Indicators
+        col1, col2, col3, col4 = st.columns(4)
+        yk_val = latest_solution.get('Yk', 0.0)
+        pi_val = latest_solution.get('PI', 0.0)
+        er_val = latest_solution.get('ER', 1.0)
+        grk_val = latest_solution.get('GRk', 0.0)
+
+        # Use t=0 state from session state model for first year comparison
+        yk_prev = prev_year_data.get('Yk') if prev_year_data else t0_solution.get('Yk')
+        pi_prev = prev_year_data.get('PI') if prev_year_data else t0_solution.get('PI')
+        er_prev = prev_year_data.get('ER') if prev_year_data else t0_solution.get('ER')
+        grk_prev = prev_year_data.get('GRk') if prev_year_data else t0_solution.get('GRk')
+
+
+        col1.metric("Real GDP (Yk)", format_value(yk_val), delta=get_delta(yk_val, yk_prev))
+        col2.metric("Inflation (PI)", format_percent(pi_val), delta=get_delta_percent(pi_val, pi_prev))
+        col3.metric("Unemployment (1-ER)", format_percent(1-er_val), delta=get_delta_percent(1-er_val, (1-er_prev) if er_prev is not None else None))
+        col4.metric("Capital Growth (GRk)", format_percent(grk_val), delta=get_delta_percent(grk_val, grk_prev))
+
+    with st.container(border=True):
+        st.markdown("##### Financial Indicators")
+        # Row 2: Financial Indicators
+        col5, col6, col7, col8 = st.columns(4)
+        rb_val = latest_solution.get('Rb', 0.0)
+        rl_val = latest_solution.get('Rl', 0.0)
+        bur_val = latest_solution.get('BUR', 0.0)
+        q_val = latest_solution.get('Q', 0.0)
+
+        # Use t=0 state from session state model for first year comparison
+        rb_prev = prev_year_data.get('Rb') if prev_year_data else t0_solution.get('Rb')
+        rl_prev = prev_year_data.get('Rl') if prev_year_data else t0_solution.get('Rl')
+        bur_prev = prev_year_data.get('BUR') if prev_year_data else t0_solution.get('BUR')
+        q_prev = prev_year_data.get('Q') if prev_year_data else t0_solution.get('Q')
+
+
+        col5.metric("Policy Rate (Rb)", format_percent(rb_val), delta=get_delta_percent(rb_val, rb_prev))
+        col6.metric("Loan Rate (Rl)", format_percent(rl_val), delta=get_delta_percent(rl_val, rl_prev))
+        col7.metric("Debt Burden (BUR)", format_value(bur_val), delta=get_delta(bur_val, bur_prev)) # Use non-% delta
+        col8.metric("Tobin's Q", format_value(q_val), delta=get_delta(q_val, q_prev)) # Use non-% delta
+
+    with st.container(border=True):
+        st.markdown("##### Government Indicators")
+        # Row 3: Government Indicators
+        col9, col10, col11, col12 = st.columns(4)
+        psbr_val = latest_solution.get('PSBR', 0.0)
+        gd_val = latest_solution.get('GD', 0.0)
+        y_val = latest_solution.get('Y', 0.0)
+        debt_ratio = (gd_val / y_val) if y_val else 0
+        deficit_ratio = (psbr_val / y_val) if y_val else 0
+
+        # Use t=0 state from session state model for first year comparison
+        psbr_prev = prev_year_data.get('PSBR') if prev_year_data else t0_solution.get('PSBR')
+        gd_prev = prev_year_data.get('GD') if prev_year_data else t0_solution.get('GD')
+        y_prev = prev_year_data.get('Y') if prev_year_data else t0_solution.get('Y')
+
+        debt_ratio_prev = (gd_prev / y_prev) if (y_prev and gd_prev is not None) else None
+        deficit_ratio_prev = (psbr_prev / y_prev) if (y_prev and psbr_prev is not None) else None
+
+
+        col9.metric("Gov Deficit (PSBR)", format_value(psbr_val), delta=get_delta(psbr_val, psbr_prev))
+        col10.metric("Gov Debt (GD)", format_value(gd_val), delta=get_delta(gd_val, gd_prev))
+        col11.metric("Deficit / GDP", format_percent(deficit_ratio), delta=get_delta_percent(deficit_ratio, deficit_ratio_prev))
+        col12.metric("Debt / GDP", format_percent(debt_ratio), delta=get_delta_percent(debt_ratio, debt_ratio_prev))
+
+    st.divider()
+
+    # (Placeholder for Consequence Calculation)
+    st.write("--- Consequences Placeholder ---")
+
+    # --- Detailed Financial Data ---
+    with st.expander("View Detailed Financial Statements"):
+
+        # Determine current and previous solutions ONCE for matrix display
+        current_solution = latest_solution # Already available from line 1152
+
+        prev_solution = None
+        if len(model_state.solutions) > 1:
+            # If more than one solution exists, the previous one is the second to last
+            prev_solution = model_state.solutions[-2]
+        # Note: If only the initial t=0 solution exists, prev_solution remains None,
+        # and the matrix functions handle this gracefully.
+
+        # --- Now call the display functions ---
+        # Display Balance Sheet
+        display_balance_sheet_matrix(current_solution)
+        st.divider()
+
+        # Display Revaluation Matrix (needs previous period)
+        if prev_solution:
+            display_revaluation_matrix(current_solution, prev_solution)
+            st.divider()
+        else:
+            st.caption("Revaluation matrix requires data from the previous period (Year > 0).")
+
+        # Display Transaction Flow Matrix (needs previous period)
+        if prev_solution:
+            display_transaction_flow_matrix(current_solution, prev_solution)
+        else:
+            st.caption("Transaction flow matrix requires data from the previous period (Year > 0).")
+
+
+
+    # --- History Table ---
+    with st.expander("View History Table"):
+        if st.session_state.history:
+            # Display latest year first
+            history_df = pd.DataFrame(st.session_state.history).sort_values(by='year', ascending=False)
+            st.dataframe(history_df)
+        else:
+            st.write("No history recorded yet.")
+
+    # --- History Charts ---
+    with st.expander("View Historical Trends"):
+        if len(st.session_state.history) > 1:
+            history_df = pd.DataFrame(st.session_state.history).set_index('year')
+
+            # Select and prepare data for charting
+            chart_data = pd.DataFrame()
+            if 'Yk' in history_df.columns:
+                chart_data['Real GDP (Yk)'] = history_df['Yk']
+            if 'PI' in history_df.columns:
+                chart_data['Inflation (PI %)'] = history_df['PI'] * 100
+            if 'ER' in history_df.columns:
+                chart_data['Unemployment Rate (%)'] = (1 - history_df['ER']) * 100
+
+            if not chart_data.empty:
+                st.line_chart(chart_data)
+            else:
+                st.caption("Not enough data or required columns missing for charts.")
+        elif len(st.session_state.history) == 1:
+             st.caption("Need at least two years of history to display trends.")
+        else:
+            st.caption("No history recorded yet.")
+
+
+    if st.button("Start Next Year"):
+        st.session_state.current_year += 1 # Increment year counter
+        st.session_state.game_phase = "YEAR_START"
+        st.rerun()
+
+elif st.session_state.game_phase == "SIMULATION_ERROR":
+    st.error(f"Simulation failed for Year {st.session_state.current_year + 1}. Cannot proceed.")
+    # (Placeholder for error handling options, e.g., reset, go back)
+    if st.button("Acknowledge Error (Stops Game)"):
+         # Simple stop for now
+         st.stop()
+
+else:
+    st.error(f"Unknown game phase: {st.session_state.game_phase}")
+
+
+# --- Debug Info (Optional) ---
+# with st.expander("Debug Info"):
+#     st.write("Session State:", st.session_state)
