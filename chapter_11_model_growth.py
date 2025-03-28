@@ -251,13 +251,13 @@ def create_growth_model():
     # ---------------------------
     # 11.18 : Real wage aspirations
     model.add('omegat = exp(omega0 + omega1*log(PR) + omega2*log(ER + z3*(1 - ER) - z4*BANDt + z5*BANDb))')
-    model.add('ER = N(-1)/Nfe(-1)')                 # 11.19 : Employment rate
+    model.add('ER = N(-1)/Nfe(-1) + 0*N')           # 11.19 : Employment rate (Added +0*N to force update)
     # 11.20 : Switch variables
     model.add('z3 = if_true(ER > (1-BANDb)) * if_true(ER <= (1+BANDt))')
     model.add('z4 = if_true(ER > (1+BANDt))')
     model.add('z5 = if_true(ER < (1-BANDb))')
     model.add('W - W(-1) = omega3*(omegat*P(-1) - W(-1))')  # 11.21 : Nominal wage
-    model.add('PR = PR(-1)*(1 + GRpr)')             # 11.22 : Labor productivity
+    model.add('PR = PR(-1)*(1 + GRpr) + 0*GRpr')    # 11.22 : Labor productivity (Added +0*GRpr to force update)
     model.add('Nt = Yk/PR')                         # 11.23 : Desired employment
     model.add('N - N(-1) = etan*(Nt - N(-1))')      # 11.24 : Actual employment
     model.add('WB = N*W')                           # 11.25 : Nominal wage bill
@@ -268,7 +268,7 @@ def create_growth_model():
     # Box 11.4 : Firms' equations
     # ---------------------------
     model.add('P = (1 + phi)*NHUC')                 # 11.29 : Normal-cost pricing
-    model.add('phi - phi(-1) = eps2*(phit(-1) - phi(-1))')  # 11.30 : Actual mark-up
+    model.add('phi = phi(-1) + eps2*(phit(-1) - phi(-1)) + 0*eps2')  # 11.30 : Actual mark-up (Rewritten, added +0*eps2 to force update)
     # 11.31 : Ideal mark-up
     model.add('phit = (FDf + FUft + Rl(-1)*(Lfd(-1) - IN(-1)))/((1 - sigmase)*Ske*UC + (1 + Rl(-1))*sigmase*Ske*UC(-1))')
     model.add('HCe = (1 - sigmase)*Ske*UC + (1 + Rl(-1))*sigmase*Ske*UC(-1)')  # 11.32 : Expected historical costs
@@ -377,7 +377,7 @@ def create_growth_model():
     model.add('OFbt = NCAR*(Lfs(-1) + Lhs(-1))')    # 11.99 : Long-run own funds target
     model.add('OFbe = OFb(-1) + betab*(OFbt - OFb(-1))')  # 11.100 : Short-run own funds target
     model.add('FUbt = OFbe - OFb(-1) + NPLke*Lfs(-1)')  # 11.101 : Target retained earnings of banks
-    model.add('NPLke = epsb*NPLke(-1) + (1 - epsb)*NPLk(-1)')  # 11.102 : Expected proportion of non-performaing loans
+    model.add('NPLke = epsb*NPLke(-1) + (1 - epsb)*NPLk(-1) + 0*epsb')  # 11.102 : Expected proportion of non-performaing loans (Added +0*epsb to force update)
     model.add('FDb = Fb - FUb')                     # 11.103 : Dividends of banks
     model.add('Fbt = lambdab*Y(-1) + (OFbe - OFb(-1) + NPLke*Lfs(-1))')  # 11.104 : Target profits of banks
     # 11.105 : Actual profits of banks
@@ -449,7 +449,7 @@ growth_parameters = {'alpha1': 0.75,
 growth_exogenous = [('ADDbl', 0.02),
                     ('BANDt', 0.07),
                     ('BANDb', 0.05),
-                    ('bot', 0.05), 
+                    ('bot', 0.05),
                     ('GRg', 0.03),
                     ('GRpr', 0.03),
                     ('Nfe', 94.76),
