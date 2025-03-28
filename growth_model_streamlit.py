@@ -227,8 +227,7 @@ else: # Only display if Year > 0 and history exists
     # Display Metrics in Sidebar
     st.sidebar.markdown("##### Macro Indicators")
     yk_val = latest_history_entry.get('Yk', np.nan)
-    st.sidebar.markdown("##### Macro Indicators")
-    yk_val = latest_history_entry.get('Yk', np.nan)
+ # Get Yk value
     pi_val = latest_history_entry.get('PI', np.nan)
     er_val = latest_history_entry.get('ER', np.nan)
     grk_val = latest_history_entry.get('GRk', np.nan)
@@ -266,7 +265,6 @@ else: # Only display if Year > 0 and history exists
     delta_q = None if is_first_result_year else get_delta(q_val, q_prev)
     delta_bur = None if is_first_result_year else get_delta_percent(bur_val, bur_prev)
     delta_car = None if is_first_result_year else get_delta_percent(car_val, car_prev)
-    # Removed sidebar logging for Rm/CAR
     st.sidebar.metric("🧾 Bill Rate (Rb)", format_percent(rb_val), delta=delta_rb)
     st.sidebar.metric("💳 Loan Rate (Rl)", format_percent(rl_val), delta=delta_rl)
     st.sidebar.metric("💰 Deposit Rate (Rm)", format_percent(rm_val), delta=delta_rm)

@@ -100,46 +100,76 @@ This document outlines the architectural design and implementation plan for tran
         *   Display Card Selection UI *first* in the main area.
         *   **(Moved)** Economic Dashboard displayed in the `st.sidebar`.
     *   **Dashboard Enhancement (Sidebar):**
-        *   **Location:** Move dashboard display logic into the `st.sidebar` section.
-        *   **Data Source:** Always display results from the *latest* entry in `st.session_state.history` (if available), comparing to the second-to-last entry or `initial_state_dict` for deltas.
-        *   **Layout:** Use `st.sidebar.metric` and potentially `st.sidebar.columns` if needed for organization within the sidebar.
-        *   **Completeness:** Add missing metrics (e.g., `Rm`, `CAR`). Investigate and fix root cause of "N/A" values (likely in initial state or first solve for these specific variables).
-        *   **Clarity:** Ensure consistent formatting (`format_value`, `format_percent`). Use clear labels. Add relevant emojis/Unicode icons (e.g., 📈, 📉, 💰, 🏦) next to metric labels for visual appeal.
+        *   **Location:** Move dashboard display logic into the `st.sidebar` section. **(Done)**
+        *   **Data Source:** Always display results from the *latest* entry in `st.session_state.history` (if available), comparing to the second-to-last entry or `initial_state_dict` for deltas. **(Attempted - Needs Verification)**
+        *   **Layout:** Use `st.sidebar.metric` and potentially `st.sidebar.columns` if needed for organization within the sidebar. **(Done)**
+        *   **Completeness:** Add missing metrics (e.g., `Rm`, `CAR`). Investigate and fix root cause of "N/A" values (likely in initial state or first solve for these specific variables). **(Investigation Pending)**
+        *   **Clarity:** Ensure consistent formatting (`format_value`, `format_percent`). Use clear labels. Add relevant emojis/Unicode icons (e.g., 📈, 📉, 💰, 🏦) next to metric labels for visual appeal. **(Done)**
         *   **Styling:** Sidebar metrics might require less styling adjustment.
         *   **Delta Handling:**
-            *   Modify `get_delta` helper function to calculate and return **percentage change** (e.g., `((curr - prev) / prev) * 100`), handling potential division by zero.
-            *   Modify `get_delta_percent` helper function to calculate and return **percentage point change** (e.g., `(curr - prev) * 100`). Ensure conditional logic correctly handles `None` values for `prev_val` before calling `np.isfinite`.
-            *   Update `st.metric` calls in the dashboard to use the appropriate delta function (`get_delta` for levels like GDP, `get_delta_percent` for rates/ratios like inflation).
-            *   Ensure deltas are explicitly omitted (passed as `None`) for Year 1 results display (when comparing to initial state).
+            *   Modify `get_delta` helper function to calculate and return **percentage change** (e.g., `((curr - prev) / prev) * 100`), handling potential division by zero. **(Done)**
+            *   Modify `get_delta_percent` helper function to calculate and return **percentage point change** (e.g., `(curr - prev) * 100`). Ensure conditional logic correctly handles `None` values for `prev_val` before calling `np.isfinite`. **(Done)**
+            *   Update `st.metric` calls in the dashboard to use the appropriate delta function (`get_delta` for levels like GDP, `get_delta_percent` for rates/ratios like inflation). **(Done)**
+            *   Ensure deltas are explicitly omitted (passed as `None`) for Year 1 results display (when comparing to initial state). **(Done)**
     *   **Card Display (`YEAR_START` Phase for Year > 0):**
-        *   **Visuals:** Improve card appearance beyond simple containers. Consider using HTML/CSS within `st.markdown(..., unsafe_allow_html=True)` for better styling (borders, icons, colors based on type?).
-        *   **Layout:** Ensure `MAX_CARDS_PER_ROW` logic works well. Consider responsiveness.
-        *   **Information:** Clearly display card type, cost (if implemented later), description, and potentially the direct parameter effect.
+        *   **Visuals:** Improve card appearance beyond simple containers. Consider using HTML/CSS within `st.markdown(..., unsafe_allow_html=True)` for better styling (borders, icons, colors based on type?). **(Basic CSS Done)**
+        *   **Layout:** Ensure `MAX_CARDS_PER_ROW` logic works well. Consider responsiveness. **(Done)**
+        *   **Information:** Clearly display card type, cost (if implemented later), description, and potentially the direct parameter effect. **(Done)**
     *   **Event Display (Sidebar / Main Area):**
         *   **Clarity:** Improve how active events are shown. Maybe use `st.warning` or dedicated containers in the main area during `YEAR_START` instead of just the sidebar.
-        *   **Details:** Show event type and description clearly.
+        *   **Details:** Show event type and description clearly. **(Done in Sidebar)**
     *   **Financial Matrices (Moved to `YEAR_START` or separate view):**
-        *   Consider placing matrices within an expander in the `YEAR_START` phase below the card selection, or creating a separate "Reports" page/view.
+        *   Consider placing matrices within an expander in the `YEAR_START` phase below the card selection, or creating a separate "Reports" page/view. **(Done - In Expander)**
         *   **Review `matrix_display.py`:** Ensure the formatting and calculations within the display functions are correct and robust.
         *   **Clarity:** Improve labels, potentially add explanations or tooltips for matrix entries.
-        *   **Error Handling:** Ensure graceful handling if `prev_solution` is missing for revaluation/transaction matrices (Use `model.solutions[0]` for Year 1 comparison).
+        *   **Error Handling:** Ensure graceful handling if `prev_solution` is missing for revaluation/transaction matrices (Use `model.solutions[0]` for Year 1 comparison). **(Done)**
     *   **General Styling & Flow:**
         *   **Consistency:** Ensure consistent styling across phases.
-        *   **Feedback:** Use `st.toast` or `st.spinner` appropriately during transitions or long operations (like simulation).
-        *   **Navigation:** Ensure button placement and phase transitions are intuitive. Rename initial button to "Start Game". Remove `RESULTS` phase display.
+        *   **Feedback:** Use `st.toast` or `st.spinner` appropriately during transitions or long operations (like simulation). **(Done)**
+        *   **Navigation:** Ensure button placement and phase transitions are intuitive. Rename initial button to "Start Game". Remove `RESULTS` phase display. **(Done)**
         *   **Responsiveness:** Check layout on different screen sizes.
 *   **(Removed) Simulation Mode UI:** Focus is on the core game loop.
 *   **Visualizations:**
-    *   Use Streamlit's native charts (`st.line_chart`) or Plotly for historical trends based on `st.session_state.history`. Place within an expander in `YEAR_START` or a separate view.
-    *   Ensure matrix displays handle the first year gracefully (when no previous data exists).
+    *   Use Streamlit's native charts (`st.line_chart`) or Plotly for historical trends based on `st.session_state.history`. Place within an expander in `YEAR_START` or a separate view. **(Done - In Expander)**
+    *   Ensure matrix displays handle the first year gracefully (when no previous data exists). **(Done)**
+*   **Retro Visual Enhancements (New Subsection - Phase 5/6):**
+    *   **Goal:** Implement a consistent 8-bit/16-bit inspired visual theme.
+    *   **Color Palette & Typography:**
+        *   Define and apply a limited retro color palette (8-12 colors).
+        *   Use bright green/amber for key text/indicators.
+        *   Use specific pixel fonts (e.g., "Press Start 2P", "VT323") for headers/titles.
+        *   Ensure numerical data uses monospace fonts (e.g., "Monaco", "Courier New").
+        *   *(Advanced)* Add subtle pixel texture/grid to backgrounds.
+    *   **Interface Elements:**
+        *   Redesign sidebar with pixelated border/edges.
+        *   Create/integrate pixel art icons for dashboard indicators and card types. (Requires assets)
+        *   Use retro arrow symbols (↑↓) for dashboard deltas.
+        *   Redesign cards with pixel art borders/shadows.
+        *   Replace default buttons with pixelated button styles.
+        *   Style main area dividers using pixel art.
+        *   Redesign Year/Phase indicators as digital counters.
+        *   *(Optional)* Frame main title in a pixelated banner. (Requires assets/complex CSS)
+    *   **Animation & Effects (Lower Priority):**
+        *   *(Feasible)* Add subtle "glow" on card hover via CSS.
+        *   *(Feasible)* Add visual confirmation for card selection (e.g., border change).
+        *   *(More Complex)* Blinking cursor, pulse effects, screen flash, pixelated transitions would require more investigation (JS/advanced CSS).
+    *   **Thematic Elements (Lower Priority/Advanced):**
+        *   *(Advanced)* CRT curvature, scanlines, terminal frame effects require significant CSS effort.
+        *   *(Asset Required)* Create retro pixel-art game logo.
+    *   **Readability:**
+        *   Ensure sufficient contrast ratios are maintained.
+        *   Prioritize clear visual hierarchy.
+        *   Maintain consistent spacing.
 
 ## 6. Development Phases
 
 1.  **Phase 1: Setup & Model Prep:** Version Control, Modify model equations, Ensure model compatibility (no warm-up solve). **(Complete)**
 2.  **Phase 2: Basic Game Loop & State:** Implement turn progression, state management (`st.session_state`), Initialization logic (no initial solve), Simulation logic (history copy, single solve), basic phase transitions. **(Complete)**
-3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Done - Selection UI moved to Phase 4)**
-4.  **Phase 4: UI/UX - Game Mode:** Implement UI for each phase. Merge `POLICY` into `YEAR_START` (Year > 0). Implement Dashboard (in sidebar), Card/Event display, Financials display (location TBD), Styling. Implement "Start Game" button and remove `RESULTS` phase display. **(User requested to prioritize - In Progress)**
-5.  **Phase 5: Testing, Balancing & Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
+3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Complete - Core logic done)**
+4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(In Progress)**
+5.  **Phase 5: Retro Visual Enhancements (Basic):** Implement styling changes based on the retro guide (colors, fonts, basic element redesign).
+6.  **Phase 6: Retro Visual Enhancements (Advanced):** Implement more complex animations, effects, and thematic elements (lower priority).
+7.  **Phase 7: Testing, Balancing & Final Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
 
 ## 7. Testing Strategy
 
