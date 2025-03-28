@@ -91,89 +91,93 @@ st.markdown("""
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-    /* --- Base Styles --- */
     html, body, [class*="st-"], button, input, textarea, select {
-        font-family: 'VT323', monospace !important; /* Base font */
-        color: #AAAAAA !important; /* Secondary text color */
+        font-family: sans-serif !important; /* Default readable font */
+        color: #AAAAAA !important;
     }
     .stApp {
-        background-color: #1A1A1A !important; /* Primary background */
+        background-color: #1A1A1A !important;
     }
 
-    /* --- Headers --- */
     h1, h2, h3 {
         font-family: 'Press Start 2P', monospace !important;
-        color: #AAAAAA !important; /* Headers use secondary color unless overridden */
+        color: #AAAAAA !important;
+        margin-bottom: 1rem !important; /* Add spacing below headers */
     }
-    h1 { /* Main Title */
-        color: #FFBF00 !important; /* Amber */
+    h1 {
+        color: #FFBF00 !important;
     }
 
-    /* --- Dashboard Metrics (Sidebar) --- */
-    /* Target the value part of the metric */
     .stMetric > div > div > div {
         font-family: 'Courier New', monospace !important;
-        color: #FFBF00 !important; /* Amber for values */
+        color: #FFBF00 !important;
     }
-    /* Target the label part */
     .stMetric > label {
         font-family: 'VT323', monospace !important;
-        color: #AAAAAA !important; /* Secondary for labels */
+        color: #AAAAAA !important;
     }
-    /* Target the delta part */
     .stMetric > div > div > p {
          font-family: 'Courier New', monospace !important;
-         color: #AAAAAA !important; /* Secondary for delta */
+         color: #AAAAAA !important;
     }
 
-    /* --- Cards --- */
     .card {
-        border: 1px solid #444444; /* Dark Grey border */
+        border: 1px solid #444444;
         border-radius: 0px;
- /* Sharp corners */
         padding: 15px;
         margin-bottom: 10px;
         background-color: #2a2a2a;
- /* Slightly lighter dark background */
     }
     .card-title {
         font-family: 'VT323', monospace !important;
         font-weight: bold;
         font-size: 1.1em;
         margin-bottom: 5px;
-        color: #FFFFFF !important; /* White for emphasis */
+        color: #FFFFFF !important;
     }
     .card-desc {
-        font-family: 'VT323', monospace !important;
+        font-family: sans-serif !important; /* Readable font for descriptions */
         font-size: 0.9em;
         color: #AAAAAA !important; /* Secondary text */
         margin-bottom: 10px;
     }
     .card.monetary {
-        border-left: 5px solid #0077CC !important; /* Medium Blue */
+        border-left: 8px solid #0077CC !important;
+ /* Thicker Medium Blue */
     }
     .card.fiscal {
-        border-left: 5px solid #00AA00 !important; /* Medium Green */
+        border-left: 8px solid #00AA00 !important;
+ /* Thicker Medium Green */
+    }
+    /* Style for selected cards (needs dynamic application) */
+    .card.selected {
+        background-color: #444444 !important;
+        border-color: #FFBF00 !important;
     }
 
-    /* --- Buttons --- */
     .stButton > button {
         font-family: 'VT323', monospace !important;
         border: 1px solid #444444 !important;
-        border-radius: 0px !important; /* Sharp corners */
+        border-radius: 0px !important;
         background-color: #333333 !important;
         color: #AAAAAA !important;
     }
     .stButton > button:hover {
         background-color: #555555 !important;
-        color: #FFBF00 !important; /* Amber on hover */
+        color: #FFBF00 !important;
         border-color: #AAAAAA !important;
     }
-    /* Style for selected state (primary button) */
      .stButton > button[kind="primary"] {
         background-color: #555555 !important;
-        color: #FFBF00 !important; /* Amber when selected */
+        color: #FFBF00 !important;
         border-color: #AAAAAA !important;
+    }
+
+    /* Simple Divider */
+    hr {
+        border-top: 1px solid #444444 !important;
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
     }
 
 </style>

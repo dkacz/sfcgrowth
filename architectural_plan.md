@@ -134,45 +134,26 @@ This document outlines the architectural design and implementation plan for tran
 *   **Visualizations:**
     *   Use Streamlit's native charts (`st.line_chart`) or Plotly for historical trends based on `st.session_state.history`. Place within an expander in `YEAR_START` or a separate view. **(Done - In Expander)**
     *   Ensure matrix displays handle the first year gracefully (when no previous data exists). **(Done)**
-*   **Retro Visual Enhancements (New Subsection - Phase 5/6):**
-    *   **Goal:** Implement a consistent 8-bit/16-bit inspired visual theme.
-    *   **Color Palette & Typography (Phase 5):**
-        *   **Palette:**
-            *   Primary Background: `#1A1A1A` (Very dark grey)
-            *   Primary Text/Indicators: `#FFBF00` (Amber)
-            *   Secondary Text: `#AAAAAA` (Light Grey)
-            *   Monetary Accent: `#0077CC` (Medium Blue)
-            *   Fiscal Accent: `#00AA00` (Medium Green)
-            *   Borders/Dividers: `#444444` (Dark Grey)
-            *   Button Background: `#333333` (Dark Grey)
-            *   Button Text: `#AAAAAA` (Light Grey)
-            *   Button Hover/Selected Background: `#555555` (Medium Grey)
-            *   Button Hover/Selected Text: `#FFBF00` (Amber)
-        *   **Fonts:**
-            *   Headers/Titles: "Press Start 2P" (Import via Google Fonts)
-            *   Body Text/Descriptions: "VT323" (Import via Google Fonts)
-            *   Numerical Values/Metrics: "Courier New", monospace
-        *   Apply these colors and fonts via CSS in `st.markdown`.
-    *   **Interface Elements (Phase 5/6):**
-        *   Redesign sidebar with pixelated border/edges.
-        *   Create/integrate pixel art icons for dashboard indicators and card types. (Requires assets)
-        *   Use retro arrow symbols (↑↓) for dashboard deltas.
-        *   Redesign cards with pixel art borders/shadows.
-        *   Replace default buttons with pixelated button styles.
-        *   Style main area dividers using pixel art.
-        *   Redesign Year/Phase indicators as digital counters.
-        *   *(Optional)* Frame main title in a pixelated banner. (Requires assets/complex CSS)
-    *   **Animation & Effects (Phase 6 - Lower Priority):**
-        *   *(Feasible)* Add subtle "glow" on card hover via CSS.
-        *   *(Feasible)* Add visual confirmation for card selection (e.g., border change).
-        *   *(More Complex)* Blinking cursor, pulse effects, screen flash, pixelated transitions would require more investigation (JS/advanced CSS).
-    *   **Thematic Elements (Phase 6 - Lower Priority/Advanced):**
-        *   *(Advanced)* CRT curvature, scanlines, terminal frame effects require significant CSS effort.
-        *   *(Asset Required)* Create retro pixel-art game logo.
-    *   **Readability (Ongoing):**
-        *   Ensure sufficient contrast ratios are maintained.
-        *   Prioritize clear visual hierarchy.
-        *   Maintain consistent spacing.
+*   **Retro Visual Enhancements (Revised Plan):**
+    *   **Phase 5: Retro Visual Refinement (Focus: Readability & Basic Elements)**
+        *   **Goal:** Apply basic retro styling while prioritizing readability.
+        *   **Typography:**
+            *   Main Title (`h1`): Keep "Press Start 2P" font, Amber color (`#FFBF00`).
+            *   Other Headers (`h2`, `h3`, Sidebar Headers): Keep "Press Start 2P" font, Light Grey color (`#AAAAAA`).
+            *   Body Text (Card Descriptions, Instructions, Captions): Switch to a clean, readable default sans-serif font (e.g., `sans-serif`). Keep Light Grey color (`#AAAAAA`).
+            *   Numerical Values (Dashboard Metrics, Matrix values): Keep "Courier New", monospace. Use Amber (`#FFBF00`) for primary indicators, Light Grey (`#AAAAAA`) for deltas/secondary numbers.
+        *   **Contrast & Hierarchy:**
+            *   Policy Card Borders: Make the left border thicker (e.g., `8px`) for Monetary (`#0077CC`) and Fiscal (`#00AA00`).
+            *   Card Selection Feedback: Add a more distinct style for selected cards (e.g., change background color to `#444444` and border color to Amber `#FFBF00`).
+        *   **Layout & Basic Elements:**
+            *   Dividers: Use CSS for sharp pixel-style dividers (`border-bottom: 1px solid #444444;`).
+            *   Spacing: Increase margins/padding around elements.
+            *   Button Corners: Ensure `border-radius: 0px !important;`.
+    *   **Phase 6: Advanced Retro Visuals & Assets (Lower Priority / Future)**
+        *   **Goal:** Layer on more complex visual elements and animations.
+        *   **Pixel Art Assets:** Integrate icons (dashboard, cards), retro arrows, game logo.
+        *   **Advanced Styling:** Pixelated borders/bevels, scanlines/CRT effects, digital counter displays.
+        *   **Subtle Animations/Effects:** Hover glows, blinking cursors, pulse effects, screen flicker.
 
 ## 6. Development Phases
 
@@ -180,8 +161,8 @@ This document outlines the architectural design and implementation plan for tran
 2.  **Phase 2: Basic Game Loop & State:** Implement turn progression, state management (`st.session_state`), Initialization logic (no initial solve), Simulation logic (history copy, single solve), basic phase transitions. **(Complete)**
 3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Complete - Core logic done)**
 4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(Complete)**
-5.  **Phase 5: Retro Visual Enhancements (Basic):** Implement styling changes based on the retro guide (colors, fonts, basic element redesign). **(Next)**
-6.  **Phase 6: Retro Visual Enhancements (Advanced):** Implement more complex animations, effects, and thematic elements (lower priority).
+5.  **Phase 5: Retro Visual Refinement (Basic):** Implement styling changes focusing on readability (hybrid fonts, contrast, basic elements). **(Next)**
+6.  **Phase 6: Retro Visual Enhancements (Advanced):** Implement more complex animations, effects, and thematic elements requiring assets or significant CSS/JS (lower priority).
 7.  **Phase 7: Testing, Balancing & Final Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
 
 ## 7. Testing Strategy
