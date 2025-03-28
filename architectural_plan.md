@@ -97,13 +97,13 @@ This document outlines the architectural design and implementation plan for tran
 *   **Goal:** Create an engaging and informative interface within Streamlit.
 *   **Game Mode UI Refinements (Phase 4 Plan):**
     *   **`YEAR_START` Phase (Year > 0) Layout:**
-        *   Display Card Selection UI *first* in the main area.
-        *   **(Moved)** Economic Dashboard displayed in the `st.sidebar`.
+        *   Display Card Selection UI *first* in the main area. **(Done)**
+        *   **(Moved)** Economic Dashboard displayed in the `st.sidebar`. **(Done)**
     *   **Dashboard Enhancement (Sidebar):**
         *   **Location:** Move dashboard display logic into the `st.sidebar` section. **(Done)**
-        *   **Data Source:** Always display results from the *latest* entry in `st.session_state.history` (if available), comparing to the second-to-last entry or `initial_state_dict` for deltas. **(Attempted - Needs Verification)**
+        *   **Data Source:** Always display results from the *latest* entry in `st.session_state.sfc_model_object.solutions`, comparing to the second-to-last entry or `initial_state_dict` for deltas. **(Done)**
         *   **Layout:** Use `st.sidebar.metric` and potentially `st.sidebar.columns` if needed for organization within the sidebar. **(Done)**
-        *   **Completeness:** Add missing metrics (e.g., `Rm`, `CAR`). Investigate and fix root cause of "N/A" values (likely in initial state or first solve for these specific variables). **(Investigation Pending)**
+        *   **Completeness:** Add missing metrics (e.g., `Rm`, `CAR`). Fix root cause of "N/A" values. **(Done)**
         *   **Clarity:** Ensure consistent formatting (`format_value`, `format_percent`). Use clear labels. Add relevant emojis/Unicode icons (e.g., 📈, 📉, 💰, 🏦) next to metric labels for visual appeal. **(Done)**
         *   **Styling:** Sidebar metrics might require less styling adjustment.
         *   **Delta Handling:**
@@ -115,6 +115,7 @@ This document outlines the architectural design and implementation plan for tran
         *   **Visuals:** Improve card appearance beyond simple containers. Consider using HTML/CSS within `st.markdown(..., unsafe_allow_html=True)` for better styling (borders, icons, colors based on type?). **(Basic CSS Done)**
         *   **Layout:** Ensure `MAX_CARDS_PER_ROW` logic works well. Consider responsiveness. **(Done)**
         *   **Information:** Clearly display card type, cost (if implemented later), description, and potentially the direct parameter effect. **(Done)**
+        *   **Functionality:** Ensure selection/deselection works reliably. **(Done)**
     *   **Event Display (Sidebar / Main Area):**
         *   **Clarity:** Improve how active events are shown. Maybe use `st.warning` or dedicated containers in the main area during `YEAR_START` instead of just the sidebar.
         *   **Details:** Show event type and description clearly. **(Done in Sidebar)**
@@ -128,19 +129,31 @@ This document outlines the architectural design and implementation plan for tran
         *   **Feedback:** Use `st.toast` or `st.spinner` appropriately during transitions or long operations (like simulation). **(Done)**
         *   **Navigation:** Ensure button placement and phase transitions are intuitive. Rename initial button to "Start Game". Remove `RESULTS` phase display. **(Done)**
         *   **Responsiveness:** Check layout on different screen sizes.
+        *   **Reliability:** Test game loop transitions for stability. **(Done)**
 *   **(Removed) Simulation Mode UI:** Focus is on the core game loop.
 *   **Visualizations:**
     *   Use Streamlit's native charts (`st.line_chart`) or Plotly for historical trends based on `st.session_state.history`. Place within an expander in `YEAR_START` or a separate view. **(Done - In Expander)**
     *   Ensure matrix displays handle the first year gracefully (when no previous data exists). **(Done)**
 *   **Retro Visual Enhancements (New Subsection - Phase 5/6):**
     *   **Goal:** Implement a consistent 8-bit/16-bit inspired visual theme.
-    *   **Color Palette & Typography:**
-        *   Define and apply a limited retro color palette (8-12 colors).
-        *   Use bright green/amber for key text/indicators.
-        *   Use specific pixel fonts (e.g., "Press Start 2P", "VT323") for headers/titles.
-        *   Ensure numerical data uses monospace fonts (e.g., "Monaco", "Courier New").
-        *   *(Advanced)* Add subtle pixel texture/grid to backgrounds.
-    *   **Interface Elements:**
+    *   **Color Palette & Typography (Phase 5):**
+        *   **Palette:**
+            *   Primary Background: `#1A1A1A` (Very dark grey)
+            *   Primary Text/Indicators: `#FFBF00` (Amber)
+            *   Secondary Text: `#AAAAAA` (Light Grey)
+            *   Monetary Accent: `#0077CC` (Medium Blue)
+            *   Fiscal Accent: `#00AA00` (Medium Green)
+            *   Borders/Dividers: `#444444` (Dark Grey)
+            *   Button Background: `#333333` (Dark Grey)
+            *   Button Text: `#AAAAAA` (Light Grey)
+            *   Button Hover/Selected Background: `#555555` (Medium Grey)
+            *   Button Hover/Selected Text: `#FFBF00` (Amber)
+        *   **Fonts:**
+            *   Headers/Titles: "Press Start 2P" (Import via Google Fonts)
+            *   Body Text/Descriptions: "VT323" (Import via Google Fonts)
+            *   Numerical Values/Metrics: "Courier New", monospace
+        *   Apply these colors and fonts via CSS in `st.markdown`.
+    *   **Interface Elements (Phase 5/6):**
         *   Redesign sidebar with pixelated border/edges.
         *   Create/integrate pixel art icons for dashboard indicators and card types. (Requires assets)
         *   Use retro arrow symbols (↑↓) for dashboard deltas.
@@ -149,14 +162,14 @@ This document outlines the architectural design and implementation plan for tran
         *   Style main area dividers using pixel art.
         *   Redesign Year/Phase indicators as digital counters.
         *   *(Optional)* Frame main title in a pixelated banner. (Requires assets/complex CSS)
-    *   **Animation & Effects (Lower Priority):**
+    *   **Animation & Effects (Phase 6 - Lower Priority):**
         *   *(Feasible)* Add subtle "glow" on card hover via CSS.
         *   *(Feasible)* Add visual confirmation for card selection (e.g., border change).
         *   *(More Complex)* Blinking cursor, pulse effects, screen flash, pixelated transitions would require more investigation (JS/advanced CSS).
-    *   **Thematic Elements (Lower Priority/Advanced):**
+    *   **Thematic Elements (Phase 6 - Lower Priority/Advanced):**
         *   *(Advanced)* CRT curvature, scanlines, terminal frame effects require significant CSS effort.
         *   *(Asset Required)* Create retro pixel-art game logo.
-    *   **Readability:**
+    *   **Readability (Ongoing):**
         *   Ensure sufficient contrast ratios are maintained.
         *   Prioritize clear visual hierarchy.
         *   Maintain consistent spacing.
@@ -166,8 +179,8 @@ This document outlines the architectural design and implementation plan for tran
 1.  **Phase 1: Setup & Model Prep:** Version Control, Modify model equations, Ensure model compatibility (no warm-up solve). **(Complete)**
 2.  **Phase 2: Basic Game Loop & State:** Implement turn progression, state management (`st.session_state`), Initialization logic (no initial solve), Simulation logic (history copy, single solve), basic phase transitions. **(Complete)**
 3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Complete - Core logic done)**
-4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(In Progress)**
-5.  **Phase 5: Retro Visual Enhancements (Basic):** Implement styling changes based on the retro guide (colors, fonts, basic element redesign).
+4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(Complete)**
+5.  **Phase 5: Retro Visual Enhancements (Basic):** Implement styling changes based on the retro guide (colors, fonts, basic element redesign). **(Next)**
 6.  **Phase 6: Retro Visual Enhancements (Advanced):** Implement more complex animations, effects, and thematic elements (lower priority).
 7.  **Phase 7: Testing, Balancing & Final Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
 

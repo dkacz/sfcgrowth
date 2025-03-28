@@ -87,37 +87,93 @@ st.set_page_config(page_title="SFC Economic Strategy Game", layout="wide")
 
 # --- Custom CSS (Optional - Keep or remove as desired) ---
 st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-    /* ... (Keep existing CSS or modify/remove) ... */
+    /* --- Base Styles --- */
     html, body, [class*="st-"], button, input, textarea, select {
-        font-family: 'Consolas', 'Courier New', monospace !important;
-        color: #E0E0E0;
+        font-family: 'VT323', monospace !important; /* Base font */
+        color: #AAAAAA !important; /* Secondary text color */
     }
-    .stApp { background-color: #1E1E1E; }
-    /* ... other styles ... */
+    .stApp {
+        background-color: #1A1A1A !important; /* Primary background */
+    }
+
+    /* --- Headers --- */
+    h1, h2, h3 {
+        font-family: 'Press Start 2P', monospace !important;
+        color: #AAAAAA !important; /* Headers use secondary color unless overridden */
+    }
+    h1 { /* Main Title */
+        color: #FFBF00 !important; /* Amber */
+    }
+
+    /* --- Dashboard Metrics (Sidebar) --- */
+    /* Target the value part of the metric */
+    .stMetric > div > div > div {
+        font-family: 'Courier New', monospace !important;
+        color: #FFBF00 !important; /* Amber for values */
+    }
+    /* Target the label part */
+    .stMetric > label {
+        font-family: 'VT323', monospace !important;
+        color: #AAAAAA !important; /* Secondary for labels */
+    }
+    /* Target the delta part */
+    .stMetric > div > div > p {
+         font-family: 'Courier New', monospace !important;
+         color: #AAAAAA !important; /* Secondary for delta */
+    }
+
+    /* --- Cards --- */
     .card {
-        border: 1px solid #555;
-        border-radius: 8px;
+        border: 1px solid #444444; /* Dark Grey border */
+        border-radius: 0px;
+ /* Sharp corners */
         padding: 15px;
         margin-bottom: 10px;
         background-color: #2a2a2a;
+ /* Slightly lighter dark background */
     }
     .card-title {
+        font-family: 'VT323', monospace !important;
         font-weight: bold;
         font-size: 1.1em;
         margin-bottom: 5px;
-        color: #ffffff; /* Ensure title is white */
+        color: #FFFFFF !important; /* White for emphasis */
     }
     .card-desc {
+        font-family: 'VT323', monospace !important;
         font-size: 0.9em;
-        color: #ccc;
+        color: #AAAAAA !important; /* Secondary text */
         margin-bottom: 10px;
     }
     .card.monetary {
-        border-left: 5px solid #0d6efd; /* Streamlit Blue */
+        border-left: 5px solid #0077CC !important; /* Medium Blue */
     }
     .card.fiscal {
-        border-left: 5px solid #198754; /* Streamlit Green */
+        border-left: 5px solid #00AA00 !important; /* Medium Green */
+    }
+
+    /* --- Buttons --- */
+    .stButton > button {
+        font-family: 'VT323', monospace !important;
+        border: 1px solid #444444 !important;
+        border-radius: 0px !important; /* Sharp corners */
+        background-color: #333333 !important;
+        color: #AAAAAA !important;
+    }
+    .stButton > button:hover {
+        background-color: #555555 !important;
+        color: #FFBF00 !important; /* Amber on hover */
+        border-color: #AAAAAA !important;
+    }
+    /* Style for selected state (primary button) */
+     .stButton > button[kind="primary"] {
+        background-color: #555555 !important;
+        color: #FFBF00 !important; /* Amber when selected */
+        border-color: #AAAAAA !important;
     }
 
 </style>
