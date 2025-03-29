@@ -82,111 +82,193 @@ def get_delta_percent(current_val, prev_val):
      # Format as percentage points, including sign
      return f"{delta:+.2f} % pts" # More explicit label
 
-# --- Page Configuration ---
-st.set_page_config(page_title="SFC Economic Strategy Game", layout="wide")
+# --- Dynamic Page Title ---
+# Initialize year for title before config if possible, otherwise default
+page_title_year = st.session_state.get('current_year', 0)
+page_title = f"SFCGAME - Year {page_title_year}"
 
-# --- Custom CSS (Optional - Keep or remove as desired) ---
+# --- Page Configuration ---
+# Force light theme to ensure cream background applies correctly
+st.set_page_config(page_title=page_title, layout="wide", initial_sidebar_state="expanded") # theme="light" argument removed as it's not valid
+
+# --- Custom CSS (Monopoly Theme) ---
 st.markdown("""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
+    /* --- Monopoly Theme --- */
+
+    /* --- Fonts --- */
+    @import url('https://fonts.googleapis.com/css2?family=Passion+One:wght@700&family=Oswald:wght@700&family=Lato&display=swap');
+
+    /* --- Base Styles --- */
     html, body, [class*="st-"], button, input, textarea, select {
-        font-family: sans-serif !important; /* Default readable font */
-        color: #AAAAAA !important;
+        font-family: 'Lato', sans-serif !important;
+        color: #000000 !important; /* Black text */
     }
     .stApp {
-        background-color: #1A1A1A !important;
+        background-color: #F7F1E3 !important; /* Cream background */
+    }
+    [data-testid="stSidebar"] {
+        background-color: #e9e4d9 !important; /* Slightly darker cream for sidebar */
+        border-right: 2px solid #000000 !important;
+    }
+    /* Hide default Streamlit header */
+    [data-testid="stHeader"] {
+        background-color: #F7F1E3 !important; /* Match background */
+        box-shadow: none !important;
+        border-bottom: none !important;
+        height: 0px !important; /* Attempt to hide */
+        visibility: hidden !important;
     }
 
-    h1, h2, h3 {
-        font-family: 'Press Start 2P', monospace !important;
-        color: #AAAAAA !important;
-        margin-bottom: 1rem !important; /* Add spacing below headers */
+
+    /* --- Title Area --- */
+    .title-container {
+        background-color: #ED1B24 !important; /* Monopoly Red */
+        padding: 0.2rem 1rem; /* Reduced vertical padding */
+        margin-bottom: 2rem;
+        border-radius: 5px;
+        display: inline-block; /* Fit content width */
+        margin-left: auto; /* Center align block */
+        margin-right: auto; /* Center align block */
+        text-align: center; /* Center text inside */
     }
-    h1 {
-        color: #FFBF00 !important;
+    .title-container h1 {
+        font-family: 'Passion One', sans-serif !important; /* Monopoly-like font */
+        color: #FFFFFF !important; /* White text */
+        text-align: center;
+        margin-bottom: 0 !important;
+        font-size: 2.5em !important;
+        line-height: 1.2 !important; /* Adjust line height */
     }
 
-    .stMetric > div > div > div {
-        font-family: 'Courier New', monospace !important;
-        color: #FFBF00 !important;
+    /* --- Other Headers --- */
+    h2, h3 {
+        font-family: 'Oswald', sans-serif !important; /* Bold sans-serif */
+        color: #000000 !important;
+        margin-bottom: 1rem !important;
+        border-bottom: 1px solid #000000 !important; /* Underline headers */
+        padding-bottom: 0.25rem;
     }
-    .stMetric > label {
-        font-family: 'VT323', monospace !important;
-        color: #AAAAAA !important;
-    }
-    .stMetric > div > div > p {
-         font-family: 'Courier New', monospace !important;
-         color: #AAAAAA !important;
+    /* Sidebar headers */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4, [data-testid="stSidebar"] h5, [data-testid="stSidebar"] h6 {
+         font-family: 'Oswald', sans-serif !important;
+         color: #000000 !important;
+         border-bottom: none !important; /* No underline in sidebar */
     }
 
+
+    /* --- Dashboard Metrics (Sidebar) --- */
+    .stMetric {
+        background-color: #FFFFFF !important; /* White background for metrics */
+        border: 1px solid #000000 !important;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .stMetric > label { /* Label */
+        font-family: 'Oswald', sans-serif !important;
+        color: #000000 !important;
+    }
+    .stMetric > div > div > div { /* Value */
+        font-family: 'Lato', sans-serif !important;
+        font-weight: bold;
+        color: #000000 !important;
+    }
+    .stMetric > div > div > p { /* Delta */
+         font-family: 'Lato', sans-serif !important;
+         color: #555555 !important; /* Grey delta */
+    }
+
+    /* --- Cards --- */
     .card {
-        border: 1px solid #444444;
-        border-radius: 0px;
-        padding: 15px;
+        border: 1px solid #000000;
+        border-radius: 5px; /* Slightly rounded corners */
+        margin-bottom: 15px;
+        background-color: #FAFAD2; /* Parchment background */
+        min-height: 200px; /* Enforce minimum height */
+        display: flex;
+        flex-direction: column;
+        padding: 0; /* Remove default padding, handle internally */
+        overflow: hidden; /* Ensure top border stays within bounds */
+    }
+    .card-top-bar {
+        height: 25px;
         margin-bottom: 10px;
-        background-color: #2a2a2a;
+    }
+    .card.monetary .card-top-bar {
+        background-color: #0072BB; /* Monopoly Blue */
+    }
+    .card.fiscal .card-top-bar {
+        background-color: #1FB25A; /* Monopoly Green */
+    }
+    /* Add other colors as needed */
+    .card.default .card-top-bar { /* Fallback */
+        background-color: #8B4513; /* Brown */
+    }
+    .card-content {
+        padding: 0 15px 15px 15px; /* Padding for content below bar */
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        justify-content: space-between;
     }
     .card-title {
-        font-family: 'VT323', monospace !important;
+        font-family: 'Oswald', sans-serif !important; /* Match headers */
         font-weight: bold;
         font-size: 1.1em;
-        margin-bottom: 5px;
-        color: #FFFFFF !important;
+        margin-bottom: 8px;
+        color: #000000 !important;
+        text-align: center; /* Center title */
     }
     .card-desc {
-        font-family: sans-serif !important; /* Readable font for descriptions */
+        font-family: 'Lato', sans-serif !important;
         font-size: 0.9em;
-        color: #AAAAAA !important; /* Secondary text */
+        color: #000000 !important;
         margin-bottom: 10px;
+        flex-grow: 1;
     }
-    .card.monetary {
-        border-left: 8px solid #0077CC !important;
- /* Thicker Medium Blue */
-    }
-    .card.fiscal {
-        border-left: 8px solid #00AA00 !important;
- /* Thicker Medium Green */
-    }
-    /* Style for selected cards (needs dynamic application) */
     .card.selected {
-        background-color: #444444 !important;
-        border-color: #FFBF00 !important;
+        border: 2px solid #DAA520 !important; /* Gold border */
+        box-shadow: 0 0 8px #DAA520;
     }
 
+    /* --- Buttons --- */
     .stButton > button {
-        font-family: 'VT323', monospace !important;
-        border: 1px solid #444444 !important;
-        border-radius: 0px !important;
-        background-color: #333333 !important;
-        color: #AAAAAA !important;
+        font-family: 'Oswald', sans-serif !important;
+        border: 1px solid #000000 !important;
+        border-radius: 3px !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        width: 100%;
+        margin-top: 10px; /* Space above button */
+        padding: 0.5rem 1rem !important; /* Adjust padding */
     }
     .stButton > button:hover {
-        background-color: #555555 !important;
-        color: #FFBF00 !important;
-        border-color: #AAAAAA !important;
+        background-color: #e0e0e0 !important; /* Light grey hover */
+        color: #000000 !important;
+        border-color: #000000 !important;
     }
-     .stButton > button[kind="primary"] {
+     .stButton > button[kind="primary"] { /* Selected button */
         background-color: #555555 !important;
-        color: #FFBF00 !important;
-        border-color: #AAAAAA !important;
+        color: #FFFFFF !important;
+        border-color: #000000 !important;
     }
 
-    /* Simple Divider */
+    /* --- Dividers --- */
     hr {
-        border-top: 1px solid #444444 !important;
+        border-top: 1px solid #000000 !important;
         margin-top: 1rem !important;
         margin-bottom: 1rem !important;
     }
-
 </style>
 """, unsafe_allow_html=True)
 
 
 # --- Game Title ---
-st.title("SFC Economic Strategy Game")
-st.markdown("Manage the economy through yearly turns using policy cards and responding to events.")
+# Wrap title in a div for styling and center it
+st.markdown('<div style="text-align: center;"><div class="title-container"><h1>SFCGAME</h1></div></div>', unsafe_allow_html=True)
+# st.title("SFCGAME") # Original title call removed
+# st.markdown("Manage the economy through yearly turns using policy cards and responding to events.") # Subtitle removed
 
 # --- Game State Initialization ---
 if "game_initialized" not in st.session_state:
@@ -373,15 +455,15 @@ st.sidebar.divider()
 # --- Main App Logic ---
 
 # --- Game Mode UI ---
-st.header(f"Year: {st.session_state.current_year}")
-st.subheader(f"Phase: {st.session_state.game_phase.replace('_', ' ').title()}")
+# Removed Year Header
+# Removed Phase Subheader
 
 # --- Phase Logic ---
 if st.session_state.game_phase == "YEAR_START":
 
     # --- Year 0: Initial Setup ---
     if st.session_state.current_year == 0:
-        st.write("Initial setup phase. Adjust starting parameters if desired.")
+        # Removed instructional text
         if "initial_params_set" not in st.session_state:
              if "sfc_model_object" not in st.session_state:
                  st.error("Model object not found in session state for initial parameter adjustment.")
@@ -431,7 +513,7 @@ if st.session_state.game_phase == "YEAR_START":
 
     # --- Year > 0: Combined Dashboard & Policy ---
     else:
-        st.write(f"Start of Year {st.session_state.current_year}. Review dashboard in sidebar, select policies.")
+        # Removed instructional text
 
         # --- Draw Cards and Check Events (Run only once per YEAR_START phase) ---
         if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != st.session_state.current_year:
@@ -462,7 +544,7 @@ if st.session_state.game_phase == "YEAR_START":
 
         # --- Card Selection UI ---
         st.subheader("Select Policy Cards to Play")
-        st.write("Click on a card to select or deselect it.")
+        # Removed instructional text
 
         available_cards = st.session_state.player_hand
         selected_cards_this_turn = st.session_state.cards_selected_this_year
@@ -480,23 +562,34 @@ if st.session_state.game_phase == "YEAR_START":
                     card_info = POLICY_CARDS.get(card_name, {})
                     is_selected = card_name in selected_cards_this_turn
                     card_type_class = card_info.get('type', 'Unknown').lower()
+                    # Add 'selected' class if the card is selected
+                    card_classes = f"card {card_type_class}"
+                    if is_selected:
+                        card_classes += " selected"
 
+                    # Modified Markdown for Monopoly Card Structure
+                    # IMPORTANT: The button is now rendered *after* the card div
                     st.markdown(f"""
-                    <div class="card {card_type_class}">
-                        <div class="card-title">{card_name} ({card_info.get('type', 'N/A')})</div>
-                        <div class="card-desc">{card_info.get('desc', 'No description available.')}</div>
+                    <div class="{card_classes}">
+                        <div class="card-top-bar"></div>
+                        <div class="card-content">
+                            <div>
+                                <div class="card-title">{card_name} ({card_info.get('type', 'N/A')})</div>
+                                <div class="card-desc">{card_info.get('desc', 'No description available.')}</div>
+                            </div>
+                        </div>
                     </div>""", unsafe_allow_html=True)
 
-                    with st.container():
-                        button_label = "Deselect" if is_selected else "Select"
-                        button_type = "primary" if is_selected else "secondary"
-                        button_key = f"select_{card_name}_{i}_{st.session_state.current_year}"
-                        if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
-                            if is_selected:
-                                st.session_state.cards_selected_this_year.remove(card_name)
-                            else:
-                                st.session_state.cards_selected_this_year.append(card_name)
-                            st.rerun()
+                    # Render button separately below the card markdown
+                    button_label = "Deselect" if is_selected else "Select"
+                    button_type = "primary" if is_selected else "secondary"
+                    button_key = f"select_{card_name}_{i}_{st.session_state.current_year}"
+                    if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
+                        if is_selected:
+                            st.session_state.cards_selected_this_year.remove(card_name)
+                        else:
+                            st.session_state.cards_selected_this_year.append(card_name)
+                        st.rerun()
         st.divider()
         if selected_cards_this_turn:
             st.write("Selected for this turn:")
@@ -555,7 +648,7 @@ if st.session_state.game_phase == "YEAR_START":
 elif st.session_state.game_phase == "SIMULATION":
     # Note: current_year is the year *starting* the simulation (0 for first run, 1 for second, etc.)
     logging.info(f"Entering SIMULATION phase for year {st.session_state.current_year + 1}")
-    st.write("Applying policies and simulating the year's economic activity...")
+    # Removed instructional text
 
     # --- Get Previous State and Inputs ---
     prev_model = st.session_state.sfc_model_object

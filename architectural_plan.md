@@ -94,7 +94,7 @@ This document outlines the architectural design and implementation plan for tran
 
 ## 5. UI/UX Design
 
-*   **Goal:** Create an engaging and informative interface within Streamlit.
+*   **Goal:** Create an engaging and informative interface within Streamlit, aiming for a "Monopoly" board game aesthetic.
 *   **Game Mode UI Refinements (Phase 4 Plan):**
     *   **`YEAR_START` Phase (Year > 0) Layout:**
         *   Display Card Selection UI *first* in the main area. **(Done)**
@@ -134,26 +134,43 @@ This document outlines the architectural design and implementation plan for tran
 *   **Visualizations:**
     *   Use Streamlit's native charts (`st.line_chart`) or Plotly for historical trends based on `st.session_state.history`. Place within an expander in `YEAR_START` or a separate view. **(Done - In Expander)**
     *   Ensure matrix displays handle the first year gracefully (when no previous data exists). **(Done)**
-*   **Retro Visual Enhancements (Revised Plan):**
-    *   **Phase 5: Retro Visual Refinement (Focus: Readability & Basic Elements)**
-        *   **Goal:** Apply basic retro styling while prioritizing readability.
+    *   **Requirement:** Include plots/charts of key historical variables (e.g., Real GDP, Inflation, Unemployment Rate).
+*   **"Monopoly" Theme Visual Enhancements (Revised Plan):**
+    *   **Phase 5: Monopoly Foundation (Layout, Core Styles, Readability & Simplification)**
+        *   **Goal:** Apply basic "Monopoly" styling, prioritizing readability and creating a distinct, simplified game-like structure.
+        *   **Overall Layout & Background:**
+            *   Use `st.container()` with custom CSS classes for distinct panels.
+            *   Main Background: Light Cream/Beige (`#F7F1E3`).
+            *   Style sidebar (`[data-testid="stSidebar"]`) with border/different background.
+            *   Fix/Hide Top Bar: Investigate black bar at the top (`[data-testid="stHeader"]`?) and hide or restyle it.
+        *   **Color Palette:**
+            *   Primary: Cream/Beige (`#F7F1E3`), Black (`#000000`) for text.
+            *   Accents: Monopoly Red (`#ED1B24`), Green (`#1FB25A`), Yellow (`#FFF200`), Blue (`#0072BB`), Orange (`#F7941D`), Magenta (`#EC008C`), Light Blue (`#A9E1F7`), Brown (`#9E5B3A`).
+            *   Title Area: Red background (`#ED1B24`) with White text (`#FFFFFF`).
         *   **Typography:**
-            *   Main Title (`h1`): Keep "Press Start 2P" font, Amber color (`#FFBF00`).
-            *   Other Headers (`h2`, `h3`, Sidebar Headers): Keep "Press Start 2P" font, Light Grey color (`#AAAAAA`).
-            *   Body Text (Card Descriptions, Instructions, Captions): Switch to a clean, readable default sans-serif font (e.g., `sans-serif`). Keep Light Grey color (`#AAAAAA`).
-            *   Numerical Values (Dashboard Metrics, Matrix values): Keep "Courier New", monospace. Use Amber (`#FFBF00`) for primary indicators, Light Grey (`#AAAAAA`) for deltas/secondary numbers.
-        *   **Contrast & Hierarchy:**
-            *   Policy Card Borders: Make the left border thicker (e.g., `8px`) for Monetary (`#0077CC`) and Fiscal (`#00AA00`).
-            *   Card Selection Feedback: Add a more distinct style for selected cards (e.g., change background color to `#444444` and border color to Amber `#FFBF00`).
-        *   **Layout & Basic Elements:**
-            *   Dividers: Use CSS for sharp pixel-style dividers (`border-bottom: 1px solid #444444;`).
-            *   Spacing: Increase margins/padding around elements.
-            *   Button Corners: Ensure `border-radius: 0px !important;`.
-    *   **Phase 6: Advanced Retro Visuals & Assets (Lower Priority / Future)**
-        *   **Goal:** Layer on more complex visual elements and animations.
-        *   **Pixel Art Assets:** Integrate icons (dashboard, cards), retro arrows, game logo.
-        *   **Advanced Styling:** Pixelated borders/bevels, scanlines/CRT effects, digital counter displays.
-        *   **Subtle Animations/Effects:** Hover glows, blinking cursors, pulse effects, screen flicker.
+            *   Main Title: Text: "SFCGAME". Font: Monopoly-like font ("Passion One"). Color: White on Red background.
+            *   Headers (`h2`, `h3`, Sidebar Headers): Font: "Oswald". Color: Black.
+            *   Card Titles: Font: "Oswald". Color: Black.
+            *   Body Text: Readable serif ("Georgia") or sans-serif ("Lato"). Color: Black.
+            *   Numerical Values: Body font or clean monospace. Color: Black.
+            *   *Action:* Define font stacks in CSS. Use `@import` for web fonts.
+        *   **Basic Elements Styling:**
+            *   **Cards:** Style like property cards (White/Light background `#FAFAD2`, black text). Add colored bar at top (`border-top: 20px solid <color>;`) based on policy type. Enforce uniform size (`min-height`). Add simple black border. Define `.selected` style (e.g., gold border).
+            *   **Buttons:** Simple black borders, white/light background, black text. Hover state: Light grey background (`#DDDDDD`) or accent border, keep text black.
+            *   **Dividers:** Simple black lines (`hr`).
+            *   **Spacing:** Increase margins/padding.
+        *   **UI Simplification (Python Code Changes):**
+            *   Modify `st.set_page_config` to dynamically include the current year in the `page_title`.
+            *   Remove the `st.markdown("Manage the economy...")` subtitle.
+            *   Remove the `st.header(f"Year: ...")` call.
+            *   Remove the `st.subheader(f"Phase: ...")` call.
+            *   Remove instructional `st.write(...)` calls in `YEAR_START`.
+    *   **Phase 6: Monopoly Polish & Game Elements (Future)**
+        *   **Goal:** Add more specific board game elements and visual flair.
+        *   **Icons:** Simple black/white icons (Font Awesome?) for dashboard/cards.
+        *   **Board Elements:** Explore background textures or framing.
+        *   **Visual Feedback:** Refine hover/selection states.
+        *   **Custom Elements:** Style expanders, etc.
 
 ## 6. Development Phases
 
@@ -161,8 +178,8 @@ This document outlines the architectural design and implementation plan for tran
 2.  **Phase 2: Basic Game Loop & State:** Implement turn progression, state management (`st.session_state`), Initialization logic (no initial solve), Simulation logic (history copy, single solve), basic phase transitions. **(Complete)**
 3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Complete - Core logic done)**
 4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(Complete)**
-5.  **Phase 5: Retro Visual Refinement (Basic):** Implement styling changes focusing on readability (hybrid fonts, contrast, basic elements). **(Next)**
-6.  **Phase 6: Retro Visual Enhancements (Advanced):** Implement more complex animations, effects, and thematic elements requiring assets or significant CSS/JS (lower priority).
+5.  **Phase 5: Monopoly Theme Foundation & Simplification:** Implement styling and Python changes focusing on the Monopoly aesthetic (layout, colors, fonts, basic card/button styles, simplified text). **(Next)**
+6.  **Phase 6: Monopoly Polish & Game Elements:** Implement icons, advanced styling, and potentially subtle effects (lower priority).
 7.  **Phase 7: Testing, Balancing & Final Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
 
 ## 7. Testing Strategy
