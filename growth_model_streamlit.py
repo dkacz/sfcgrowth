@@ -659,16 +659,87 @@ if st.session_state.game_phase == "YEAR_START":
                  st.caption("Adjust the starting parameters for the economy. These settings are locked once you start the game.")
                  initial_params_changed = False
                  initial_params_to_set = {}
-                 # Example:
-                 parameter_categories = { "Growth Parameters": [("gamma0", "Base growth rate", 0.00122, 0.0, 0.01)] } # Add all categories
+                 # Define categories of parameters for better organization
+                 parameter_categories = {
+                     "Growth Parameters": [
+                         ("gamma0", "Base growth rate of real capital stock (gamma0)", 0.00122, 0.0, 0.01),
+                         ("gammar", "Effect of interest rate on capital growth (gammar)", 0.1, 0.0, 0.5),
+                         ("gammau", "Effect of utilization on capital growth (gammau)", 0.05, 0.0, 0.5),
+                         ("delta", "Rate of depreciation of fixed capital (delta)", 0.10667, 0.05, 0.2),
+                     ],
+                     "Consumption Parameters": [
+                         ("alpha1", "Propensity to consume out of income (alpha1)", 0.75, 0.5, 1.0),
+                         ("alpha2", "Propensity to consume out of wealth (alpha2)", 0.064, 0.01, 0.2),
+                         ("eps", "Speed of adjustment in income expectations (eps)", 0.5, 0.1, 1.0),
+                     ],
+                     "Government Parameters": [
+                         ("GRg", "Growth rate of government expenditures (GRg)", 0.03, -0.05, 0.1),
+                         ("theta", "Income tax rate (theta)", 0.22844, 0.1, 0.4),
+                     ],
+                     "Bank/Monetary Parameters": [
+                         ("Rbbar", "Interest rate on bills (Rbbar)", 0.035, 0.0, 0.1),
+                         ("ADDbl", "Spread between bonds and bills rate (ADDbl)", 0.02, 0.0, 0.05),
+                         ("NPLk", "Proportion of non-performing loans (NPLk)", 0.02, 0.0, 0.1),
+                         ("NCAR", "Normal capital adequacy ratio (NCAR)", 0.1, 0.05, 0.2),
+                         ("bot", "Bottom value for bank net liquidity ratio (bot)", 0.05, 0.0, 0.1),
+                         ("top", "Top value for bank net liquidity ratio (top)", 0.12, 0.1, 0.2),
+                         ("ro", "Reserve requirement parameter (ro)", 0.05, 0.01, 0.1),
+                         ("Rln", "Normal interest rate on loans (Rln)", 0.07, 0.02, 0.15),
+                     ],
+                     "Labor Market Parameters": [
+                         ("omega0", "Parameter affecting target real wage (omega0)", -0.20594, -0.5, 0.0),
+                         ("omega1", "Parameter in wage equation (omega1)", 1.005, 0.9, 1.1), # Default updated
+                         ("omega2", "Parameter in wage equation (omega2)", 2.0, 1.0, 3.0),
+                         ("omega3", "Speed of wage adjustment (omega3)", 0.45621, 0.1, 0.9),
+                         ("GRpr", "Growth rate of productivity (GRpr)", 0.03, 0.0, 0.1),
+                         ("BANDt", "Upper band of flat Phillips curve (BANDt)", 0.07, 0.0, 0.1), # Default updated
+                         ("BANDb", "Lower band of flat Phillips curve (BANDb)", 0.05, 0.0, 0.1), # Default updated
+                         ("etan", "Speed of employment adjustment (etan)", 0.6, 0.1, 1.0),
+                         ("Nfe", "Full employment level (Nfe)", 94.76, 80.0, 110.0),
+                     ],
+                     "Personal Loan Parameters": [
+                         ("eta0", "Base ratio of new loans to personal income (eta0)", 0.07416, 0.0, 0.2),
+                         ("etar", "Effect of real interest rate on loan ratio (etar)", 0.4, 0.0, 1.0),
+                         ("deltarep", "Ratio of loan repayments to stock (deltarep)", 0.1, 0.05, 0.2),
+                     ],
+                     "Firm Parameters": [
+                         ("beta", "Speed of adjustment in sales expectations (beta)", 0.5, 0.1, 1.0),
+                         ("gamma", "Speed of inventory adjustment (gamma)", 0.15, 0.0, 0.5),
+                         ("sigmat", "Target inventories to sales ratio (sigmat)", 0.2, 0.1, 0.3),
+                         ("sigman", "Param. influencing historic unit costs (sigman)", 0.1666, 0.1, 0.3),
+                         ("eps2", "Speed of markup adjustment (eps2)", 0.8, 0.1, 1.0),
+                         ("psid", "Ratio of dividends to gross profits (psid)", 0.15255, 0.1, 0.3),
+                         ("psiu", "Ratio of retained earnings to investments (psiu)", 0.92, 0.7, 1.0),
+                         ("RA", "Random shock to expectations on real sales (RA)", 0.0, -0.05, 0.05),
+                     ],
+                     "Portfolio Parameters": [
+                         ("lambda20", "Param in household demand for bills (lambda20)", 0.25, 0.1, 0.4),
+                         ("lambda30", "Param in household demand for bonds (lambda30)", -0.04341, -0.1, 0.1),
+                         ("lambda40", "Param in household demand for equities (lambda40)", 0.67132, 0.5, 0.9),
+                         ("lambdab", "Parameter determining bank dividends (lambdab)", 0.0153, 0.01, 0.03),
+                         ("lambdac", "Parameter in household demand for cash (lambdac)", 0.05, 0.01, 0.1),
+                     ],
+                 }
 
                  for category, params in parameter_categories.items():
                      st.markdown(f"**{category}**")
                      for param_key, param_name, default_val, min_val, max_val in params:
                          current_model_val = getattr(st.session_state.sfc_model_object, param_key, default_val)
                          slider_key = f"initial_slider_{param_key}"
-                         step_size = 0.001
-                         format_spec = "%.3f"
+                         # Calculate step size dynamically based on range
+                         range_val = float(max_val) - float(min_val)
+                         if range_val <= 0.01: step_size = 0.0001
+                         elif range_val <= 0.1: step_size = 0.001
+                         elif range_val <= 1.0: step_size = 0.01
+                         elif range_val <= 10.0: step_size = 0.1
+                         else: step_size = 1.0 # Adjust if needed for very large ranges
+
+                         # Determine format based on step size
+                         if step_size < 0.001: format_spec = "%.4f"
+                         elif step_size < 0.01: format_spec = "%.3f"
+                         elif step_size < 0.1: format_spec = "%.2f"
+                         else: format_spec = "%.1f"
+
                          if slider_key not in st.session_state.initial_params:
                              try: initial_float_val = float(current_model_val)
                              except: initial_float_val = float(default_val)

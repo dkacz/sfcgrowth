@@ -167,9 +167,9 @@ This document outlines the architectural design and implementation plan for tran
             *   Remove instructional `st.write(...)` calls in `YEAR_START`.
     *   **Phase 6: Monopoly Polish & Game Elements (Future)**
         *   **Goal:** Add more specific board game elements and visual flair.
-        *   **Icons:** Simple black/white icons (Font Awesome?) for dashboard/cards.
+        *   **Icons:** Integrate icons for dashboard metrics and card types based on the detailed descriptions in `asset_specifications.md`. Icons to be provided externally (PNG format).
         *   **Board Elements:** Explore background textures or framing.
-        *   **Visual Feedback:** Refine hover/selection states.
+        *   **Visual Feedback:** Refine hover/selection states. Add specific refinements for card styling (fixed height, content overflow handling).
         *   **Custom Elements:** Style expanders, etc.
 
 ## 6. Development Phases
@@ -178,8 +178,8 @@ This document outlines the architectural design and implementation plan for tran
 2.  **Phase 2: Basic Game Loop & State:** Implement turn progression, state management (`st.session_state`), Initialization logic (no initial solve), Simulation logic (history copy, single solve), basic phase transitions. **(Complete)**
 3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Complete - Core logic done)**
 4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(Complete)**
-5.  **Phase 5: Monopoly Theme Foundation & Simplification:** Implement styling and Python changes focusing on the Monopoly aesthetic (layout, colors, fonts, basic card/button styles, simplified text). **(Next)**
-6.  **Phase 6: Monopoly Polish & Game Elements:** Implement icons, advanced styling, and potentially subtle effects (lower priority).
+5.  **Phase 5: Monopoly Theme Foundation & Simplification:** Implement styling and Python changes focusing on the Monopoly aesthetic (layout, colors, fonts, basic card/button styles, simplified text). **(Complete)**
+6.  **Phase 6: Monopoly Polish & Game Elements:** Implement icons (based on `asset_specifications.md`), refine card styling (fixed height, overflow), advanced styling, and potentially subtle effects (lower priority). **(Next)**
 7.  **Phase 7: Testing, Balancing & Final Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
 
 ## 7. Testing Strategy
