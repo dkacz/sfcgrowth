@@ -95,6 +95,61 @@ This document outlines the architectural design and implementation plan for tran
 ## 5. UI/UX Design
 
 *   **Goal:** Create an engaging and informative interface within Streamlit, aiming for a "Monopoly" board game aesthetic.
+
+### 5.1 Detailed UI/UX Requirements (from Audio Prompts)
+
+This section details specific UI/UX changes requested based on audio feedback analysis.
+
+**I. Left Panel / Sidebar**
+
+*   **Remove Headings:** Delete the text headings: "Game Information", "Economic Dashboard", and "Macro Indicators".
+*   **Add Sparklines to Indicators:** For each macro indicator, display a small sparkline graph next to its name/value visualizing its recent trend.
+*   **Remove Sections:** Delete the "Player Hand" and "Active Events" sections entirely.
+*   **Add Sector Information:**
+    *   Replace the current "Government Sector" display.
+    *   Display a summary section for all economic sectors (Households, Firms, Government, Banks, Central Bank).
+    *   For each sector, show key balance sheet and transaction flow information derived from the SFC Matrices views.
+*   **Indicator Hover Interaction:** On hover over a macro indicator, display a tooltip/pop-up with a larger version of its trend graph.
+*   **Indicator Click Interaction:** On click of a macro indicator, navigate to a dedicated view showing:
+    *   Full-size trend graph for only the clicked indicator.
+    *   Historical data table for only the clicked indicator.
+
+**II. "View Detailed Financial Statements" Dropdown**
+
+*   **Rename Dropdown:** Change text to "SFC Matrices".
+*   **Rename Dropdown Items:**
+    *   Remove "Table 11 " prefixes.
+    *   Items should be: "Balance Sheet Matrix", "Revaluation Matrix", "Transaction Flow Matrix".
+*   **Style Matrices Views:** Ensure these views match the overall "Monopoly" theme (not dark mode).
+
+**III. History Table**
+
+*   **Improve Column Headings:** Use descriptive names instead of raw variable names.
+
+**IV. "View Historical Trends" Graph**
+
+*   **Remove Graph:** Delete the combined historical trends graph. (Individual graphs are handled by indicator clicks).
+
+**V. Game Start / Initial Setup**
+
+*   **Modify Start Options:**
+    *   Only present the "Advanced: Set initial economic conditions" option.
+    *   Display this option less prominently (e.g., bottom, smaller font).
+    *   Remove other default start options.
+
+**VI. Policy Cards (During Gameplay)**
+
+*   **Filter Card Categories:** Only display "Fiscal" and "Monetary" policy cards.
+*   **Standardize Heading Background Size:** Ensure the colored header/background area is consistently sized for all cards, accommodating up to two lines of title text comfortably.
+*   **Add "Learn More" Section:**
+    *   Add a "Learn More" link/collapsible section below the main description.
+    *   Content: Additional details about card effects (Placeholder text initially).
+    *   Conditional Visibility: Only show content after the card has been played once in the current game session.
+*   **Implement Card Play Rules:**
+    *   Maximum two (2) cards playable per turn.
+    *   Prevent playing two identical cards in the same turn.
+
+
 *   **Game Mode UI Refinements (Phase 4 Plan):**
     *   **`YEAR_START` Phase (Year > 0) Layout:**
         *   Display Card Selection UI *first* in the main area. **(Done)**
