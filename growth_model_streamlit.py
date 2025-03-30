@@ -7,6 +7,8 @@ import sys
 import io
 from contextlib import redirect_stdout
 import logging
+import os
+import base64 # Import base64 encoding
 
 # Import the necessary components from the model definition file
 from chapter_11_model_growth import (
@@ -40,6 +42,29 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 INITIAL_HAND_SIZE = 5
 CARDS_TO_DRAW_PER_YEAR = 2
 MAX_CARDS_PER_ROW = 4 # For card display layout
+ICON_DIR = "assets/icons" # Define icon directory
+
+# --- Icon Mapping ---
+# Maps internal keys/types to filenames in ICON_DIR
+ICON_FILENAME_MAP = {
+    # Card Types
+    "monetary": "monetary_icon.png",
+    "fiscal": "fiscal_icon.png",
+    # Dashboard Metrics (using keys from history/solution dicts)
+    "Yk": "factory.png",
+    "PI": "inflation_icon.png",
+    "ER": "people.png", # Note: We calculate unemployment from ER
+    "GRk": "buildingouparrow.png",
+    "Rb": "percentagescroll.png",
+    "Rl": "percentagescroll.png", # Reusing bill rate icon for loan rate
+    "Rm": "pig.png",
+    "Q": "tobins_q_icon.png",
+    "BUR": "bendingman.png",
+    "CAR": "plusshield.png",
+    "PSBR": "dollardownarrow.png",
+    "GD_GDP": "fiscal_icon.png" # Reusing fiscal icon for Gov Debt/GDP ratio
+}
+# Removed EMOJI_MAP
 
 # --- Helper Functions ---
 class NullIO(io.StringIO):
@@ -82,6 +107,51 @@ def get_delta_percent(current_val, prev_val):
      # Format as percentage points, including sign
      return f"{delta:+.2f} % pts" # More explicit label
 
+# --- Icon Handling with Base64 ---
+@st.cache_data # Cache the encoded icons
+def get_base64_of_bin_file(bin_file):
+    """ Reads binary file and returns base64 encoded string """
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        logging.warning(f"Icon file not found: {bin_file}")
+        return None
+    except Exception as e:
+        logging.error(f"Error reading icon file {bin_file}: {e}")
+        return None
+
+def get_icon_data_uri(icon_key):
+    """Gets the base64 data URI for an icon."""
+    filename = ICON_FILENAME_MAP.get(icon_key)
+    if filename:
+        filepath = os.path.join(ICON_DIR, filename)
+        base64_string = get_base64_of_bin_file(filepath)
+        if base64_string:
+            return f"data:image/png;base64,{base64_string}"
+    return None # Return None if key not in map or file error
+
+# --- Logo Handling ---
+@st.cache_data # Cache the encoded logo
+def get_logo_data_uri(logo_filename="sfcgamelogo.png"):
+    """Reads the logo file and returns base64 encoded data URI."""
+    # Assuming logo is in the root directory
+    logo_path = logo_filename
+    if not os.path.exists(logo_path):
+        logging.warning(f"Logo file not found at specified path: {logo_path}")
+        return None
+
+    base64_string = get_base64_of_bin_file(logo_path) # Reuse existing helper
+    if base64_string:
+        # Assuming PNG format, adjust if needed
+        return f"data:image/png;base64,{base64_string}"
+    else:
+        logging.warning(f"Failed to encode logo file: {logo_path}")
+        return None
+
+# Removed get_emoji_for_key function
+
 # --- Dynamic Page Title ---
 # Initialize year for title before config if possible, otherwise default
 page_title_year = st.session_state.get('current_year', 0)
@@ -89,7 +159,7 @@ page_title = f"SFCGAME - Year {page_title_year}"
 
 # --- Page Configuration ---
 # Force light theme to ensure cream background applies correctly
-st.set_page_config(page_title=page_title, layout="wide", initial_sidebar_state="expanded") # theme="light" argument removed as it's not valid
+st.set_page_config(page_title=page_title, layout="wide", initial_sidebar_state="expanded")
 
 # --- Custom CSS (Monopoly Theme) ---
 st.markdown("""
@@ -123,7 +193,6 @@ st.markdown("""
 
     /* --- Title Area --- */
     .title-container {
-        background-color: #ED1B24 !important; /* Monopoly Red */
         padding: 0.2rem 1rem; /* Reduced vertical padding */
         margin-bottom: 2rem;
         border-radius: 5px;
@@ -137,7 +206,7 @@ st.markdown("""
         color: #FFFFFF !important; /* White text */
         text-align: center;
         margin-bottom: 0 !important;
-        font-size: 2.5em !important;
+        font-size: 2.5em !important; /* Adjust size as needed */
         line-height: 1.2 !important; /* Adjust line height */
     }
 
@@ -178,22 +247,36 @@ st.markdown("""
          font-family: 'Lato', sans-serif !important;
          color: #555555 !important; /* Grey delta */
     }
+    /* Icon Styling for Sidebar */
+    .metric-icon {
+        height: 1.5em; /* Adjust size */
+        width: 1.5em;
+        display: block;
+        margin: 0.2em auto 0 auto; /* Center and add some top margin */
+    }
+
 
     /* --- Cards --- */
     .card {
         border: 1px solid #000000;
-        border-radius: 5px; /* Slightly rounded corners */
+        border-radius: 8px; /* Slightly more rounded corners */
         margin-bottom: 15px;
         background-color: #FAFAD2; /* Parchment background */
-        min-height: 200px; /* Enforce minimum height */
+        height: 250px; /* Fixed height for cards */
         display: flex;
         flex-direction: column;
         padding: 0; /* Remove default padding, handle internally */
         overflow: hidden; /* Ensure top border stays within bounds */
+        transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transition */
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2); /* Add subtle drop shadow */
     }
     .card-top-bar {
-        height: 25px;
+        /* Removed height/min-height */
         margin-bottom: 10px;
+        padding: 8px 10px; /* Adjusted padding */
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Center items vertically */
+        flex-shrink: 0; /* Prevent bar from shrinking */
     }
     .card.monetary .card-top-bar {
         background-color: #0072BB; /* Monopoly Blue */
@@ -209,27 +292,42 @@ st.markdown("""
         padding: 0 15px 15px 15px; /* Padding for content below bar */
         display: flex;
         flex-direction: column;
-        flex-grow: 1;
-        justify-content: space-between;
+        flex-grow: 1; /* Allow content area to grow */
+        justify-content: space-between; /* Push button to bottom */
+        overflow-y: auto; /* Allow description to scroll if needed */
+        min-height: 0; /* Allow shrinking for flexbox */
     }
-    .card-title {
-        font-family: 'Oswald', sans-serif !important; /* Match headers */
+    .card-title { /* Now inside top bar */
+        font-family: 'Oswald', sans-serif !important;
         font-weight: bold;
         font-size: 1.1em;
-        margin-bottom: 8px;
-        color: #000000 !important;
-        text-align: center; /* Center title */
+        color: #FFFFFF !important; /* White text on colored bar */
+        text-align: left; /* Align left now that icon is there */
+        margin-bottom: 0; /* Remove bottom margin */
+        margin-left: 0.5em; /* Space after icon */
+        /* flex-grow: 1; Removed flex-grow */
+        line-height: 1.3; /* Allow text to wrap naturally */
+        word-wrap: break-word; /* Ensure wrapping */
+        overflow-wrap: break-word; /* Ensure wrapping */
+    }
+    .card-icon { /* Icon inside card title bar */
+        height: 1.1em; /* Adjusted size */
+        width: 1.1em;
+        vertical-align: middle; /* Keep middle align */
+        filter: brightness(0) invert(1); /* Make black PNG white */
+        margin-right: 0.4em; /* Adjust spacing */
+        flex-shrink: 0; /* Prevent icon from shrinking */
     }
     .card-desc {
         font-family: 'Lato', sans-serif !important;
         font-size: 0.9em;
         color: #000000 !important;
         margin-bottom: 10px;
-        flex-grow: 1;
+        /* flex-grow: 1; Let card-content handle growth */
     }
     .card.selected {
-        border: 2px solid #DAA520 !important; /* Gold border */
-        box-shadow: 0 0 8px #DAA520;
+        border: 3px solid #DAA520 !important; /* Thicker Gold border */
+        box-shadow: 0 0 10px 2px #DAA520 !important; /* Stronger gold glow */
     }
 
     /* --- Buttons --- */
@@ -242,6 +340,8 @@ st.markdown("""
         width: 100%;
         margin-top: 10px; /* Space above button */
         padding: 0.5rem 1rem !important; /* Adjust padding */
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; /* Smooth transition */
+        flex-shrink: 0; /* Prevent button from shrinking */
     }
     .stButton > button:hover {
         background-color: #e0e0e0 !important; /* Light grey hover */
@@ -266,7 +366,18 @@ st.markdown("""
 
 # --- Game Title ---
 # Wrap title in a div for styling and center it
-st.markdown('<div style="text-align: center;"><div class="title-container"><h1>SFCGAME</h1></div></div>', unsafe_allow_html=True)
+logo_data_uri = get_logo_data_uri() # Call the new helper
+if logo_data_uri:
+    # Display the logo image, remove red background from container, center image
+    st.markdown(f'''<div style="text-align: center;">
+                        <div class="title-container" style="background-color: transparent !important; padding: 0.5rem 0;">
+                            <img src="{logo_data_uri}" alt="SFCGame Logo" style="height: 120px; display: block; margin-left: auto; margin-right: auto;">
+                        </div>
+                   </div>''', unsafe_allow_html=True)
+else:
+    # Fallback to the original text title if logo loading fails
+    st.warning("Logo image 'sfcgamelogo.png' not found or could not be loaded. Displaying text title.")
+    st.markdown('<div style="text-align: center;"><div class="title-container"><h1>SFCGAME</h1></div></div>', unsafe_allow_html=True)
 # st.title("SFCGAME") # Original title call removed
 # st.markdown("Manage the economy through yearly turns using policy cards and responding to events.") # Subtitle removed
 
@@ -366,10 +477,9 @@ else: # Only display if Year > 0 and history exists
         elif len(model_state.solutions) < 2: # Should not happen if outer check works
              prev_year_data = st.session_state.initial_state_dict # Fallback
 
-    # Display Metrics in Sidebar
+    # Display Metrics in Sidebar using columns and Base64 icons
     st.sidebar.markdown("##### Macro Indicators")
     yk_val = latest_history_entry.get('Yk', np.nan)
- # Get Yk value
     pi_val = latest_history_entry.get('PI', np.nan)
     er_val = latest_history_entry.get('ER', np.nan)
     grk_val = latest_history_entry.get('GRk', np.nan)
@@ -383,10 +493,36 @@ else: # Only display if Year > 0 and history exists
     unemp_prev = 1 - er_prev if er_prev is not None and np.isfinite(er_prev) else np.nan
     delta_unemp = None if is_first_result_year else get_delta_percent(unemp_val, unemp_prev)
     delta_grk = None if is_first_result_year else get_delta_percent(grk_val, grk_prev)
-    st.sidebar.metric("📈 Real GDP (Yk)", format_value(yk_val), delta=delta_yk)
-    st.sidebar.metric("🔥 Inflation (PI)", format_percent(pi_val), delta=delta_pi)
-    st.sidebar.metric("📉 Unemployment Rate", format_percent(unemp_val), delta=delta_unemp)
-    st.sidebar.metric("🏗️ Capital Growth (GRk)", format_percent(grk_val), delta=delta_grk)
+
+    # GDP
+    icon_data_uri = get_icon_data_uri("Yk")
+    cols = st.sidebar.columns([1, 4]) # Adjust column ratio if needed
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Real GDP (Yk)", value=format_value(yk_val), delta=delta_yk)
+    # Inflation
+    icon_data_uri = get_icon_data_uri("PI")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Inflation (PI)", value=format_percent(pi_val), delta=delta_pi)
+    # Unemployment
+    icon_data_uri = get_icon_data_uri("ER") # Use ER key for icon
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Unemployment Rate", value=format_percent(unemp_val), delta=delta_unemp)
+    # Capital Growth
+    icon_data_uri = get_icon_data_uri("GRk")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Capital Growth (GRk)", value=format_percent(grk_val), delta=delta_grk)
+
 
     st.sidebar.markdown("##### Financial & Banking")
     rb_val = latest_history_entry.get('Rb', np.nan)
@@ -407,13 +543,50 @@ else: # Only display if Year > 0 and history exists
     delta_q = None if is_first_result_year else get_delta(q_val, q_prev)
     delta_bur = None if is_first_result_year else get_delta_percent(bur_val, bur_prev)
     delta_car = None if is_first_result_year else get_delta_percent(car_val, car_prev)
-    st.sidebar.metric("🧾 Bill Rate (Rb)", format_percent(rb_val), delta=delta_rb)
-    st.sidebar.metric("💳 Loan Rate (Rl)", format_percent(rl_val), delta=delta_rl)
-    st.sidebar.metric("💰 Deposit Rate (Rm)", format_percent(rm_val), delta=delta_rm)
 
-    st.sidebar.metric("📊 Tobin's Q", format_value(q_val), delta=delta_q)
-    st.sidebar.metric("😥 Debt Burden (BUR)", format_percent(bur_val), delta=delta_bur)
-    st.sidebar.metric("🏦 Capital Adequacy (CAR)", format_percent(car_val), delta=delta_car)
+    # Bill Rate
+    icon_data_uri = get_icon_data_uri("Rb")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Bill Rate (Rb)", value=format_percent(rb_val), delta=delta_rb)
+    # Loan Rate
+    icon_data_uri = get_icon_data_uri("Rl")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Loan Rate (Rl)", value=format_percent(rl_val), delta=delta_rl)
+    # Deposit Rate
+    icon_data_uri = get_icon_data_uri("Rm")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Deposit Rate (Rm)", value=format_percent(rm_val), delta=delta_rm)
+    # Tobin's Q
+    icon_data_uri = get_icon_data_uri("Q")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Tobin's Q", value=format_value(q_val), delta=delta_q)
+    # Debt Burden
+    icon_data_uri = get_icon_data_uri("BUR")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Debt Burden (BUR)", value=format_percent(bur_val), delta=delta_bur)
+    # Capital Adequacy
+    icon_data_uri = get_icon_data_uri("CAR")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Capital Adequacy (CAR)", value=format_percent(car_val), delta=delta_car)
+
 
     st.sidebar.markdown("##### Government Sector")
     psbr_val = latest_history_entry.get('PSBR', np.nan)
@@ -426,8 +599,21 @@ else: # Only display if Year > 0 and history exists
     gd_gdp_val = gd_val / y_val if y_val and y_val != 0 else np.nan
     gd_gdp_prev = gd_prev / y_prev if prev_year_data and y_prev and y_prev != 0 else np.nan
     delta_gd_gdp = None if is_first_result_year else get_delta_percent(gd_gdp_val, gd_gdp_prev)
-    st.sidebar.metric("💸 Gov Deficit (PSBR)", format_value(psbr_val), delta=delta_psbr)
-    st.sidebar.metric("🏛️ Gov Debt / GDP", format_percent(gd_gdp_val), delta=delta_gd_gdp)
+
+    # Gov Deficit
+    icon_data_uri = get_icon_data_uri("PSBR")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Gov Deficit (PSBR)", value=format_value(psbr_val), delta=delta_psbr)
+    # Gov Debt / GDP
+    icon_data_uri = get_icon_data_uri("GD_GDP")
+    cols = st.sidebar.columns([1, 4])
+    with cols[0]:
+        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+    with cols[1]:
+        st.metric(label="Gov Debt / GDP", value=format_percent(gd_gdp_val), delta=delta_gd_gdp)
 # --- End of Dashboard Display ---
 
 # Display Hand and Events
@@ -561,22 +747,24 @@ if st.session_state.game_phase == "YEAR_START":
                 with cols[col_index]:
                     card_info = POLICY_CARDS.get(card_name, {})
                     is_selected = card_name in selected_cards_this_turn
-                    card_type_class = card_info.get('type', 'Unknown').lower()
-                    # Add 'selected' class if the card is selected
-                    card_classes = f"card {card_type_class}"
+                    card_type = card_info.get('type', 'Unknown').lower()
+                    card_classes = f"card {card_type}"
                     if is_selected:
                         card_classes += " selected"
+                    # Determine icon data uri based on type
+                    icon_data_uri = get_icon_data_uri(card_type)
+                    # Use <img> tag for PNG icons with base64 data
+                    icon_html = f'<img src="{icon_data_uri}" class="card-icon" alt="{card_type} icon">' if icon_data_uri else "❓" # Fallback icon
 
-                    # Modified Markdown for Monopoly Card Structure
-                    # IMPORTANT: The button is now rendered *after* the card div
+
+                    # Modified Markdown for Monopoly Card Structure with Icon
                     st.markdown(f"""
                     <div class="{card_classes}">
-                        <div class="card-top-bar"></div>
+                        <div class="card-top-bar">
+                           {icon_html} <span class="card-title">{card_name} ({card_info.get('type', 'N/A')})</span>
+                        </div>
                         <div class="card-content">
-                            <div>
-                                <div class="card-title">{card_name} ({card_info.get('type', 'N/A')})</div>
-                                <div class="card-desc">{card_info.get('desc', 'No description available.')}</div>
-                            </div>
+                            <div class="card-desc">{card_info.get('desc', 'No description available.')}</div>
                         </div>
                     </div>""", unsafe_allow_html=True)
 
@@ -584,6 +772,7 @@ if st.session_state.game_phase == "YEAR_START":
                     button_label = "Deselect" if is_selected else "Select"
                     button_type = "primary" if is_selected else "secondary"
                     button_key = f"select_{card_name}_{i}_{st.session_state.current_year}"
+                    # Place button below the card div
                     if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
                         if is_selected:
                             st.session_state.cards_selected_this_year.remove(card_name)

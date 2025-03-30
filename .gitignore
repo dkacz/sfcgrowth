@@ -55,8 +55,12 @@ venv.bak/
 
 # Output files
 *.pdf
-*.png
+#*.png
 *.jpg
 *.jpeg
 *.gif
 *.svg
+
+# Icon Generation
+split_icons.py
+#assets/icons/
