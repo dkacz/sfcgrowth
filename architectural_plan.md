@@ -234,7 +234,30 @@ This section details specific UI/UX changes requested based on audio feedback an
 3.  **Phase 3: Card & Event Systems:** Data structures (`cards.py`, `events.py`), Card logic (deck, hand), Event logic (triggering), Effect application (`game_mechanics.py`). **(Partially Complete - Core logic done)**
 4.  **Phase 4: UI/UX Refinement & Core Functionality:** Implement UI for merged `YEAR_START`. Move dashboard to sidebar. Fix N/A value display. Implement basic card selection UI. Ensure core game loop functions reliably. **(Complete)**
 5.  **Phase 5: Monopoly Theme Foundation & Simplification:** Implement styling and Python changes focusing on the Monopoly aesthetic (layout, colors, fonts, basic card/button styles, simplified text). **(Complete)**
-6.  **Phase 6: Monopoly Polish & Game Elements:** Implement icons (based on `asset_specifications.md`), refine card styling (fixed height, overflow), advanced styling, and potentially subtle effects (lower priority). **(Next)**
+6.  **Phase 6: UI/UX Implementation (Addressing Section 5.1 & Card Stance):**
+    *   **Goal:** Implement the detailed UI/UX requirements from Section 5.1 and introduce the 'Expansionary/Contractionary' card dimension. **(Next)**
+    *   **Sub-Phases:**
+        *   **Phase 6A: Sidebar Refactoring**
+            *   Remove Headers/Sections: Delete "Game Information", "Economic Dashboard", "Macro Indicators", "Player Hand", "Active Events" headers and sections from the sidebar.
+            *   Implement Sparklines: Add small `st.line_chart` next to each sidebar metric showing recent trend. Handle insufficient history.
+            *   Implement Sector Information
+: Remove "Government Sector". Add function to extract/display summary data for *all* sectors (Households, Firms, Gov, Banks, CB) from matrices.
+            *   Implement Indicator Hover Interaction: *(Deferrable)* Investigate Streamlit Components or custom HTML/JS for hover graphs.
+            *   Implement Indicator Click Interaction: Refactor to multi-page app or use session state for conditional detailed view (graph/table) of clicked indicator.
+        *   **Phase 6B: Main Area Refactoring (Expanders & Game Start)**
+            *   Rename/Restyle "SFC Matrices" Expander: Rename label. Verify matrix display labels and styling.
+            *   Improve History Table Headings: Rename `history_df` columns before `st.dataframe` call.
+            *   Remove Historical Trends Graph: Remove `st.line_chart` call. Consider renaming/merging the expander.
+            *   Modify Game Start Options: Ensure only "Advanced: Set initial economic conditions" expander shows on Year 0, styled less prominently.
+        *   **Phase 6C: Policy Card Refinements & Rules**
+            *   Add Card Stance Data: Modify `cards.py` to add a `stance` field ('expansionary'/'contractionary') to each `POLICY_CARDS` definition.
+            *   Visualize Card Stance: Modify card rendering HTML/CSS to include a secondary indicator icon (e.g., ↑ for expansionary, ↓ for contractionary) next to the title or type icon, while keeping primary Fiscal/Monetary colors.
+            *   Filter Card Categories: Ensure only "Fiscal" and "Monetary" cards are rendered (regardless of stance).
+            *   Standardize Header Height: Adjust `.card-top-bar` CSS (`min-height`) to accommodate two lines of text and ensure vertical alignment.
+            *   Implement "Learn More" Section: Add `st.session_state.played_card_names = set()`. Update on play. Add `st.expander("Learn More")` to cards, conditionally showing placeholder text based on played status.
+            *   Implement Card Play Rules:
+                *   Add check before "Confirm" button: If `len(selected_cards) > 2`, show warning and disable button.
+                *   Modify selection logic: Prevent selecting a card if its `name` is already in `selected_cards`, show warning.
 7.  **Phase 7: Testing, Balancing & Final Polish:** Implement tests, Balance gameplay, Refine UI, Optimize.
 
 ## 7. Testing Strategy

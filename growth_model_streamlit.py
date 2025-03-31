@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 import logging
 import os
 import base64 # Import base64 encoding
+import altair as alt # Keep altair import for potential future use if needed
 
 # Import the necessary components from the model definition file
 from chapter_11_model_growth import (
@@ -43,6 +44,7 @@ INITIAL_HAND_SIZE = 5
 CARDS_TO_DRAW_PER_YEAR = 2
 MAX_CARDS_PER_ROW = 4 # For card display layout
 ICON_DIR = "assets/icons" # Define icon directory
+SPARKLINE_YEARS = 10 # Number of years for sparkline history
 
 # --- Icon Mapping ---
 # Maps internal keys/types to filenames in ICON_DIR
@@ -65,6 +67,23 @@ ICON_FILENAME_MAP = {
     "GD_GDP": "fiscal_icon.png" # Reusing fiscal icon for Gov Debt/GDP ratio
 }
 # Removed EMOJI_MAP
+
+# --- Variable Descriptions (Keep for potential future use) ---
+VARIABLE_DESCRIPTIONS = {
+    "Yk": "Real Gross Domestic Product: Total value of goods and services produced, adjusted for inflation.",
+    "PI": "Inflation Rate: Percentage increase in the general price level.",
+    "Unemployment": "Unemployment Rate: Percentage of the labor force that is jobless and looking for work.",
+    "GRk": "Capital Growth Rate: Percentage change in the stock of physical capital.",
+    "Rb": "Bill Rate: Interest rate on short-term government debt (Treasury Bills).",
+    "Rl": "Loan Rate: Interest rate charged by banks on loans to firms and households.",
+    "Rm": "Deposit Rate: Interest rate paid by banks on deposits.",
+    "Q": "Tobin's Q: Ratio of the market value of firms' capital to its replacement cost.",
+    "BUR": "Debt Burden Ratio: Ratio of household debt service payments to disposable income.",
+    "CAR": "Capital Adequacy Ratio: Ratio of a bank's capital to its risk-weighted assets.",
+    "PSBR": "Public Sector Borrowing Requirement: The government's budget deficit.",
+    "GD_GDP": "Government Debt to GDP Ratio: Ratio of total government debt to nominal GDP."
+}
+
 
 # --- Helper Functions ---
 class NullIO(io.StringIO):
@@ -257,78 +276,92 @@ st.markdown("""
 
 
     /* --- Cards --- */
-    .card {
+    /* Style the container holding the card elements */
+    .card-container {
         border: 1px solid #000000;
-        border-radius: 8px; /* Slightly more rounded corners */
+        border-radius: 8px;
         margin-bottom: 15px;
         background-color: #FAFAD2; /* Parchment background */
         height: 250px; /* Fixed height for cards */
         display: flex;
         flex-direction: column;
-        padding: 0; /* Remove default padding, handle internally */
-        overflow: hidden; /* Ensure top border stays within bounds */
-        transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transition */
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2); /* Add subtle drop shadow */
+        padding: 0; /* Remove padding from container */
+        overflow: hidden;
+        transition: border 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+    .card-container.selected {
+        border: 3px solid #DAA520 !important;
+        box-shadow: 0 0 10px 2px #DAA520 !important;
     }
     .card-top-bar {
-        /* Removed height/min-height */
+        min-height: 3.5em;
         margin-bottom: 10px;
-        padding: 8px 10px; /* Adjusted padding */
-        display: flex; /* Use flexbox for alignment */
-        align-items: center; /* Center items vertically */
-        flex-shrink: 0; /* Prevent bar from shrinking */
-    }
-    .card.monetary .card-top-bar {
-        background-color: #0072BB; /* Monopoly Blue */
-    }
-    .card.fiscal .card-top-bar {
-        background-color: #1FB25A; /* Monopoly Green */
-    }
-    /* Add other colors as needed */
-    .card.default .card-top-bar { /* Fallback */
-        background-color: #8B4513; /* Brown */
-    }
-    .card-content {
-        padding: 0 15px 15px 15px; /* Padding for content below bar */
+        padding: 8px 10px;
         display: flex;
-        flex-direction: column;
-        flex-grow: 1; /* Allow content area to grow */
-        justify-content: space-between; /* Push button to bottom */
-        overflow-y: auto; /* Allow description to scroll if needed */
-        min-height: 0; /* Allow shrinking for flexbox */
+        align-items: center;
+        flex-shrink: 0;
+        color: #FFFFFF !important; /* White text for title */
     }
-    .card-title { /* Now inside top bar */
+    .card-top-bar.monetary { background-color: #0072BB; } /* Monopoly Blue */
+    .card-top-bar.fiscal { background-color: #1FB25A; } /* Monopoly Green */
+    .card-top-bar.default { background-color: #8B4513; } /* Brown */
+
+    .card-title {
         font-family: 'Oswald', sans-serif !important;
         font-weight: bold;
         font-size: 1.1em;
-        color: #FFFFFF !important; /* White text on colored bar */
-        text-align: left; /* Align left now that icon is there */
-        margin-bottom: 0; /* Remove bottom margin */
-        margin-left: 0.5em; /* Space after icon */
-        /* flex-grow: 1; Removed flex-grow */
-        line-height: 1.3; /* Allow text to wrap naturally */
-        word-wrap: break-word; /* Ensure wrapping */
-        overflow-wrap: break-word; /* Ensure wrapping */
+        text-align: left;
+        margin-bottom: 0;
+        margin-left: 0.5em; /* Space after stance icon */
+        line-height: 1.3;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        color: inherit; /* Inherit color from parent (.card-top-bar) */
     }
-    .card-icon { /* Icon inside card title bar */
-        height: 1.1em; /* Adjusted size */
+    .card-icon {
+        height: 1.1em;
         width: 1.1em;
-        vertical-align: middle; /* Keep middle align */
-        filter: brightness(0) invert(1); /* Make black PNG white */
-        margin-right: 0.4em; /* Adjust spacing */
-        flex-shrink: 0; /* Prevent icon from shrinking */
+        vertical-align: middle;
+        filter: brightness(0) invert(1);
+        margin-right: 0.4em;
+        flex-shrink: 0;
+    }
+    .stance-icon {
+        height: 1em;
+        width: 1em;
+        vertical-align: middle;
+        filter: brightness(0) invert(1);
+        margin-left: 0.5em;
+        flex-shrink: 0;
+    }
+    /* Container for the main content below the top bar */
+    .card-main-content {
+        padding: 0 15px 10px 15px; /* Padding for content */
+        flex-grow: 1; /* Allow content area to grow */
+        overflow-y: auto; /* Allow scrolling if needed */
+        min-height: 0; /* Allow shrinking for flexbox */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Push button to bottom */
     }
     .card-desc {
         font-family: 'Lato', sans-serif !important;
         font-size: 0.9em;
         color: #000000 !important;
         margin-bottom: 10px;
-        /* flex-grow: 1; Let card-content handle growth */
     }
-    .card.selected {
-        border: 3px solid #DAA520 !important; /* Thicker Gold border */
-        box-shadow: 0 0 10px 2px #DAA520 !important; /* Stronger gold glow */
+    /* Ensure expander takes minimal space */
+    .card-main-content .stExpander {
+        padding: 0 !important;
+        margin-top: auto; /* Push expander towards bottom before button */
+        margin-bottom: 5px; /* Space before button */
     }
+     .card-main-content .stExpander p { /* Style caption inside expander */
+        font-size: 0.8em;
+        color: #555555;
+    }
+
 
     /* --- Buttons --- */
     .stButton > button {
@@ -442,6 +475,7 @@ if "game_initialized" not in st.session_state:
     st.session_state.active_events_this_year = []
     st.session_state.cards_selected_this_year = []
     st.session_state.history = [] # Initialize history as empty
+    st.session_state.played_card_names = set() # Initialize set to track played cards
     st.session_state.initial_params = {} # For year 0 adjustments
 
     logging.info("Game Initialized at Year 0.")
@@ -449,10 +483,6 @@ if "game_initialized" not in st.session_state:
 
 
 # --- Sidebar ---
-st.sidebar.header("Game Information")
-
-# --- Dashboard Display (Moved to Top of Sidebar) ---
-st.sidebar.header("Economic Dashboard")
 if st.session_state.current_year == 0 or not st.session_state.history: # Check year and history
      st.sidebar.caption("Waiting for first year results...")
 else: # Only display if Year > 0 and history exists
@@ -478,7 +508,110 @@ else: # Only display if Year > 0 and history exists
              prev_year_data = st.session_state.initial_state_dict # Fallback
 
     # Display Metrics in Sidebar using columns and Base64 icons
-    st.sidebar.markdown("##### Macro Indicators")
+    # --- Helper function to create sparkline data ---
+    def get_sparkline_data(metric_key, num_years):
+        if not hasattr(st.session_state, 'sfc_model_object') or not st.session_state.sfc_model_object.solutions:
+            return None
+        solutions = st.session_state.sfc_model_object.solutions
+        if len(solutions) < 2: # Need at least 2 points for a line
+            return None
+
+        start_index = max(0, len(solutions) - num_years)
+        history_slice = solutions[start_index:]
+
+        # Extract data, handling potential missing keys or non-numeric values gracefully
+        data = []
+        years = []
+        # Assuming solutions[0] corresponds to year 0, solutions[1] to year 1 etc.
+        # This might need adjustment if the simulation starts differently
+        start_actual_year = start_index # Adjust if year numbering is different
+
+        for i, sol in enumerate(history_slice):
+            val = sol.get(metric_key)
+            # Special handling for unemployment rate
+            if metric_key == 'Unemployment':
+                er_val = sol.get('ER')
+                val = (1 - er_val) * 100 if er_val is not None and np.isfinite(er_val) else np.nan
+            elif metric_key in ['PI', 'GRk', 'Rb', 'Rl', 'Rm', 'BUR', 'CAR', 'GD_GDP']: # Rates/Ratios need scaling
+                 val = val * 100 if val is not None and np.isfinite(val) else np.nan
+
+            if val is not None and np.isfinite(val):
+                data.append(val)
+                years.append(start_actual_year + i) # Use calculated year
+
+        if len(data) < 2: # Still need at least 2 valid points
+             return None
+
+        # Create DataFrame
+        df = pd.DataFrame({'Year': years, metric_key: data})
+
+        # Explicitly drop rows where the metric value is NaN BEFORE setting index
+        # This ensures Altair receives only valid points for the y-axis
+        df.dropna(subset=[metric_key], inplace=True)
+
+        # Check again if enough points remain after dropping NaNs
+        if len(df) < 2:
+            return None
+
+        # Set index after cleaning
+        df.set_index('Year', inplace=True)
+        return df
+
+    # --- Function to create Vega-Lite spec for sidebar (minimalist) ---
+    def create_sparkline_spec(data_df, metric_key):
+        if data_df is None or data_df.empty:
+            return None
+        # Prepare data in list-of-dicts format
+        chart_data = data_df.reset_index().to_dict('records')
+        return {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {"values": chart_data},
+            "mark": {"type": "line", "point": True}, # Show points
+            "encoding": {
+                "x": {"field": "Year", "type": "ordinal", "axis": None}, # Hide X axis
+                "y": {"field": metric_key, "type": "quantitative", "axis": None}, # Hide Y axis
+                "tooltip": [ # Enable tooltips
+                    {"field": "Year", "type": "ordinal"},
+                    {"field": metric_key, "type": "quantitative", "format": ".2f"} # Format tooltip value
+                ]
+            },
+            "height": 50,
+            "width": "container", # Use container width
+             # Attempt to set theme config
+            "config": {
+                 "background": None, # Try transparent background
+                 "view": {"stroke": None}, # Remove view border
+                 "theme": "none" # Attempt to force theme inheritance
+             }
+        }
+
+    # --- Function to display metric and sparkline (NO EXPANDER) ---
+    def display_metric_sparkline(metric_key, label, icon_key, format_func, delta_val):
+        spark_df = get_sparkline_data(metric_key, SPARKLINE_YEARS)
+        current_val = latest_history_entry.get(metric_key, np.nan)
+        # Special handling for unemployment
+        if metric_key == 'Unemployment':
+            er_val = latest_history_entry.get('ER', np.nan)
+            current_val = (1 - er_val) if np.isfinite(er_val) else np.nan
+            icon_key = "ER" # Use ER icon
+
+        icon_data_uri = get_icon_data_uri(icon_key)
+        cols = st.sidebar.columns([1, 3, 2])
+        with cols[0]:
+            if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
+        with cols[1]:
+            st.metric(label=label, value=format_func(current_val), delta=delta_val)
+        with cols[2]:
+            if spark_df is not None and not spark_df.empty: # Ensure data exists
+                try:
+                    spec = create_sparkline_spec(spark_df, metric_key)
+                    if spec:
+                        # Pass spec directly to st.vega_lite_chart, explicitly setting theme
+                        st.vega_lite_chart(spec, use_container_width=True, theme="streamlit")
+                except Exception as e:
+                    logging.error(f"Error creating st.vega_lite_chart for {metric_key}: {e}")
+
+
     yk_val = latest_history_entry.get('Yk', np.nan)
     pi_val = latest_history_entry.get('PI', np.nan)
     er_val = latest_history_entry.get('ER', np.nan)
@@ -494,34 +627,11 @@ else: # Only display if Year > 0 and history exists
     delta_unemp = None if is_first_result_year else get_delta_percent(unemp_val, unemp_prev)
     delta_grk = None if is_first_result_year else get_delta_percent(grk_val, grk_prev)
 
-    # GDP
-    icon_data_uri = get_icon_data_uri("Yk")
-    cols = st.sidebar.columns([1, 4]) # Adjust column ratio if needed
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Real GDP (Yk)", value=format_value(yk_val), delta=delta_yk)
-    # Inflation
-    icon_data_uri = get_icon_data_uri("PI")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Inflation (PI)", value=format_percent(pi_val), delta=delta_pi)
-    # Unemployment
-    icon_data_uri = get_icon_data_uri("ER") # Use ER key for icon
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Unemployment Rate", value=format_percent(unemp_val), delta=delta_unemp)
-    # Capital Growth
-    icon_data_uri = get_icon_data_uri("GRk")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Capital Growth (GRk)", value=format_percent(grk_val), delta=delta_grk)
+    # --- Display Core Metrics ---
+    display_metric_sparkline("Yk", "Real GDP (Yk)", "Yk", format_value, delta_yk)
+    display_metric_sparkline("PI", "Inflation (PI)", "PI", format_percent, delta_pi)
+    display_metric_sparkline("Unemployment", "Unemployment Rate", "ER", format_percent, delta_unemp)
+    display_metric_sparkline("GRk", "Capital Growth (GRk)", "GRk", format_percent, delta_grk)
 
 
     st.sidebar.markdown("##### Financial & Banking")
@@ -544,51 +654,15 @@ else: # Only display if Year > 0 and history exists
     delta_bur = None if is_first_result_year else get_delta_percent(bur_val, bur_prev)
     delta_car = None if is_first_result_year else get_delta_percent(car_val, car_prev)
 
-    # Bill Rate
-    icon_data_uri = get_icon_data_uri("Rb")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Bill Rate (Rb)", value=format_percent(rb_val), delta=delta_rb)
-    # Loan Rate
-    icon_data_uri = get_icon_data_uri("Rl")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Loan Rate (Rl)", value=format_percent(rl_val), delta=delta_rl)
-    # Deposit Rate
-    icon_data_uri = get_icon_data_uri("Rm")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Deposit Rate (Rm)", value=format_percent(rm_val), delta=delta_rm)
-    # Tobin's Q
-    icon_data_uri = get_icon_data_uri("Q")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Tobin's Q", value=format_value(q_val), delta=delta_q)
-    # Debt Burden
-    icon_data_uri = get_icon_data_uri("BUR")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Debt Burden (BUR)", value=format_percent(bur_val), delta=delta_bur)
-    # Capital Adequacy
-    icon_data_uri = get_icon_data_uri("CAR")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Capital Adequacy (CAR)", value=format_percent(car_val), delta=delta_car)
+    # --- Display Financial Metrics ---
+    display_metric_sparkline("Rb", "Bill Rate (Rb)", "Rb", format_percent, delta_rb)
+    display_metric_sparkline("Rl", "Loan Rate (Rl)", "Rl", format_percent, delta_rl)
+    display_metric_sparkline("Rm", "Deposit Rate (Rm)", "Rm", format_percent, delta_rm)
+    display_metric_sparkline("Q", "Tobin's Q", "Q", format_value, delta_q)
+    display_metric_sparkline("BUR", "Debt Burden (BUR)", "BUR", format_percent, delta_bur)
+    display_metric_sparkline("CAR", "Capital Adequacy (CAR)", "CAR", format_percent, delta_car)
 
 
-    st.sidebar.markdown("##### Government Sector")
     psbr_val = latest_history_entry.get('PSBR', np.nan)
     gd_val = latest_history_entry.get('GD', np.nan)
     y_val = latest_history_entry.get('Y', np.nan)
@@ -600,42 +674,79 @@ else: # Only display if Year > 0 and history exists
     gd_gdp_prev = gd_prev / y_prev if prev_year_data and y_prev and y_prev != 0 else np.nan
     delta_gd_gdp = None if is_first_result_year else get_delta_percent(gd_gdp_val, gd_gdp_prev)
 
-    # Gov Deficit
-    icon_data_uri = get_icon_data_uri("PSBR")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Gov Deficit (PSBR)", value=format_value(psbr_val), delta=delta_psbr)
-    # Gov Debt / GDP
-    icon_data_uri = get_icon_data_uri("GD_GDP")
-    cols = st.sidebar.columns([1, 4])
-    with cols[0]:
-        if icon_data_uri: st.markdown(f'<img src="{icon_data_uri}" class="metric-icon">', unsafe_allow_html=True)
-    with cols[1]:
-        st.metric(label="Gov Debt / GDP", value=format_percent(gd_gdp_val), delta=delta_gd_gdp)
+    # --- Display Government Metrics ---
+    display_metric_sparkline("PSBR", "Gov Deficit (PSBR)", "PSBR", format_value, delta_psbr)
+    display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp)
+
 # --- End of Dashboard Display ---
 
-# Display Hand and Events
-st.sidebar.header("Player Hand")
-if not st.session_state.get("player_hand"): # Use .get for safety
-    st.sidebar.write("Hand is empty.")
-else:
-    st.sidebar.caption("Cards in hand:")
-    for card_name in st.session_state.player_hand:
-         st.sidebar.markdown(f"- {card_name}")
+# --- Sector Summary Display ---
+def display_sector_summary(latest_solution):
+    """Displays key summary data for each economic sector in the sidebar."""
+    st.sidebar.markdown("---") # Add a divider
+    st.sidebar.markdown("##### Sector Summaries")
 
-st.sidebar.header("Active Events")
-if not st.session_state.get("active_events_this_year"): # Use .get for safety
-    st.sidebar.write("No active events.")
-else:
-    st.sidebar.caption("Events affecting this year:")
-    for event_name in st.session_state.active_events_this_year:
-        if event_name in ECONOMIC_EVENTS:
-            st.sidebar.markdown(f"- **{event_name}**: {ECONOMIC_EVENTS[event_name]['desc']}")
-        else:
-            st.sidebar.markdown(f"- {event_name}") # Fallback if not found
-st.sidebar.divider()
+    # Households
+    with st.sidebar.expander("Households", expanded=False):
+        hh_v = latest_solution.get('V', np.nan)
+        hh_ydr = latest_solution.get('YDr', np.nan)
+        hh_c = latest_solution.get('C', np.nan)
+        st.metric(label="Wealth (V)", value=format_value(hh_v))
+        st.metric(label="Disposable Income (YDr)", value=format_value(hh_ydr))
+        st.metric(label="Consumption (C)", value=format_value(hh_c))
+
+    # Firms
+    with st.sidebar.expander("Firms", expanded=False):
+        f_k = latest_solution.get('K', np.nan)
+        f_i = latest_solution.get('I', np.nan)
+        f_fu = latest_solution.get('FU', np.nan)
+        st.metric(label="Capital Stock (K)", value=format_value(f_k))
+        st.metric(label="Investment (I)", value=format_value(f_i))
+        st.metric(label="Gross Profits (FU)", value=format_value(f_fu))
+
+    # Government
+    with st.sidebar.expander("Government", expanded=False):
+        g_gd = latest_solution.get('GD', np.nan) # Total Gov Debt
+        g_psbr = latest_solution.get('PSBR', np.nan)
+        g_t = latest_solution.get('T', np.nan) # Total Taxes
+        g_g = latest_solution.get('G', np.nan) # Gov Spending
+        st.metric(label="Total Debt (GD)", value=format_value(g_gd))
+        st.metric(label="Deficit (PSBR)", value=format_value(g_psbr))
+        st.metric(label="Taxes (T)", value=format_value(g_t))
+        st.metric(label="Spending (G)", value=format_value(g_g))
+
+    # Banks
+    with st.sidebar.expander("Banks", expanded=False):
+        b_l = latest_solution.get('L', np.nan) # Loans
+        b_m = latest_solution.get('M', np.nan) # Deposits
+        b_ekb = latest_solution.get('Ekb', np.nan) # Equity
+        b_car = latest_solution.get('CAR', np.nan) # Capital Adequacy Ratio
+        st.metric(label="Loans (L)", value=format_value(b_l))
+        st.metric(label="Deposits (M)", value=format_value(b_m))
+        st.metric(label="Equity (Ekb)", value=format_value(b_ekb))
+        st.metric(label="Capital Adequacy (CAR)", value=format_percent(b_car))
+
+    # Central Bank
+    with st.sidebar.expander("Central Bank", expanded=False):
+        cb_bcb = latest_solution.get('Bcb', np.nan) # Bills Held
+        cb_as = latest_solution.get('As', np.nan) # Advances to Banks
+        st.metric(label="Bills Held (Bcb)", value=format_value(cb_bcb))
+        st.metric(label="Advances to Banks (As)", value=format_value(cb_as))
+
+# Call the sector summary function if results are available
+if st.session_state.current_year > 0 and st.session_state.history:
+    # Ensure latest_history_entry is defined from the metric display block
+    if 'latest_history_entry' in locals():
+         display_sector_summary(latest_history_entry)
+    else:
+         # Fallback or error handling if latest_history_entry isn't available
+         # This might happen if the metric display logic fails or is skipped
+         logging.warning("latest_history_entry not available for sector summary display.")
+         # Optionally try to get it again, though this duplicates logic:
+         model_state = st.session_state.get('sfc_model_object')
+         if model_state and model_state.solutions:
+             display_sector_summary(model_state.solutions[-1])
+
 
 
 # --- Main App Logic ---
@@ -655,7 +766,15 @@ if st.session_state.game_phase == "YEAR_START":
                  st.error("Model object not found in session state for initial parameter adjustment.")
                  st.stop()
 
-             with st.expander("Advanced: Set Initial Economic Conditions"):
+             # Display Start Game button first
+             if st.button("Start Game"): # Changed button text
+                 st.session_state.game_phase = "SIMULATION" # Skip POLICY for Year 0->1
+                 st.session_state.initial_params_set = True # Lock initial params
+                 if "year_start_processed" in st.session_state: del st.session_state.year_start_processed # Clean up flag
+                 st.rerun()
+
+             # Then display the less prominent advanced options
+             with st.expander("Advanced: Set Initial Economic Conditions", expanded=False): # Set expanded=False
                  st.caption("Adjust the starting parameters for the economy. These settings are locked once you start the game.")
                  initial_params_changed = False
                  initial_params_to_set = {}
@@ -762,12 +881,6 @@ if st.session_state.game_phase == "YEAR_START":
                      except Exception as e:
                          st.error(f"Error applying initial parameters: {e}")
 
-        if st.button("Start Game"): # Changed button text
-            st.session_state.game_phase = "SIMULATION" # Skip POLICY for Year 0->1
-            st.session_state.initial_params_set = True # Lock initial params
-            if "year_start_processed" in st.session_state: del st.session_state.year_start_processed # Clean up flag
-            st.rerun()
-
     # --- Year > 0: Combined Dashboard & Policy ---
     else:
         # Removed instructional text
@@ -805,51 +918,97 @@ if st.session_state.game_phase == "YEAR_START":
 
         available_cards = st.session_state.player_hand
         selected_cards_this_turn = st.session_state.cards_selected_this_year
+        max_cards_allowed = 2 # Define max cards here for use in selection logic
 
         if not available_cards:
-            st.write("No cards in hand.")
+            st.write("No policy cards currently in hand.")
         else:
-            num_cards = len(available_cards)
+            # Filter cards to only show Fiscal and Monetary
+            displayable_cards = [
+                card_name for card_name in available_cards
+                if POLICY_CARDS.get(card_name, {}).get('type') in ["Fiscal", "Monetary"]
+            ]
+
+            if not displayable_cards:
+                st.write("No Fiscal or Monetary policy cards currently in hand.")
+                # Exit this block if no displayable cards
+                # Note: This assumes the 'else' block below handles the case where displayable_cards is empty
+
+            num_cards = len(displayable_cards)
             num_cols = min(num_cards, MAX_CARDS_PER_ROW)
             cols = st.columns(num_cols)
 
-            for i, card_name in enumerate(available_cards):
-                col_index = i % num_cols
+            card_render_index = 0 # Index for column assignment
+            for card_name in displayable_cards: # Iterate over filtered list
+                col_index = card_render_index % num_cols # Use card_render_index instead of i
                 with cols[col_index]:
                     card_info = POLICY_CARDS.get(card_name, {})
                     is_selected = card_name in selected_cards_this_turn
                     card_type = card_info.get('type', 'Unknown').lower()
-                    card_classes = f"card {card_type}"
+
+                    # Determine card container class based on selection
+                    card_container_class = "card-container"
                     if is_selected:
-                        card_classes += " selected"
-                    # Determine icon data uri based on type
-                    icon_data_uri = get_icon_data_uri(card_type)
-                    # Use <img> tag for PNG icons with base64 data
-                    icon_html = f'<img src="{icon_data_uri}" class="card-icon" alt="{card_type} icon">' if icon_data_uri else "❓" # Fallback icon
+                        card_container_class += " selected"
 
+                    # --- Card Rendering using Streamlit Elements ---
+                    with st.container():
+                        # Apply card container styling via CSS class
+                        # We need to manually construct the top bar HTML here
+                        icon_data_uri = get_icon_data_uri(card_type)
+                        icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
+                        card_stance = card_info.get('stance', None)
+                        stance_icon_html = ""
+                        if card_stance == 'expansionary':
+                            stance_icon_html = '<span class="stance-icon" title="Expansionary">↑</span>'
+                        elif card_stance == 'contractionary':
+                            stance_icon_html = '<span class="stance-icon" title="Contractionary">↓</span>'
 
-                    # Modified Markdown for Monopoly Card Structure with Icon
-                    st.markdown(f"""
-                    <div class="{card_classes}">
-                        <div class="card-top-bar">
-                           {icon_html} <span class="card-title">{card_name} ({card_info.get('type', 'N/A')})</span>
+                        top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
+                        # Use st.markdown for the top bar structure
+                        st.markdown(f'''
+                        <div class="{card_container_class}"> <!-- Apply container class -->
+                            <div class="card-top-bar {top_bar_color_class}">
+                               {icon_html} {stance_icon_html} <span class="card-title">{card_name}</span>
+                            </div>
+                            <div class="card-main-content">
+                                <div class="card-desc">{card_info.get('desc', 'No description available.')}</div>
+                                <!-- Expander and Button will be placed below by Streamlit -->
+                            </div>
                         </div>
-                        <div class="card-content">
-                            <div class="card-desc">{card_info.get('desc', 'No description available.')}</div>
-                        </div>
-                    </div>""", unsafe_allow_html=True)
+                        ''', unsafe_allow_html=True)
 
-                    # Render button separately below the card markdown
-                    button_label = "Deselect" if is_selected else "Select"
-                    button_type = "primary" if is_selected else "secondary"
-                    button_key = f"select_{card_name}_{i}_{st.session_state.current_year}"
-                    # Place button below the card div
-                    if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
-                        if is_selected:
-                            st.session_state.cards_selected_this_year.remove(card_name)
-                        else:
-                            st.session_state.cards_selected_this_year.append(card_name)
-                        st.rerun()
+                        # Place Expander and Button *outside* markdown, but *inside* the column's context
+                        # Use a container to help manage layout within the flex column
+                        with st.container():
+                            with st.expander("Learn More"):
+                                if card_name in st.session_state.played_card_names:
+                                    st.caption(f"Details for {card_name} will appear here. [Placeholder]")
+                                else:
+                                    st.caption("Play this card once to unlock more details.")
+
+                            button_label = "Deselect" if is_selected else "Select"
+                            button_type = "primary" if is_selected else "secondary"
+                            button_key = f"select_{card_name}_{card_render_index}_{st.session_state.current_year}"
+ # Use render index for unique key
+                            if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
+                                if is_selected:
+                                    st.session_state.cards_selected_this_year.remove(card_name)
+                                    st.rerun() # Rerun after deselecting
+                                else:
+                                    # --- Add Duplicate Name Check ---
+                                    if card_name in st.session_state.cards_selected_this_year:
+                                        st.warning(f"Cannot select two '{card_name}' cards in the same turn.")
+                                    # --- Add Max Card Check before appending ---
+                                    elif len(st.session_state.cards_selected_this_year) >= max_cards_allowed:
+                                        st.warning(f"You can only select up to {max_cards_allowed} cards.")
+                                    else:
+                                        st.session_state.cards_selected_this_year.append(card_name)
+                                        st.rerun() # Rerun only if selection was successful
+
+                    card_render_index += 1 # Increment render index
+
+
         st.divider()
         if selected_cards_this_turn:
             st.write("Selected for this turn:")
@@ -860,7 +1019,8 @@ if st.session_state.game_phase == "YEAR_START":
 
         # --- Detailed Data Expanders ---
         st.divider()
-        with st.expander("View Detailed Financial Statements"):
+ # Keep divider above expanders
+        with st.expander("SFC Matrices"): # Renamed Expander
             model_state = st.session_state.sfc_model_object # Get current model state
             current_solution_for_matrix = model_state.solutions[-1] # Latest solution
             prev_solution_for_matrix = None
@@ -880,25 +1040,40 @@ if st.session_state.game_phase == "YEAR_START":
 
         with st.expander("View History Table"):
             if st.session_state.history:
+                # Define mapping for clearer column names
+                column_mapping = {
+                    'year': 'Year',
+                    'Yk': 'Real GDP',
+                    'PI': 'Inflation Rate',
+                    'ER': 'Employment Rate', # Note: Lower is better for unemployment
+                    'GRk': 'Capital Growth Rate',
+                    'Rb': 'Bill Rate',
+                    'Rl': 'Loan Rate',
+                    'BUR': 'Debt Burden Ratio',
+                    'Q': "Tobin's Q",
+                    'PSBR': 'Gov Deficit',
+                    'GD': 'Gov Debt Stock',
+                    'Y': 'Nominal GDP',
+                    'cards_played': 'Cards Played',
+                    'events': 'Active Events'
+                }
                 history_df = pd.DataFrame(st.session_state.history).sort_values(by='year', ascending=False)
-                st.dataframe(history_df)
+                # Select and rename columns that exist in the DataFrame
+                display_df = history_df[[col for col in column_mapping if col in history_df.columns]].rename(columns=column_mapping)
+                st.dataframe(display_df) # Display the renamed DataFrame
             else: st.write("No history recorded yet.")
 
-        with st.expander("View Historical Trends"):
-            if len(st.session_state.history) > 0: # Need at least Year 1 results
-                history_df = pd.DataFrame(st.session_state.history).set_index('year')
-                chart_data = pd.DataFrame({
-                    'Real GDP (Yk)': history_df['Yk'],
-                    'Inflation (PI %)': history_df['PI'] * 100,
-                    'Unemployment Rate (%)': (1 - history_df['ER']) * 100
-                })
-                st.line_chart(chart_data)
-            else: st.caption("Need at least one year of history to display trends.")
         # --- End Detailed Data Expanders ---
 
 
         # Button to proceed (for Year > 0)
-        if st.button("Confirm Policies & Run Simulation"):
+        # --- Add Card Limit Check ---
+        max_cards_allowed = 2
+        can_proceed = len(selected_cards_this_turn) <= max_cards_allowed
+        if not can_proceed:
+            st.warning(f"You can select a maximum of {max_cards_allowed} cards per turn.")
+
+        if st.button("Confirm Policies & Run Simulation", disabled=not can_proceed):
             st.session_state.game_phase = "SIMULATION"
             if "year_start_processed" in st.session_state: del st.session_state.year_start_processed
             st.rerun()
@@ -1008,6 +1183,11 @@ elif st.session_state.game_phase == "SIMULATION":
             current_results['cards_played'] = list(cards_to_play)
             current_results['events'] = list(events_active)
             st.session_state.history.append(current_results)
+
+            # Add played cards to the set for "Learn More" tracking
+            if cards_to_play:
+                st.session_state.played_card_names.update(cards_to_play)
+                logging.debug(f"Updated played cards set: {st.session_state.played_card_names}")
 
             # Update Hand (Only if not first simulation)
             if st.session_state.current_year > 0:
