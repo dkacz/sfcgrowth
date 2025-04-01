@@ -22,19 +22,52 @@ def create_deck():
     random.shuffle(deck)
     return deck
 
-def draw_cards(deck, hand, num_to_draw):
-    """Draws cards from the deck to the hand."""
-    drawn = []
-    for _ in range(num_to_draw):
+def draw_cards(deck, hand, target_hand_size):
+    """
+    Draws cards from the deck, attempting to add a specific number of *unique*
+    Fiscal or Monetary policy cards to the hand, up to the target_hand_size.
+    Existing cards in hand are preserved.
+    """
+    drawn_unique_policy_cards = []
+    # Calculate how many *new* unique policy cards we aim to add
+    # Note: This assumes the hand might already contain some cards we want to keep.
+    # For the Streamlit app, the hand is usually empty at the start of the draw phase.
+    unique_policy_in_hand = {card for card in hand if POLICY_CARDS.get(card, {}).get('type') in ["Fiscal", "Monetary"]}
+    cards_needed = target_hand_size - len(unique_policy_in_hand)
+
+    if cards_needed <= 0:
+        logging.debug(f"Hand already meets or exceeds target unique policy cards ({len(unique_policy_in_hand)}/{target_hand_size}). No draw needed.")
+        return deck, hand # Target already met or exceeded
+
+    # Keep track of cards drawn this cycle to avoid infinite loops if deck cycles
+    drawn_this_cycle = set()
+    initial_deck_size = len(deck)
+
+    while len(drawn_unique_policy_cards) < cards_needed:
         if not deck:
             # Reshuffle discard pile if deck is empty (implement later if needed)
             logging.warning("Deck empty, cannot draw more cards.") # Use logging
             break # Stop if deck is empty
-        drawn.append(deck.pop())
-    hand.extend(drawn)
-    return deck, hand # Return modified deck and hand
 
-# --- Event Triggering (Basic Function - To be expanded) ---
+        card_name = deck.pop()
+
+        # Check if we've cycled through the entire deck without finding enough cards
+        if card_name in drawn_this_cycle and len(drawn_this_cycle) >= initial_deck_size:
+             logging.warning(f"Cycled through deck, could not find enough unique policy cards. Found {len(drawn_unique_policy_cards)}/{cards_needed}.")
+             break
+        drawn_this_cycle.add(card_name)
+
+        card_info = POLICY_CARDS.get(card_name)
+        if card_info and card_info.get('type') in ["Fiscal", "Monetary"]:
+            # Check if it's unique among cards already in hand AND cards drawn this turn
+            if card_name not in unique_policy_in_hand and card_name not in drawn_unique_policy_cards:
+                drawn_unique_policy_cards.append(card_name)
+
+    if drawn_unique_policy_cards:
+        hand.extend(drawn_unique_policy_cards)
+        logging.info(f"Drew {len(drawn_unique_policy_cards)} unique policy cards: {', '.join(drawn_unique_policy_cards)}")
+
+    return deck, hand
 
 def check_for_events(model_state):
     """Checks conditions and randomly triggers events."""
