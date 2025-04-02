@@ -268,3 +268,19 @@ This section details specific UI/UX changes requested based on audio feedback an
 *   **Gameplay:** Play through scenarios, test strategies, check edge cases.
 *   **UI/State:** Test navigation, phase transitions, state persistence.
 *   **Balancing:** Iterative playtesting for challenge and fairness.
+
+## 8. Phase 8: User Feedback Implementation (Post-Monopoly Theme)
+
+This phase addresses specific feedback received after the initial Monopoly theme implementation and card/event effect calibration.
+
+*   **Goal:** Refine UI/UX, fix bugs, adjust game balance, and improve clarity based on user testing.
+*   **Tasks:**
+    1.  **Fix Initial Parameter Application:** Investigate and correct why parameter changes made in the "Advanced: Set Initial Economic Conditions" expander at Year 0 are not being applied to the Year 1 simulation. Ensure `apply_effects` or the parameter setting logic in the `SIMULATION` phase correctly uses the modified initial state.
+    2.  **Add Unemployment Floor:** Modify the unemployment calculation/display logic (likely in `display_metric_sparkline`) to enforce a minimum displayed value of 0.5%, preventing negative unemployment rates.
+    3.  **Ensure 4 Cards:** Adjust card drawing logic (`CARDS_TO_DRAW_PER_YEAR` constant or `draw_cards` function) to aim for a hand size of 4 cards each turn, assuming sufficient cards in the deck.
+    4.  **Add Year Start Info/Plots:** Implement a new section at the start of the `YEAR_START` phase (for Year > 0) to display active events and key KPIs (Real GDP, Inflation, Unemployment) from the previous year, including small trend plots for these KPIs.
+    5.  **Improve Stance Icons:** Replace the simple arrow characters (↑/↓) used for card stance indicators with more explicit symbols like `(+)` / `(-)` or potentially color cues in the card rendering logic.
+    6.  **Fix Sector Summary N/As:** Re-verify variable keys used in `display_sector_summary` against `chapter_11_model_growth.py` definitions and correct any mismatches (e.g., for Investment, Bank Equity, CB Assets).
+    7.  **Adjust Sidebar Width/Formatting:** Attempt to adjust `st.sidebar.columns` widths in `display_metric_sparkline` to give metric values more space and prevent truncation (e.g., `[1, 4, 2]` instead of `[1, 3, 2]`).
+    8.  **Reduce Effect Magnitudes:** Halve all numeric `effect` values in `cards.py` and `events.py`.
+    9.  **Improve Card Descriptions:** Review and rewrite the `desc` field for all cards in `cards.py` to provide more realistic economic context and better align with the card title and its parameter effect.

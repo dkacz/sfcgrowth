@@ -11,71 +11,29 @@ POLICY_CARDS = {
         "type": "Monetary",
         "stance": "contractionary",
         "param": "Rbbar",
-        "effect": 0.005, # +0.5%
-        "desc": "Increase the central bank policy rate. Secondary: Higher lending rates, reduced investment."
+        "effect": 0.015, # Boosted from 0.010
+        "desc": "The central bank raises its target bill rate (Rbbar) to combat inflation or cool an overheating economy. Expect higher borrowing costs (Rl) and reduced investment (Ik)."
     },
     "Interest Rate Cut": { # Added counterpart for balance
         "type": "Monetary",
         "param": "Rbbar",
         "stance": "expansionary",
-        "effect": -0.005, # -0.5%
-        "desc": "Decrease the central bank policy rate. Secondary: Lower lending rates, potential for increased investment."
-    },
-    "Forward Guidance (Expansionary)": {
-        "type": "Monetary",
-        "param": "RA", # Affects expectations
-        "stance": "expansionary",
-        "effect": 0.002, # +0.2% (proxy effect on expectations)
-        "desc": "Signal lower future rates. Secondary: Affects expected sales and investment positively."
-    },
-     "Forward Guidance (Contractionary)": {
-        "type": "Monetary",
-        "param": "RA", # Affects expectations
-        "stance": "contractionary",
-        "effect": -0.002, # -0.2% (proxy effect on expectations)
-        "desc": "Signal higher future rates. Secondary: Affects expected sales and investment negatively."
+        "effect": -0.015, # Boosted from -0.010
+        "desc": "The central bank lowers its target bill rate (Rbbar) to stimulate growth or fight deflation. Expect lower borrowing costs (Rl) and potentially increased investment (Ik)."
     },
     "Quantitative Easing": {
         "type": "Monetary",
         "param": "ADDbl", # Spread between long/short rates
         "stance": "expansionary",
-        "effect": -0.003, # -0.3% spread reduction
-        "desc": "Central bank buys assets. Secondary: Lower long-term rates, higher asset prices."
+        "effect": -0.008, # Boosted from -0.005, rounded
+        "desc": "The central bank injects liquidity by purchasing long-term bonds, aiming to reduce the yield spread (ADDbl) and lower long-term borrowing costs, potentially boosting asset prices (Pe)."
     },
     "Quantitative Tightening": { # Added counterpart
         "type": "Monetary",
         "param": "ADDbl", # Spread between long/short rates
         "stance": "contractionary",
-        "effect": 0.003, # +0.3% spread increase
-        "desc": "Central bank sells assets/lets them mature. Secondary: Higher long-term rates, lower asset prices."
-    },
-    "Lower Reserve Requirements": {
-        "type": "Monetary",
-        "param": "ro",
-        "stance": "expansionary",
-        "effect": -0.02, # -2% points
-        "desc": "Decrease bank reserve requirements. Secondary: Increases bank lending capacity."
-    },
-    "Raise Reserve Requirements": {
-        "type": "Monetary",
-        "param": "ro",
-        "stance": "contractionary",
-        "effect": 0.02, # +2% points
-        "desc": "Increase bank reserve requirements. Secondary: Reduces bank lending capacity."
-    },
-    "Ease Bank Capital Requirements": {
-        "type": "Monetary",
-        "param": "NCAR", # Normal Capital Adequacy Ratio
-        "stance": "expansionary",
-        "effect": -0.02, # -2% points
-        "desc": "Lower the required capital banks must hold. Secondary: Affects bank lending and risk-taking (potentially increases)."
-    },
-    "Tighten Bank Capital Requirements": {
-        "type": "Monetary",
-        "param": "NCAR", # Normal Capital Adequacy Ratio
-        "stance": "contractionary",
-        "effect": 0.02, # +2% points
-        "desc": "Raise the required capital banks must hold. Secondary: Affects bank lending and risk-taking (potentially decreases)."
+        "effect": 0.008, # Boosted from 0.005, rounded
+        "desc": "The central bank withdraws liquidity by selling assets or letting them mature, widening the yield spread (ADDbl). Aims to increase long-term borrowing costs and moderate asset prices (Pe)."
     },
     # Note: Bank Liquidity Ratio Targets (bot/top) affect Rm adjustment speed (xim1/xim2), not a direct param change in the same way.
     # This requires modifying the Rm equation logic or adjusting xim1/xim2, which is more complex. Deferring for now.
@@ -85,42 +43,42 @@ POLICY_CARDS = {
         "type": "Fiscal",
         "stance": "expansionary",
         "param": "GRg", # Growth rate of real gov spending
-        "effect": 0.005, # +0.5% growth rate
-        "desc": "Boost government expenditure growth. Secondary: Affects aggregate demand and employment."
+        "effect": 0.015, # Boosted from 0.010
+        "desc": "Boost the growth rate of real government spending (GRg). This fiscal stimulus directly increases aggregate demand (Yk) and tends to raise employment (N)."
     },
     "Decrease Government Spending": {
         "type": "Fiscal",
         "param": "GRg", # Growth rate of real gov spending
         "stance": "contractionary",
-        "effect": -0.005, # -0.5% growth rate
-        "desc": "Reduce government expenditure growth. Secondary: Affects aggregate demand and employment."
+        "effect": -0.015, # Boosted from -0.010
+        "desc": "Reduce the growth rate of real government spending (GRg). This fiscal consolidation directly dampens aggregate demand (Yk) and tends to lower employment (N)."
     },
     "Cut Income Tax Rate": {
         "type": "Fiscal",
         "param": "theta",
         "stance": "expansionary",
-        "effect": -0.02, # -2% points
-        "desc": "Lower the income tax rate. Secondary: Affects disposable income and consumption."
+        "effect": -0.019, # Boosted from -0.0125, rounded
+        "desc": "Implement a broad cut in the average income tax rate (theta). This increases household disposable income (YDr) and typically stimulates consumption (Ck)."
     },
     "Raise Income Tax Rate": {
         "type": "Fiscal",
         "param": "theta",
         "stance": "contractionary",
-        "effect": 0.02, # +2% points
-        "desc": "Increase the income tax rate. Secondary: Affects disposable income and consumption."
+        "effect": 0.019, # Boosted from 0.0125, rounded
+        "desc": "Implement a broad increase in the average income tax rate (theta). This reduces household disposable income (YDr) and typically dampens consumption (Ck)."
     },
-    "Boost Productivity Growth": { # Renamed from card doc for clarity
-        "type": "Fiscal", # Often result of fiscal policy (R&D, education)
-        "param": "GRpr", # Growth rate of productivity
-        "stance": "expansionary", # Considered expansionary in effect
-        "effect": 0.003, # +0.3% growth rate
-        "desc": "Implement policies to enhance productivity growth. Secondary: Affects labor productivity and wages."
+    "Make Tax System More Progressive": { # Renamed, uses alpha1 as proxy
+        "type": "Fiscal",
+        "param": "alpha1", # Propensity to consume
+        "stance": "expansionary",
+        "effect": 0.023, # Boosted from 0.015, rounded
+        "desc": "Restructure the tax system to increase the burden on higher incomes relative to lower incomes. This tends to increase the overall propensity to consume (alpha1), boosting aggregate demand."
     },
-     "Productivity Slowdown Policy": { # Added counterpart
-        "type": "Fiscal", # Can be policy induced (bad regulation etc)
-        "param": "GRpr", # Growth rate of productivity
+    "Make Tax System Less Progressive": { # Renamed, uses alpha1 as proxy
+        "type": "Fiscal",
+        "param": "alpha1", # Propensity to consume
         "stance": "contractionary",
-        "effect": -0.003, # -0.3% growth rate
-        "desc": "Policies hindering productivity growth take effect. Secondary: Affects labor productivity and wages."
+        "effect": -0.023, # Boosted from -0.015, rounded
+        "desc": "Restructure the tax system to decrease the burden on higher incomes relative to lower incomes. This tends to decrease the overall propensity to consume (alpha1), dampening aggregate demand."
     },
 }

@@ -29,7 +29,7 @@ def format_value(value, include_sign=False):
 
 def display_balance_sheet_matrix(solution):
     """Displays the balance sheet matrix for a given solution state."""
-    st.markdown("#### Table 11.1: Balance Sheet")
+    st.markdown("#### Balance Sheet Matrix")
     st.caption("Assets (+) and liabilities (-) of each sector.")
 
     # Extract values
@@ -95,7 +95,7 @@ def display_balance_sheet_matrix(solution):
 
 def display_revaluation_matrix(solution, prev_solution):
     """Displays the revaluation matrix comparing solution to prev_solution."""
-    st.markdown("#### Table 11.2: Revaluation Account")
+    st.markdown("#### Revaluation Matrix")
     st.caption("Capital gains (+) or losses (-) due to changes in asset prices.")
 
     # Extract and calculate values
@@ -136,7 +136,7 @@ def display_revaluation_matrix(solution, prev_solution):
 
 def display_transaction_flow_matrix(solution, prev_solution):
     """Displays the transaction flow matrix comparing solution to prev_solution."""
-    st.markdown("#### Table 11.3: Transaction Flow Matrix")
+    st.markdown("#### Transaction Flow Matrix")
     st.caption("Transactions between sectors for the period.")
 
     # --- Extract values ---

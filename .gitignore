@@ -64,8 +64,10 @@ venv.bak/
 # Icon Generation
 split_icons.py
 #assets/icons/
+scripts/split_characters.py
 
 
 # Cloned Repositories (for debugging/inspection)
 altair_src/
 streamlit_src/
+libs/pylinsolve/

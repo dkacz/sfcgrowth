@@ -577,11 +577,12 @@ if __name__ == "__main__":
 
     print("Baseline model solved successfully")
 
-# These lines outside the if block will be executed on import
-baseline = create_growth_model()
-baseline.set_values(growth_parameters)
-baseline.set_values(growth_exogenous)
-baseline.set_values(growth_variables)
+# # These lines outside the if block will be executed on import
+# baseline = create_growth_model()
+# baseline.set_values(growth_parameters)
+# baseline.set_values(growth_exogenous)
+# baseline.set_values(growth_variables)
 
-for _ in range(100):
-    baseline.solve(iterations=200, threshold=1e-6)
+#
+# for _ in range(100):
+#     baseline.solve(iterations=200, threshold=1e-6)

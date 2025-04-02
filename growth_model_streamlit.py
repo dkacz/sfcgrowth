@@ -31,8 +31,9 @@ try:
         display_balance_sheet_matrix, display_revaluation_matrix,
         display_transaction_flow_matrix
     )
+    from characters import CHARACTERS # Import CHARACTERS at top level
 except ImportError as e:
-    st.error(f"Failed to import game components: {e}. Ensure cards.py, events.py, game_mechanics.py, matrix_display.py are present.")
+    st.error(f"Failed to import game components: {e}. Ensure cards.py, events.py, game_mechanics.py, matrix_display.py, characters.py are present.")
     st.stop()
 
 
@@ -45,6 +46,7 @@ CARDS_TO_DRAW_PER_YEAR = 4 # Draw 4 cards per year as requested
 MAX_CARDS_PER_ROW = 4 # For card display layout
 ICON_DIR = "assets/icons" # Define icon directory
 SPARKLINE_YEARS = 10 # Number of years for sparkline history
+GAME_END_YEAR = 15 # Define the final year (Increased to 15)
 
 # --- Icon Mapping ---
 # Maps internal keys/types to filenames in ICON_DIR
@@ -86,7 +88,8 @@ VARIABLE_DESCRIPTIONS = {
     "CAR": "Capital Adequacy Ratio: Ratio of a bank's capital to its risk-weighted assets.",
     "Lhs": "Loans to Households: Outstanding loan balances held by the household sector.",
     "PSBR": "Public Sector Borrowing Requirement: The government's budget deficit.",
-    "GD_GDP": "Government Debt to GDP Ratio: Ratio of total government debt to nominal GDP."
+    "GD_GDP": "Government Debt to GDP Ratio: Ratio of total government debt to nominal GDP.",
+    "GovBalance_GDP": "Government Balance as % of GDP: Surplus (+) or Deficit (-)."
 }
 
 
@@ -192,7 +195,8 @@ def get_icon_data_uri(icon_key):
         base64_string = get_base64_of_bin_file(filepath)
         if base64_string:
             return f"data:image/png;base64,{base64_string}"
-    return None # Return None if key not in map or file error
+    # Return a placeholder or empty string if icon not found
+    return "" # Changed to return empty string
 
 # --- Logo Handling ---
 @st.cache_data # Cache the encoded logo
@@ -280,13 +284,55 @@ st.markdown("""
         border-bottom: 1px solid #000000 !important; /* Underline headers */
         padding-bottom: 0.25rem;
     }
+    /* --- Character Selection --- */
+    .character-column {
+        border: 2px solid transparent; /* Default no border */
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        background-color: rgba(255, 255, 255, 0.5); /* Slightly transparent white */
+        height: 100%; /* Allow column to take full height */
+        display: flex; /* Use flexbox */
+        flex-direction: column; /* Stack children vertically */
+        transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+    }
+    .character-column.selected {
+        border-color: #DAA520 !important; /* Gold border when selected */
+        background-color: rgba(250, 250, 210, 0.8); /* Light yellow tint when selected */
+    }
+    .character-column img {
+        max-width: 80%;
+        max-height: 280px; /* Adjusted max-height */
+        height: auto;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+
     /* Sidebar headers */
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4, [data-testid="stSidebar"] h5, [data-testid="stSidebar"] h6 {
          font-family: 'Oswald', sans-serif !important;
          color: #000000 !important;
          border-bottom: none !important; /* No underline in sidebar */
     }
+    /* Objective List Styling */
+    .character-column ul {
+        list-style-type: none; /* Remove default bullets */
+        padding-left: 5px; /* Adjust left padding */
+        margin-top: 0.5rem; /* Add some space above the list */
+        text-align: left; /* Align text to the left */
+        padding-bottom: 0.5rem; /* Add some padding below objectives */
+    }
+    .character-column li {
+        margin-bottom: 0.3rem; /* Space between objectives */
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Vertically align icon and text */
+    }
 
+    /* Make description take available space, pushing objectives down */
+    .character-column .description-wrapper { /* Target the new wrapper div */
+        flex-grow: 1; /* Allow description wrapper to grow */
+        margin-bottom: 0.5rem; /* Add space below description */
+    }
 
     /* --- Dashboard Metrics (Sidebar) --- */
     .stMetric {
@@ -325,7 +371,7 @@ st.markdown("""
         border-radius: 8px;
         margin-bottom: 15px;
         background-color: #FAFAD2; /* Parchment background */
-        height: 250px; /* Fixed height for cards */
+        height: 300px; /* Increased height for cards */
         display: flex;
         flex-direction: column;
         padding: 0; /* Remove padding from container */
@@ -347,7 +393,7 @@ st.markdown("""
         color: #FFFFFF !important; /* White text for title */
     }
     .card-top-bar.monetary { background-color: #0072BB; } /* Monopoly Blue */
-    .card-top-bar.fiscal { background-color: #1FB25A; } /* Monopoly Green */
+    .card-top-bar.fiscal { background-color: #A0522D; } /* Sienna Brown for Fiscal */
     .card-top-bar.default { background-color: #8B4513; } /* Brown */
 
     .card-title {
@@ -514,7 +560,10 @@ if "game_initialized" not in st.session_state:
     st.session_state.game_initialized = True
     logging.info("--- Initializing Game State (Starting Year 0) ---")
     st.session_state.current_year = 0
-    st.session_state.game_phase = "YEAR_START" # Initial phase
+    # Start with CHARACTER_SELECTION phase
+    st.session_state.game_phase = "CHARACTER_SELECTION"
+    st.session_state.selected_character_id = None
+    st.session_state.game_objectives = {}
 
     # --- Model Initialization (No Initial Solve) ---
     try:
@@ -558,20 +607,68 @@ if "game_initialized" not in st.session_state:
     # --- End of Model Initialization ---
 
     # --- Game Variables Initialization ---
-    st.session_state.deck = create_deck()
- # Still create the deck
+    # Deck creation moved to after character selection
+    st.session_state.deck = [] # Initialize empty deck
     st.session_state.player_hand = [] # Initialize empty hand
-    logging.info("Initialized deck (no initial hand draw).")
+    st.session_state.discard_pile = [] # Initialize discard pile
+    logging.info("Initialized empty deck, hand, and discard pile.")
     st.session_state.active_events_this_year = []
     st.session_state.cards_selected_this_year = []
     st.session_state.history = [] # Initialize history as empty
     st.session_state.initial_params = {} # For year 0 adjustments
+    st.session_state.temporary_effects = [] # Initialize list to track temporary event effects
 
     logging.info("Game Initialized at Year 0.")
     st.rerun() # Rerun to start the flow
 
 
 # --- Sidebar ---
+# Display Character Image and Objectives side-by-side if character selected
+if st.session_state.get('selected_character_id'):
+    char_id = st.session_state.selected_character_id
+    char_data = CHARACTERS.get(char_id)
+
+    # Create two columns in the sidebar
+    col1, col2 = st.sidebar.columns([1, 2]) # Adjust ratio if needed (e.g., [1, 3])
+
+    # --- Column 1: Character Image ---
+    with col1:
+        if char_data:
+            img_path = char_data.get('image_path')
+            if img_path:
+                try:
+                    img_data_uri = get_base64_of_bin_file(img_path)
+                    if img_data_uri:
+                        # Display image, slightly smaller width
+                        st.image(f"data:image/png;base64,{img_data_uri}", width=70, use_container_width=False)
+ # Reduced width, use use_container_width
+                    else:
+                        logging.warning(f"Could not encode image for character {char_id} at path: {img_path}")
+                except Exception as e:
+                    logging.error(f"Error loading/displaying character image {img_path}: {e}")
+
+    # --- Column 2: Objectives ---
+    with col2:
+        st.markdown(f"**Objectives (Y{GAME_END_YEAR})**") # Use bold markdown, shorter title
+        objectives = st.session_state.get('game_objectives', {})
+        if objectives:
+            for obj_key, details in objectives.items():
+                target_str = ""
+                if details['target_type'] == 'percent':
+                    target_str = f"{details['target_value']:.0f}%"
+                elif details['target_type'] == 'index':
+                     target_str = f"{details['target_value']:.0f}"
+                else:
+                     target_str = f"{details['target_value']}" # Default
+                # Display objective using smaller text
+                st.markdown(f"<small>- {details['label']}: {details['condition']} {target_str}</small>", unsafe_allow_html=True)
+        else:
+            st.caption("Objectives not set.")
+
+    # Add divider below the columns
+    st.sidebar.divider()
+
+
 if st.session_state.current_year == 0 or not st.session_state.history: # Check year and history
      st.sidebar.caption("Waiting for first year results...")
 else: # Only display if Year > 0 and history exists
@@ -630,8 +727,16 @@ else: # Only display if Year > 0 and history exists
             elif metric_key == 'GD_GDP':
                 gd_val = sol.get('GD')
                 y_val = sol.get('Y')
-                if gd_val is not None and y_val is not None and np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(y_val, 0):
+                if gd_val is not None and y_val is not None and np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0):
                     val = (gd_val / y_val) * 100 # Calculate ratio and scale to percentage
+                else:
+                    val = np.nan # Cannot calculate
+            elif metric_key == 'GovBalance_GDP': # New metric calculation
+                psbr_val = sol.get('PSBR')
+                y_val = sol.get('Y')
+                if psbr_val is not None and y_val is not None and np.isfinite(psbr_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0):
+                    # Calculate balance (-PSBR) as % of GDP
+                    val = (-psbr_val / y_val) * 100
                 else:
                     val = np.nan # Cannot calculate
             elif metric_key in ['PI', 'GRk', 'Rb', 'Rl', 'Rm', 'BUR', 'CAR']: # Rates/Ratios need scaling (excluding GD_GDP as it's handled above)
@@ -699,7 +804,12 @@ else: # Only display if Year > 0 and history exists
             "mark": {"type": "line", "point": True}, # Show points
             "encoding": {
                 "x": {"field": "Year", "type": "ordinal", "axis": None}, # Hide X axis
-                "y": {"field": metric_key, "type": "quantitative", "axis": None}, # Hide Y axis
+                "y": {
+                    "field": metric_key,
+                    "type": "quantitative",
+                    "axis": None,
+                    "scale": {"zero": True} # Ensure zero is included in the scale
+                }, # Hide Y axis
                 "tooltip": [ # Enable tooltips
                     {"field": "Year", "type": "ordinal"},
                     {"field": metric_key, "type": "quantitative", "format": ".2f"} # Format tooltip value
@@ -740,14 +850,25 @@ else: # Only display if Year > 0 and history exists
             icon_key = "Yk" # Use Yk icon
             format_func = lambda x: f"{x:.1f}" if np.isfinite(x) else "N/A" # Custom format for index
         # Special handling for Gov Debt / GDP Ratio
-        elif metric_key == 'GD_GDP':
+        elif metric_key == 'GD_GDP': # Keep this for the core metric display
             gd_val = latest_history_entry.get('GD', np.nan)
             y_val = latest_history_entry.get('Y', np.nan)
-            if np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(y_val, 0):
+            if np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0):
                 current_val = gd_val / y_val # Calculate the ratio
             else:
                 current_val = np.nan # Cannot calculate ratio
             icon_key = "GD_GDP" # Use correct icon key
+            format_func = format_percent # Use percentage format
+
+        # Special handling for Gov Balance / GDP Ratio
+        elif metric_key == 'GovBalance_GDP':
+            psbr_val = latest_history_entry.get('PSBR', np.nan)
+            y_val = latest_history_entry.get('Y', np.nan)
+            if np.isfinite(psbr_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0):
+                current_val = -psbr_val / y_val # Calculate balance ratio
+            else:
+                current_val = np.nan
+            icon_key = "PSBR" # Reuse deficit icon for now
             format_func = format_percent # Use percentage format
 
         icon_data_uri = get_icon_data_uri(icon_key)
@@ -771,39 +892,56 @@ else: # Only display if Year > 0 and history exists
                     logging.error(f"Error creating st.vega_lite_chart for {metric_key}: {e}")
 
 
+    # --- Core Metrics Display ---
+    st.sidebar.markdown("##### Core Economic Indicators")
+
+    # Fetch current and previous values for delta calculation
     yk_val = latest_history_entry.get('Yk', np.nan)
     pi_val = latest_history_entry.get('PI', np.nan)
     er_val = latest_history_entry.get('ER', np.nan)
-    grk_val = latest_history_entry.get('GRk', np.nan)
+    rb_val = latest_history_entry.get('Rb', np.nan)
+    gd_val = latest_history_entry.get('GD', np.nan)
+    y_val = latest_history_entry.get('Y', np.nan)
+    psbr_val = latest_history_entry.get('PSBR', np.nan)
+    grk_val = latest_history_entry.get('GRk', np.nan) # Added GRk back
+
     yk_prev = prev_year_data.get('Yk') if prev_year_data else np.nan
     pi_prev = prev_year_data.get('PI') if prev_year_data else np.nan
     er_prev = prev_year_data.get('ER') if prev_year_data else np.nan
-    grk_prev = prev_year_data.get('GRk') if prev_year_data else np.nan
-    delta_yk = None if is_first_result_year else get_delta(yk_val, yk_prev)
+    rb_prev = prev_year_data.get('Rb') if prev_year_data else np.nan
+    gd_prev = prev_year_data.get('GD') if prev_year_data else np.nan
+    y_prev = prev_year_data.get('Y') if prev_year_data else np.nan
+    psbr_prev = prev_year_data.get('PSBR') if prev_year_data else np.nan
+    grk_prev = prev_year_data.get('GRk') if prev_year_data else np.nan # Added GRk back
+
+    # Calculate deltas (handle potential division by zero or NaN)
+    delta_yk_index = None # Delta for index is tricky, maybe show absolute change?
     delta_pi = None if is_first_result_year else get_delta_percent(pi_val, pi_prev)
-    unemp_val = 1 - er_val if np.isfinite(er_val) else np.nan
-    unemp_prev = 1 - er_prev if er_prev is not None and np.isfinite(er_prev) else np.nan
-    delta_unemp = None if is_first_result_year else get_delta_percent(unemp_val, unemp_prev)
-    delta_grk = None if is_first_result_year else get_delta_percent(grk_val, grk_prev)
+    delta_unemp = None if is_first_result_year else get_delta_percent((1-er_val), (1-er_prev))
+    delta_rb = None if is_first_result_year else get_delta_percent(rb_val, rb_prev)
+    delta_grk = None if is_first_result_year else get_delta_percent(grk_val, grk_prev) # Added GRk back
 
-    # --- Display Core Metrics ---
-    # Display Yk as an index
-    yk_index_val = np.nan
-    yk_index_prev = np.nan
-    base_yk = st.session_state.get('base_yk')
-    if base_yk and not np.isclose(base_yk, 0):
-        if np.isfinite(yk_val): yk_index_val = (yk_val / base_yk) * 100
-        if prev_year_data and np.isfinite(yk_prev): yk_index_prev = (yk_prev / base_yk) * 100
-    # Calculate delta for the index (percentage point change from previous index value)
-    # Calculate delta for the index (percentage change from previous index value)
-    delta_yk_index = None if is_first_result_year else get_delta(yk_index_val, yk_index_prev)
-    display_metric_sparkline("Yk_Index", "Real GDP Index (Y1=100)", "Yk", lambda x: f"{x:.1f}" if np.isfinite(x) else "N/A", delta_yk_index)
+    # Calculate current and previous GD/GDP ratio
+    gd_gdp_curr = (gd_val / y_val) if np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0) else np.nan
+    gd_gdp_prev = (gd_prev / y_prev) if np.isfinite(gd_prev) and np.isfinite(y_prev) and not np.isclose(float(y_prev), 0) else np.nan
+    delta_gd_gdp = None if is_first_result_year else get_delta_percent(gd_gdp_curr, gd_gdp_prev)
 
-    display_metric_sparkline("PI", "Inflation (PI)", "PI", format_percent, delta_pi)
-    display_metric_sparkline("Unemployment", "Unemployment Rate", "ER", format_percent, delta_unemp)
-    display_metric_sparkline("GRk", "Capital Growth (GRk)", "GRk", format_percent, delta_grk)
+    # Calculate current and previous Gov Balance/GDP ratio
+    # Note: PSBR is deficit (positive value), so balance is -PSBR
+    gov_bal_gdp_curr = (-psbr_val / y_val) if np.isfinite(psbr_val) and np.isfinite(y_val) and y_val != 0 else np.nan
+    gov_bal_gdp_prev = (-psbr_prev / y_prev) if np.isfinite(psbr_prev) and np.isfinite(y_prev) and y_prev != 0 else np.nan
+    delta_gov_bal_gdp = None if is_first_result_year else get_delta_percent(gov_bal_gdp_curr, gov_bal_gdp_prev)
 
 
+    # Display core metrics (Using original metrics from commit)
+    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index)
+    display_metric_sparkline('PI', 'Inflation Rate', 'PI', format_percent, delta_pi)
+    display_metric_sparkline('Unemployment', 'Unemployment Rate', 'ER', format_percent, delta_unemp)
+    display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp) # Moved here
+
+    st.sidebar.divider()
+
+    # --- Sector Expanders (Restored from commit) ---
     st.sidebar.markdown("##### Financial & Banking")
     rb_val = latest_history_entry.get('Rb', np.nan)
     rl_val = latest_history_entry.get('Rl', np.nan)
@@ -842,7 +980,7 @@ else: # Only display if Year > 0 and history exists
 
     # Calculate Gov Debt / GDP Ratio, handle potential division by zero or NaN
     gd_gdp_val = np.nan
-    if np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(y_val, 0):
+    if np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0):
         gd_gdp_val = gd_val / y_val
     else:
         logging.warning(f"Cannot calculate GD/GDP for year {st.session_state.current_year}. GD={gd_val}, Y={y_val}")
@@ -850,7 +988,7 @@ else: # Only display if Year > 0 and history exists
     gd_gdp_prev = np.nan
     if prev_year_data:
         gd_prev = prev_year_data.get('GD', np.nan) # Corrected syntax
-        if np.isfinite(gd_prev) and np.isfinite(y_prev) and not np.isclose(y_prev, 0):
+        if np.isfinite(gd_prev) and np.isfinite(y_prev) and not np.isclose(float(y_prev), 0):
             gd_gdp_prev = gd_prev / y_prev
         else:
              logging.warning(f"Cannot calculate previous GD/GDP. GD_prev={gd_prev}, Y_prev={y_prev}")
@@ -858,8 +996,8 @@ else: # Only display if Year > 0 and history exists
     delta_gd_gdp = None if is_first_result_year else get_delta_percent(gd_gdp_val, gd_gdp_prev)
 
     # --- Display Government Metrics ---
-    display_metric_sparkline("PSBR", "Gov Deficit (PSBR)", "PSBR", format_value, delta_psbr)
-    display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp)
+    # Display Gov Balance / GDP instead of absolute deficit
+    display_metric_sparkline("GovBalance_GDP", "Gov Balance / GDP", "PSBR", format_percent, delta_gov_bal_gdp)
 
 # --- End of Dashboard Display ---
 
@@ -883,9 +1021,11 @@ def display_sector_summary(latest_solution):
         f_k = latest_solution.get('K', np.nan)
         f_i = latest_solution.get('INV', np.nan) # Changed key from I to INV
         f_fu = latest_solution.get('FUf', np.nan) # Corrected key for Firm Retained Earnings
+        f_grk = latest_solution.get('GRk', np.nan) # Get Capital Growth Rate
         st.metric(label="Capital Stock (K)", value=format_value(f_k))
         st.metric(label="Investment (I)", value=format_value(f_i))
         st.metric(label="Retained Earnings (FUf)", value=format_value(f_fu))
+        st.metric(label="Capital Growth (GRk)", value=format_percent(f_grk)) # Display GRk here
 
     # Government
     with st.sidebar.expander("Government", expanded=False):
@@ -941,557 +1081,571 @@ if st.session_state.current_year > 0 and st.session_state.history:
 # Removed Phase Subheader
 
 # --- Phase Logic ---
-if st.session_state.game_phase == "YEAR_START":
+if st.session_state.game_phase == "CHARACTER_SELECTION":
+    st.header("Choose Your Economic Advisor")
+    st.write("Select the advisor whose economic philosophy and objectives align with your strategy.")
 
-    # --- Year 0: Initial Setup ---
-    if st.session_state.current_year == 0:
-        # Removed instructional text
-        if "initial_params_set" not in st.session_state:
-             if "sfc_model_object" not in st.session_state:
-                 st.error("Model object not found in session state for initial parameter adjustment.")
-                 st.stop()
+    cols = st.columns(len(CHARACTERS))
+    selected_id = st.session_state.selected_character_id
 
-             # Display Start Game button first
-             if st.button("Start Game"): # Changed button text
-                 st.session_state.game_phase = "SIMULATION" # Skip POLICY for Year 0->1
-                 st.session_state.initial_params_set = True # Lock initial params
-                 if "year_start_processed" in st.session_state: del st.session_state.year_start_processed # Clean up flag
-                 st.rerun()
+    for i, (char_id, char_data) in enumerate(CHARACTERS.items()):
+        with cols[i]:
+            container_class = "character-column"
+            if char_id == selected_id:
+                container_class += " selected"
 
-             # Then display the less prominent advanced options
-             with st.expander("Advanced: Set Initial Economic Conditions", expanded=False): # Set expanded=False
-                 st.caption("Adjust the starting parameters for the economy. These settings are locked once you start the game.")
-                 initial_params_changed = False
-                 initial_params_to_set = {}
-                 # Define categories of parameters for better organization
-                 parameter_categories = {
-                     "Growth Parameters": [
-                         ("gamma0", "Base growth rate of real capital stock (gamma0)", 0.00122, 0.0, 0.01),
-                         ("gammar", "Effect of interest rate on capital growth (gammar)", 0.1, 0.0, 0.5),
-                         ("gammau", "Effect of utilization on capital growth (gammau)", 0.05, 0.0, 0.5),
-                         ("delta", "Rate of depreciation of fixed capital (delta)", 0.10667, 0.05, 0.2),
-                     ],
-                     "Consumption Parameters": [
-                         ("alpha1", "Propensity to consume out of income (alpha1)", 0.75, 0.5, 1.0),
-                         ("alpha2", "Propensity to consume out of wealth (alpha2)", 0.064, 0.01, 0.2),
-                         ("eps", "Speed of adjustment in income expectations (eps)", 0.5, 0.1, 1.0),
-                     ],
-                     "Government Parameters": [
-                         ("GRg", "Growth rate of government expenditures (GRg)", 0.03, -0.05, 0.1),
-                         ("theta", "Income tax rate (theta)", 0.22844, 0.1, 0.4),
-                     ],
-                     "Bank/Monetary Parameters": [
-                         ("Rbbar", "Interest rate on bills (Rbbar)", 0.035, 0.0, 0.1),
-                         ("ADDbl", "Spread between bonds and bills rate (ADDbl)", 0.02, 0.0, 0.05),
-                         ("NPLk", "Proportion of non-performing loans (NPLk)", 0.02, 0.0, 0.1),
-                         ("NCAR", "Normal capital adequacy ratio (NCAR)", 0.1, 0.05, 0.2),
-                         ("bot", "Bottom value for bank net liquidity ratio (bot)", 0.05, 0.0, 0.1),
-                         ("top", "Top value for bank net liquidity ratio (top)", 0.12, 0.1, 0.2),
-                         ("ro", "Reserve requirement parameter (ro)", 0.05, 0.01, 0.1),
-                         ("Rln", "Normal interest rate on loans (Rln)", 0.07, 0.02, 0.15),
-                     ],
-                     "Labor Market Parameters": [
-                         ("omega0", "Parameter affecting target real wage (omega0)", -0.20594, -0.5, 0.0),
-                         ("omega1", "Parameter in wage equation (omega1)", 1.005, 0.9, 1.1), # Default updated
-                         ("omega2", "Parameter in wage equation (omega2)", 2.0, 1.0, 3.0),
-                         ("omega3", "Speed of wage adjustment (omega3)", 0.45621, 0.1, 0.9),
-                         ("GRpr", "Growth rate of productivity (GRpr)", 0.03, 0.0, 0.1),
-                         ("BANDt", "Upper band of flat Phillips curve (BANDt)", 0.07, 0.0, 0.1), # Default updated
-                         ("BANDb", "Lower band of flat Phillips curve (BANDb)", 0.05, 0.0, 0.1), # Default updated
-                         ("etan", "Speed of employment adjustment (etan)", 0.6, 0.1, 1.0),
-                         ("Nfe", "Full employment level (Nfe)", 94.76, 80.0, 110.0),
-                     ],
-                     "Personal Loan Parameters": [
-                         ("eta0", "Base ratio of new loans to personal income (eta0)", 0.07416, 0.0, 0.2),
-                         ("etar", "Effect of real interest rate on loan ratio (etar)", 0.4, 0.0, 1.0),
-                         ("deltarep", "Ratio of loan repayments to stock (deltarep)", 0.1, 0.05, 0.2),
-                     ],
-                     "Firm Parameters": [
-                         ("beta", "Speed of adjustment in sales expectations (beta)", 0.5, 0.1, 1.0),
-                         ("gamma", "Speed of inventory adjustment (gamma)", 0.15, 0.0, 0.5),
-                         ("sigmat", "Target inventories to sales ratio (sigmat)", 0.2, 0.1, 0.3),
-                         ("sigman", "Param. influencing historic unit costs (sigman)", 0.1666, 0.1, 0.3),
-                         ("eps2", "Speed of markup adjustment (eps2)", 0.8, 0.1, 1.0),
-                         ("psid", "Ratio of dividends to gross profits (psid)", 0.15255, 0.1, 0.3),
-                         ("psiu", "Ratio of retained earnings to investments (psiu)", 0.92, 0.7, 1.0),
-                         ("RA", "Random shock to expectations on real sales (RA)", 0.0, -0.05, 0.05),
-                     ],
-                     "Portfolio Parameters": [
-                         ("lambda20", "Param in household demand for bills (lambda20)", 0.25, 0.1, 0.4),
-                         ("lambda30", "Param in household demand for bonds (lambda30)", -0.04341, -0.1, 0.1),
-                         ("lambda40", "Param in household demand for equities (lambda40)", 0.67132, 0.5, 0.9),
-                         ("lambdab", "Parameter determining bank dividends (lambdab)", 0.0153, 0.01, 0.03),
-                         ("lambdac", "Parameter in household demand for cash (lambdac)", 0.05, 0.01, 0.1),
-                     ],
-                 }
+            # Use markdown with inline style for background image if available
+            img_path = char_data.get('image_path')
+            img_html = ""
+            if img_path:
+                try:
+                    img_data_uri = get_base64_of_bin_file(img_path)
+                    if img_data_uri:
+                        img_html = f'<img src="data:image/png;base64,{img_data_uri}" alt="{char_data["name"]}">'
+                    else:
+                        img_html = f'<p style="color: red;">Image not found: {img_path}</p>'
+                except Exception as e:
+                    img_html = f'<p style="color: red;">Error loading image: {e}</p>'
+                    logging.error(f"Error loading character image {img_path}: {e}")
 
-                 for category, params in parameter_categories.items():
-                     st.markdown(f"**{category}**")
-                     for param_key, param_name, default_val, min_val, max_val in params:
-                        # Read from the state dict where initial values are stored, not getattr
-                         current_model_val = st.session_state.initial_state_dict.get(param_key, default_val)
-                         slider_key = f"initial_slider_{param_key}"
-                         # Calculate step size dynamically based on range
-                         range_val = float(max_val) - float(min_val)
-                         if range_val <= 0.01: step_size = 0.0001
-                         elif range_val <= 0.1: step_size = 0.001
-                         elif range_val <= 1.0: step_size = 0.01
-                         elif range_val <= 10.0: step_size = 0.1
-                         else: step_size = 1.0 # Adjust if needed for very large ranges
+            # --- Objective List Generation with Icons ---
+            # Mapping from objective keys to icon keys in ICON_FILENAME_MAP
+            objective_icon_map = {
+                "gdp_index": "Yk",
+                "unemployment": "ER", # Using Employment Rate icon
+                "inflation": "PI",
+                "debt_gdp": "GD_GDP" # Using Gov Debt/GDP icon
+            }
 
-                         # Determine format based on step size
-                         if step_size < 0.001: format_spec = "%.4f"
-                         elif step_size < 0.01: format_spec = "%.3f"
-                         elif step_size < 0.1: format_spec = "%.2f"
-                         else: format_spec = "%.1f"
-
-                         if slider_key not in st.session_state.initial_params:
-                             try: initial_float_val = float(current_model_val)
-                             except: initial_float_val = float(default_val)
-                             st.session_state.initial_params[slider_key] = initial_float_val
-                         new_value = st.slider(
-                             param_name, float(min_val), float(max_val),
-                             st.session_state.initial_params[slider_key],
-                             step=step_size, format=format_spec, key=slider_key
-                         )
-                         if not np.isclose(st.session_state.initial_params[slider_key], new_value):
-                             # Store the slider's current value in the temporary dict
-                             st.session_state.initial_params[slider_key] = new_value
-                             # Directly check if this new value differs from the main state dict
-                             if not np.isclose(st.session_state.initial_state_dict.get(param_key, default_val), new_value):
-                                 initial_params_changed = True # Mark that *some* change occurred this cycle
-                         initial_params_to_set[param_key] = new_value
-
-                 # Always update the model and state dict with the latest slider values from this render
-                 if initial_params_to_set: # Ensure there are values to set
-                     try:
-                         st.session_state.sfc_model_object.set_values(initial_params_to_set)
-                         st.session_state.initial_state_dict.update(initial_params_to_set)
-                         if initial_params_changed: # Show success only if a value actually changed this cycle
-                             st.success("Initial parameters updated.")
-                     except Exception as e:
-                         st.error(f"Error applying initial parameters: {e}")
-
-    # --- Year > 0: Combined Dashboard & Policy ---
-    else:
-        st.markdown("---") # Divider
-
-        # Helper to create simple KPI plots
-        def create_kpi_plot(metric_key, y_axis_title): # Renamed 'title' arg to 'y_axis_title'
-            plot_df = get_sparkline_data(metric_key, SPARKLINE_YEARS) # Reuse sparkline data getter
-            if plot_df is not None and not plot_df.empty:
-                # Check if data exists
-                # Define colors based on metric_key (using theme/standard colors)
-                # Using Blue, Green, Grey, Black for theme alignment
-                if metric_key == 'Yk_Index':
-                    plot_color = "#1FB25A" # Green (Fiscal card color)
-                elif metric_key == 'PI':
-                    plot_color = "#000000" # Black
-                elif metric_key == 'Unemployment':
-                    plot_color = "#0072BB" # Blue (Monetary card color)
-                elif metric_key == 'GD_GDP':
-                    plot_color = "#555555" # Dark Grey
+            # Generate objective list items HTML string, padding with empty items if needed
+            objectives_list = list(char_data.get('objectives', {}).items())
+            objectives_html = ""
+            for j in range(3): # Always generate 3 list items
+                if j < len(objectives_list):
+                    obj_key, obj = objectives_list[j]
+                    objectives_html += f"""<li>
+                            <img src="{get_icon_data_uri(objective_icon_map.get(obj_key, ''))}" style="height: 1em; width: 1em; margin-right: 0.5em;">
+                            <small>{obj['label']}: {obj['condition']} {obj['target_value']}{'%' if obj['target_type'] == 'percent' else ''}</small>
+                        </li>"""
                 else:
-                    plot_color = "#1FB25A" # Default Green
+                    # Add an empty list item with a non-breaking space to maintain height
+                    objectives_html += '<li><small>&nbsp;</small></li>'
 
-                # Determine axis format
-                y_axis_format = ".1f" # Default format for index
-                if metric_key in ['PI', 'Unemployment', 'GD_GDP']:
-                    y_axis_format = ".1%" # Percentage format
 
-                # --- Correction for Percentage Scaling ---
-                # Divide values by 100 if the axis format is percentage,
-                # as Altair's format expects raw proportions (e.g., 0.20 for 20%)
-                plot_df_corrected = plot_df.copy() # Avoid modifying original df used elsewhere
-                if y_axis_format.endswith('%'):
-                    plot_df_corrected[metric_key] = plot_df_corrected[metric_key] / 100.0
-                # --- End Correction ---
+            st.markdown(f"""
+            <div class="{container_class}">
+                <div style="flex-grow: 1;"> <!-- Wrapper for content above objectives -->
+                    {img_html}
+                    <h4>{char_data['name']}</h4>
+                    <p><small>{char_data['description']}</small></p>
+                </div>
+                <div> <!-- Wrapper for objectives -->
+                    <p><strong>Objectives:</strong></p>
+                    <ul>
+                        {objectives_html}
+                    </ul>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-                # Base chart
-                # Use the corrected DataFrame for plotting
-                base = alt.Chart(plot_df_corrected.reset_index()).encode(
-                    # X-Axis: Remove title and labels for top row plots
-                    x=alt.X('Year:O', axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
-                                                    labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
-                                                    labelAngle=-45, grid=False)),
-                    tooltip=[
-                        alt.Tooltip('Year:O', title='Simulation Year'),
-                        # Use y_axis_title for tooltip, format based on corrected data
-                        alt.Tooltip(f'{metric_key}:Q', format=y_axis_format, title=y_axis_title)
-                    ]
+            # Selection Button
+            button_label = "Selected" if char_id == selected_id else "Select"
+            button_type = "primary" if char_id == selected_id else "secondary"
+            if st.button(button_label, key=f"select_{char_id}", type=button_type, use_container_width=True):
+                st.session_state.selected_character_id = char_id
+                st.rerun()
+
+    st.divider()
+    if selected_id:
+        st.write(f"You have selected: **{CHARACTERS[selected_id]['name']}**")
+        if st.button("Confirm Character & Start Game", type="primary"):
+            # --- Set Game Objectives based on Character ---
+            st.session_state.game_objectives = CHARACTERS[selected_id].get('objectives', {})
+            logging.info(f"Character '{CHARACTERS[selected_id]['name']}' confirmed. Objectives set: {st.session_state.game_objectives}")
+
+            # --- Create Deck based on Character ---
+            st.session_state.deck = create_deck(character_id=selected_id)
+            logging.info(f"Deck created based on character '{selected_id}'. Deck size: {len(st.session_state.deck)}")
+
+            # --- Initial Draw ---
+            st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+                st.session_state.deck,
+                st.session_state.player_hand,
+                st.session_state.discard_pile,
+                INITIAL_HAND_SIZE
+            )
+            logging.info(f"Drew initial hand of {INITIAL_HAND_SIZE} cards. Hand size: {len(st.session_state.player_hand)}")
+
+            # --- Start First Simulation (Year 0 -> Year 1) ---
+            st.session_state.game_phase = "SIMULATION" # Trigger first simulation
+            st.session_state.cards_selected_this_year = [] # No cards played in year 0
+            st.session_state.active_events_this_year = [] # No events in year 0
+            logging.info("Proceeding to first simulation (Year 0 -> Year 1).")
+            st.rerun()
+    else:
+        st.warning("Please select an economic advisor to begin.")
+
+
+elif st.session_state.game_phase == "YEAR_START":
+    # --- Display Current Year ---
+    st.header(f"Year {st.session_state.current_year}") # ADDED YEAR DISPLAY
+
+    # Helper to create simple KPI plots
+    def create_kpi_plot(metric_key, y_axis_title): # Renamed 'title' arg to 'y_axis_title'
+        plot_df = get_sparkline_data(metric_key, SPARKLINE_YEARS) # Reuse sparkline data getter
+        if plot_df is not None and not plot_df.empty:
+            # Check if data exists
+            # Define colors based on metric_key (using theme/standard colors)
+            # Using Blue, Green, Grey, Black for theme alignment
+            if metric_key == 'Yk_Index':
+                plot_color = "#1FB25A" # Green (Fiscal card color)
+            elif metric_key == 'PI':
+                plot_color = "#000000" # Black
+            elif metric_key == 'Unemployment':
+                plot_color = "#0072BB" # Blue (Monetary card color)
+            elif metric_key == 'GD_GDP':
+                plot_color = "#555555" # Dark Grey
+            else:
+                plot_color = "#1FB25A" # Default Green
+
+            # Determine axis format
+            y_axis_format = ".1f" # Default format for index
+            if metric_key in ['PI', 'Unemployment', 'GD_GDP']:
+                y_axis_format = ".1%" # Percentage format
+
+            # --- Correction for Percentage Scaling ---
+            # Divide values by 100 if the axis format is percentage,
+            # as Altair's format expects raw proportions (e.g., 0.20 for 20%)
+            plot_df_corrected = plot_df.copy() # Avoid modifying original df used elsewhere
+            if y_axis_format.endswith('%'):
+                plot_df_corrected[metric_key] = plot_df_corrected[metric_key] / 100.0
+            # --- End Correction ---
+
+            # Base chart
+            # Use the corrected DataFrame for plotting
+            base = alt.Chart(plot_df_corrected.reset_index()).encode(
+                # X-Axis: Remove title and labels for top row plots
+                x=alt.X('Year:O', axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
+                                                labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
+                                                labelAngle=-45, grid=False)),
+                tooltip=[
+                    alt.Tooltip('Year:O', title='Simulation Year'),
+                    # Use y_axis_title for tooltip, format based on corrected data
+                    alt.Tooltip(f'{metric_key}:Q', format=y_axis_format, title=y_axis_title)
+                ]
+            )
+
+            # Handle single data point case (e.g., first year)
+            # Use corrected df for single point value as well
+            if len(plot_df_corrected) == 1:
+                # Define Y-axis scale for single point
+                single_value = plot_df_corrected[metric_key].iloc[0]
+                # Add padding for single point to avoid label truncation
+                if np.isclose(single_value, 0):
+                    padding = 0.01 # Add small absolute padding if value is zero
+                else:
+                    padding = abs(single_value) * 0.15 # 15% padding relative to value
+                y_domain_single = [single_value - padding, single_value + padding]
+                # Ensure lower bound is not unnecessarily negative for rates/ratios
+                if metric_key in ['Unemployment', 'GD_GDP', 'PI']:
+                     y_domain_single[0] = max(0, y_domain_single[0])
+
+                y_axis_scale_single = alt.Scale(domain=y_domain_single, zero=False) # Explicit domain, don't force zero
+
+                # Create a chart with just a point
+                chart = base.mark_point(
+                    size=100, # Make point visible
+                    filled=True,
+                    color=plot_color
+                ).encode(
+                     y=alt.Y(f'{metric_key}:Q',
+                             # Use y_axis_title for axis title
+                             axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
+                             scale=y_axis_scale_single # Apply explicit scale with padding
+                            )
+                ).properties(
+                     # Removed title property
+                     height=200 # Increased height
+                ).configure_view(
+                    fill=None,         # Make background transparent
+                    stroke='#cccccc'   # Add a light grey border
+                ).configure_axis(
+                    labelFont='Lato',    # Font for axis numbers/ticks
+                    titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
+                    titleFontSize=12,    # Adjust size if needed
+                    labelFontSize=11     # Adjust size if needed
+                ).interactive()
+            else:
+                # Existing logic for line chart (now indented)
+                # Calculate Y-axis domain with padding
+                min_val = plot_df_corrected[metric_key].min()
+                max_val = plot_df_corrected[metric_key].max()
+                data_range = max_val - min_val
+                if np.isclose(data_range, 0): # Handle flat line case
+                    if np.isclose(max_val, 0): padding = 0.01 # Small absolute padding if value is zero
+                    else: padding = abs(max_val) * 0.15 # 15% padding relative to value
+                else:
+                    padding = data_range * 0.15 # 15% padding relative to range
+
+                y_domain_line = [min_val - padding, max_val + padding]
+                # Ensure lower bound is not unnecessarily negative for rates/ratios
+                if metric_key in ['Unemployment', 'GD_GDP', 'PI']:
+                     y_domain_line[0] = max(0, y_domain_line[0])
+
+                y_axis_scale_line = alt.Scale(domain=y_domain_line, zero=False) # Explicit domain, don't force zero unless appropriate
+
+                line = base.mark_line(
+                    point=alt.OverlayMarkDef(color=plot_color), # Style points to match line
+                    color=plot_color, # Use defined color
+                    strokeWidth=2 # Slightly thicker line
+                ).encode(
+                    y=alt.Y(f'{metric_key}:Q', # Fixed parenthesis
+                            axis=alt.Axis(
+                                title=y_axis_title, # Use y_axis_title for axis title
+                                format=y_axis_format, # Use dynamic format
+                                grid=True, # Add Y-axis gridlines
+                                titlePadding=10 # Add padding to title
+                            ),
+                            scale=y_axis_scale_line # Apply explicit scale with padding
+                    ) # Fixed parenthesis
                 )
 
-                # Handle single data point case (e.g., first year)
-                # Use corrected df for single point value as well
-                if len(plot_df_corrected) == 1:
-                    # Define Y-axis scale for single point
-                    single_value = plot_df_corrected[metric_key].iloc[0]
-                    # Add padding for single point to avoid label truncation
-                    if np.isclose(single_value, 0):
-                        padding = 0.01 # Add small absolute padding if value is zero
-                    else:
-                        padding = abs(single_value) * 0.15 # 15% padding relative to value
-                    y_domain_single = [single_value - padding, single_value + padding]
-                    # Ensure lower bound is not unnecessarily negative for rates/ratios
-                    if metric_key in ['Unemployment', 'GD_GDP', 'PI']:
-                         y_domain_single[0] = max(0, y_domain_single[0])
+                # Add text label for the last point
+                # Use corrected df for label position and format
+                last_point_df_corrected = plot_df_corrected.reset_index().iloc[[-1]]
+                labels = alt.Chart(last_point_df_corrected).mark_text(
+                    align='left',
+                    baseline='middle',
+                    dx=7, # Offset text to the right of the point
+                    fontSize=11
+                ).encode(
+                    x=alt.X('Year:O'),
+                    y=alt.Y(f'{metric_key}:Q'),
+                    text=alt.Text(f'{metric_key}:Q', format=y_axis_format),
+                    color=alt.value(plot_color) # Match label color to line
+                )
 
-                    y_axis_scale_single = alt.Scale(domain=y_domain_single, zero=False) # Explicit domain, don't force zero
-
-                    # Create a chart with just a point
-                    chart = base.mark_point(
-                        size=100, # Make point visible
-                        filled=True,
-                        color=plot_color
-                    ).encode(
-                         y=alt.Y(f'{metric_key}:Q',
-                                 # Use y_axis_title for axis title
-                                 axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
-                                 scale=y_axis_scale_single # Apply explicit scale with padding
-                                )
-                    ).properties(
-                         # Removed title property
-                         height=200 # Increased height
-                    ).configure_view(
-                        fill=None,         # Make background transparent
-                        stroke='#cccccc'   # Add a light grey border
-                    ).configure_axis(
-                        labelFont='Lato',    # Font for axis numbers/ticks
-                        titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
-                        titleFontSize=12,    # Adjust size if needed
-                        labelFontSize=11     # Adjust size if needed
-                    ).interactive()
+                # Add zero reference line for specific metrics if scale includes zero
+                if metric_key in ['PI', 'Unemployment'] and y_domain_line[0] <= 0:
+                    zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
+                        color='grey', strokeDash=[2,2], size=1
+                    ).encode(y='y')
+                    chart_layers = [line, labels, zero_line]
                 else:
-                    # Existing logic for line chart (now indented)
-                    # Calculate Y-axis domain with padding
-                    min_val = plot_df_corrected[metric_key].min()
-                    max_val = plot_df_corrected[metric_key].max()
-                    data_range = max_val - min_val
-                    if np.isclose(data_range, 0): # Handle flat line case
-                        if np.isclose(max_val, 0): padding = 0.01 # Small absolute padding if value is zero
-                        else: padding = abs(max_val) * 0.15 # 15% padding relative to value
-                    else:
-                        padding = data_range * 0.15 # 15% padding relative to range
+                    chart_layers = [line, labels]
 
-                    y_domain_line = [min_val - padding, max_val + padding]
-                    # Ensure lower bound is not unnecessarily negative for rates/ratios
-                    if metric_key in ['Unemployment', 'GD_GDP', 'PI']:
-                         y_domain_line[0] = max(0, y_domain_line[0])
+                # Configure overall chart properties
+                # Layer the components
+                chart = alt.layer(*chart_layers).properties(
+                    # Removed title property
+                    height=200 # Increased height
+                ).configure_view(
+                    fill=None,         # Make background transparent
+                    stroke='#cccccc'   # Add a light grey border
+                ).configure_axis(
+                    labelFont='Lato',    # Font for axis numbers/ticks
+                    titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
+                    titleFontSize=12,    # Adjust size if needed
+                    labelFontSize=11     # Adjust size if needed
+                ).interactive() # Allow zooming/panning
 
-                    y_axis_scale_line = alt.Scale(domain=y_domain_line, zero=False) # Explicit domain, don't force zero unless appropriate
+            return chart # Return the styled line or point chart
+        return None # Return None if plot_df is None or empty
 
-                    line = base.mark_line(
-                        point=alt.OverlayMarkDef(color=plot_color), # Style points to match line
-                        color=plot_color, # Use defined color
-                        strokeWidth=2 # Slightly thicker line
-                    ).encode(
-                        y=alt.Y(f'{metric_key}:Q',
-                                axis=alt.Axis(
-                                    title=y_axis_title, # Use y_axis_title for axis title
-                                    format=y_axis_format, # Use dynamic format
-                                    grid=True, # Add Y-axis gridlines
-                                    titlePadding=10 # Add padding to title
-                                ),
-                                scale=y_axis_scale_line # Apply explicit scale with padding
-                        )
-                    )
+    # Check if it's the very first year start (Year 1)
+    if st.session_state.current_year == 1 and not st.session_state.history:
+        st.info("Welcome to your first year as economic advisor! Review the initial state and select your policies.")
+        # Display initial state details if needed (e.g., from initial_state_dict)
+        # with st.expander("Initial Economic State (Year 0)"):
+        #     st.write(st.session_state.initial_state_dict) # Example
 
-                    # Add text label for the last point
-                    # Use corrected df for label position and format
-                    last_point_df_corrected = plot_df_corrected.reset_index().iloc[[-1]]
-                    labels = alt.Chart(last_point_df_corrected).mark_text(
-                        align='left',
-                        baseline='middle',
-                        dx=7, # Offset text to the right of the point
-                        fontSize=11
-                    ).encode(
-                        x=alt.X('Year:O'),
-                        y=alt.Y(f'{metric_key}:Q'),
-                        text=alt.Text(f'{metric_key}:Q', format=y_axis_format),
-                        color=alt.value(plot_color) # Match label color to line
-                    )
+    # --- Display KPI Plots in 2x2 Grid ---
+    st.markdown("##### Key Economic Indicators")
+    row1_cols = st.columns(2)
+    with row1_cols[0]:
+        # Use shorter title
+        st.altair_chart(create_kpi_plot('Yk_Index', 'GDP Index (Y1=100)'), use_container_width=True)
+    with row1_cols[1]:
+         # Use shorter title
+        st.altair_chart(create_kpi_plot('PI', 'Inflation Rate'), use_container_width=True)
 
-                    # Add zero reference line for specific metrics if scale includes zero
-                    if metric_key in ['PI', 'Unemployment'] and y_domain_line[0] <= 0:
-                        zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
-                            color='grey', strokeDash=[2,2], size=1
-                        ).encode(y='y')
-                        chart_layers = [line, labels, zero_line]
-                    else:
-                        chart_layers = [line, labels]
+    row2_cols = st.columns(2)
+    with row2_cols[0]:
+         # Use shorter title
+        st.altair_chart(create_kpi_plot('Unemployment', 'Unemployment Rate'), use_container_width=True)
+    with row2_cols[1]:
+         # Use shorter title
+        st.altair_chart(create_kpi_plot('GD_GDP', 'Debt/GDP Ratio'), use_container_width=True)
 
-                    # Configure overall chart properties
-                    # Layer the components
-                    chart = alt.layer(*chart_layers).properties(
-                        # Removed title property
-                        height=200 # Increased height
-                    ).configure_view(
-                        fill=None,         # Make background transparent
-                        stroke='#cccccc'   # Add a light grey border
-                    ).configure_axis(
-                        labelFont='Lato',    # Font for axis numbers/ticks
-                        titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
-                        titleFontSize=12,    # Adjust size if needed
-                        labelFontSize=11     # Adjust size if needed
-                    ).interactive() # Allow zooming/panning
+    # --- Display Active Events Below Plots (Original Vertical Layout) ---
+    st.markdown("##### Active Events")
+    active_events = st.session_state.get('active_events_this_year', []) # Use .get for safety
+    if active_events:
+        num_event_cols = min(len(active_events), 3) # Max 3 columns, adjust if fewer events
+        event_cols = st.columns(num_event_cols)
+        event_index = 0
+        for event_name in active_events:
+            col_index = event_index % num_event_cols
+            with event_cols[col_index]:
+                event_details = ECONOMIC_EVENTS.get(event_name, {})
+                event_desc = event_details.get('desc', 'No description available.')
+                direct_param = event_details.get('param')
+                indirect_commentary = event_details.get('indirect_effects')
 
-                return chart # Return the styled line or point chart
-            return None # Return None if plot_df is None or empty
-
-        # --- Display KPI Plots in 2x2 Grid ---
-        st.markdown("##### Key Economic Indicators")
-        row1_cols = st.columns(2)
-        with row1_cols[0]:
-            # Use shorter title
-            st.altair_chart(create_kpi_plot('Yk_Index', 'GDP Index (Y1=100)'), use_container_width=True)
-        with row1_cols[1]:
-             # Use shorter title
-            st.altair_chart(create_kpi_plot('PI', 'Inflation Rate'), use_container_width=True)
-
-        row2_cols = st.columns(2)
-        with row2_cols[0]:
-             # Use shorter title
-            st.altair_chart(create_kpi_plot('Unemployment', 'Unemployment Rate'), use_container_width=True)
-        with row2_cols[1]:
-             # Use shorter title
-            st.altair_chart(create_kpi_plot('GD_GDP', 'Debt/GDP Ratio'), use_container_width=True)
-
-        # --- Display Active Events Below Plots (in columns) ---
-        st.markdown("##### Active Events")
-        if st.session_state.active_events_this_year:
-            event_cols = st.columns(3) # Create 3 columns for events
-            event_index = 0
-            for event_name in st.session_state.active_events_this_year:
-                col_index = event_index % 3
-                with event_cols[col_index]: # Place event in the current column
-                    event_data = ECONOMIC_EVENTS.get(event_name, {})
-                    event_desc = event_data.get('desc', 'No description available.')
-                    affected_vars = event_data.get('affected_vars', [])
-
-                    with st.container():
-                        # Use markdown with CSS classes for styling
-                        st.markdown(f"""
-                        <div class="event-card">
+                # Use a container for each card within the column
+                with st.container():
+                    # Use markdown with CSS classes for styling
+                    st.markdown(f"""
+                    <div class="event-card" style="height: 180px; display: flex; flex-direction: column; justify-content: space-between;"> <!-- Added fixed height and flex -->
+                        <div> <!-- Content div -->
                             <div class="event-card-title">{event_name}</div>
                             <div class="event-card-desc">{event_desc}</div>
                         </div>
-                        """, unsafe_allow_html=True)
-
-                        # Add expander for affected variables inside the container but outside the markdown
-                        if affected_vars:
-                            with st.expander("Affected Variables"):
-                                details_list = []
-                                for var in affected_vars:
-                                    # Handle special case for Unemployment derived from ER
-                                    if var == "ER" and "Unemployment" in VARIABLE_DESCRIPTIONS:
-                                        var_display_name = "Unemployment"
-                                        var_desc = VARIABLE_DESCRIPTIONS["Unemployment"]
-                                    else:
-                                        var_display_name = var
-                                        var_desc = VARIABLE_DESCRIPTIONS.get(var, "No description available.")
-                                    st.markdown(f"- **{var_display_name}:** _{var_desc}_")
-                event_index += 1 # Increment index for next event
-        else:
-            st.caption("None")
-
-        st.markdown("---") # Divider
-
-        # --- Draw Cards and Check Events (Run only once per YEAR_START phase) ---
-        if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != st.session_state.current_year:
-            # Draw cards
-            st.session_state.deck, st.session_state.player_hand = draw_cards(
-                st.session_state.deck, st.session_state.player_hand, CARDS_TO_DRAW_PER_YEAR
-            )
-            st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
-
-            # Check for events based on the *previous* year's state
-            if st.session_state.history:
-                 previous_year_results = st.session_state.history[-1] # Use last year's results
-            else:
-                 # Should not happen in Year > 0 if logic is correct
-                 logging.error("History is empty when checking events for Year > 0.")
-                 previous_year_results = st.session_state.initial_state_dict # Fallback
-
-            if previous_year_results:
-                st.session_state.active_events_this_year = check_for_events(previous_year_results)
-                if st.session_state.active_events_this_year:
-                     st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
-            else:
-                 st.session_state.active_events_this_year = []
-
-            st.session_state.year_start_processed = st.session_state.current_year
-            st.session_state.cards_selected_this_year = []
-            st.rerun()
-
-        # --- Card Selection UI ---
-        st.subheader("Select Policy Cards to Play")
-
-        available_cards = st.session_state.player_hand
-        selected_cards_this_turn = st.session_state.cards_selected_this_year
-        max_cards_allowed = 2 # Define max cards here for use in selection logic
-
-        if not available_cards:
-            st.write("No policy cards currently in hand.")
-        else:
-            # Filter cards to only show Fiscal and Monetary
-            # Show only UNIQUE card names for selection
-            unique_card_names = sorted(list(set(
-                card_name for card_name in available_cards
-                if POLICY_CARDS.get(card_name, {}).get('type') in ["Fiscal", "Monetary"]
-            )))
-
-            if not unique_card_names:
-                st.write("No Fiscal or Monetary policy cards currently in hand.")
-                # Exit this block if no displayable cards
-                # Note: This assumes the 'else' block below handles the case where displayable_cards is empty
-
-            num_cards = len(unique_card_names)
-            num_cols = min(num_cards, MAX_CARDS_PER_ROW)
-            cols = st.columns(num_cols)
-
-            card_render_index = 0 # Index for column assignment
-            for card_name in unique_card_names: # Iterate over unique list
-                col_index = card_render_index % num_cols # Use card_render_index instead of i
-                with cols[col_index]:
-                    card_info = POLICY_CARDS.get(card_name, {})
-                    is_selected = card_name in selected_cards_this_turn
-                    card_type = card_info.get('type', 'Unknown').lower()
-                    param_name = card_info.get('param')
-                    param_effect = card_info.get('effect')
-                    param_desc = PARAM_DESCRIPTIONS.get(param_name, "N/A")
-                    formatted_effect = format_effect(param_name, param_effect)
-
-                    # Determine card container class based on selection
-                    card_container_class = "card-container"
-                    if is_selected:
-                        card_container_class += " selected"
-
-                    # --- Card Rendering using Streamlit Elements ---
-                    with st.container():
-                        # Apply card container styling via CSS class
-                        # We need to manually construct the top bar HTML here
-                        icon_data_uri = get_icon_data_uri(card_type)
-                        icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
-                        card_stance = card_info.get('stance', None)
-                        # Removed old stance_icon_html logic
-
-                        top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
-                        # Use st.markdown for the top bar structure
-                        st.markdown(f'''
-                        <div class="{card_container_class}"> <!-- Apply container class -->
-                            <div class="card-top-bar {top_bar_color_class}">
-                               {icon_html} <span class="card-title">{card_type.capitalize()}: {card_name}</span>
-                            </div>
-                            <div class="card-main-content">
-                                <div class="card-desc">
-                                    {card_info.get('desc', 'No description available.')}<br>
-                                    <small><i>Effect: {formatted_effect} on {param_name} ({param_desc})</i></small>
-                                </div>
-                                <!-- Button will be placed below by Streamlit -->
-                                {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
-                            </div>
+                        <div> <!-- Expander div -->
+                            <!-- Expander will be placed here by Streamlit -->
                         </div>
-                        ''', unsafe_allow_html=True)
+                    </div>
 
-                        # Place Button *outside* markdown, but *inside* the column's context
-                        # Use a container to help manage layout within the flex column
-                        with st.container():
-                            button_label = "Deselect" if is_selected else "Select"
-                            button_type = "primary" if is_selected else "secondary"
-                            button_key = f"select_{card_name}_{card_render_index}_{st.session_state.current_year}"
- # Use render index for unique key
-                            if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
-                                if is_selected:
-                                    st.session_state.cards_selected_this_year.remove(card_name)
-                                    st.rerun() # Rerun after deselecting
-                                else:
-                                    # --- Add Duplicate Name Check ---
-                                    # This check might be redundant now if only unique names are displayed, but keep for safety
-                                    if card_name in st.session_state.cards_selected_this_year:
-                                        st.warning(f"Cannot select two '{card_name}' cards in the same turn.")
-                                    # --- Add Max Card Check before appending ---
-                                    elif len(st.session_state.cards_selected_this_year) >= max_cards_allowed:
-                                        st.warning(f"You can only select up to {max_cards_allowed} cards.")
-                                    else:
-                                        st.session_state.cards_selected_this_year.append(card_name)
-                                        st.rerun() # Rerun only if selection was successful
+                """, unsafe_allow_html=True)
 
-                    card_render_index += 1 # Increment render index
+                    # Add expander for affected variables inside the container but outside the markdown
+                    if direct_param or indirect_commentary:
+                        with st.expander("Details"):
+                            if direct_param:
+                                param_desc = PARAM_DESCRIPTIONS.get(direct_param, "No description available.")
+                                st.markdown(f"**Directly Affects:** `{direct_param}` ({param_desc})")
+                            if indirect_commentary:
+                                st.markdown(f"**Potential Indirect Effects:** _{indirect_commentary}_")
+            event_index += 1
+    else:
+        st.caption("None")
 
 
-        st.divider()
-        if selected_cards_this_turn:
-            st.write("Selected for this turn:")
-            for card_name in selected_cards_this_turn: st.markdown(f"- {card_name}")
+    st.markdown("---") # Divider
+
+    # --- Draw Cards and Check Events (Run only once per YEAR_START phase) ---
+    if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != st.session_state.current_year:
+        # Draw cards - Now includes discard pile
+        st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+            st.session_state.deck,
+            st.session_state.player_hand,
+            st.session_state.discard_pile,
+            CARDS_TO_DRAW_PER_YEAR
+        )
+        st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
+
+        # Check for events based on the *previous* year's state
+        if st.session_state.history:
+             previous_year_results = st.session_state.history[-1] # Use last year's results
         else:
-            st.write("No cards selected for this turn.")
-        # --- End of Card Selection UI ---
+             # Should not happen in Year > 0 if logic is correct
+             logging.error("History is empty when checking events for Year > 0.")
+             previous_year_results = st.session_state.initial_state_dict # Fallback
 
-        # --- Detailed Data Expanders ---
-        st.divider()
+        if previous_year_results:
+            st.session_state.active_events_this_year = check_for_events(previous_year_results)
+            if st.session_state.active_events_this_year:
+                 st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
+        else:
+             st.session_state.active_events_this_year = []
+
+        st.session_state.year_start_processed = st.session_state.current_year
+        st.session_state.cards_selected_this_year = []
+        st.rerun()
+
+    # --- Card Selection UI ---
+    st.subheader("Select Policy Cards to Play")
+
+    available_cards = st.session_state.player_hand
+    selected_cards_this_turn = st.session_state.cards_selected_this_year
+    max_cards_allowed = 2 # Define max cards here for use in selection logic
+
+    if not available_cards:
+        st.write("No policy cards currently in hand.")
+    else:
+        # Filter cards to only show Fiscal and Monetary
+        # Show only UNIQUE card names for selection
+        unique_card_names = sorted(list(set(
+            card_name for card_name in available_cards
+            if POLICY_CARDS.get(card_name, {}).get('type') in ["Fiscal", "Monetary"]
+        )))
+
+        if not unique_card_names:
+            st.write("No Fiscal or Monetary policy cards currently in hand.")
+            # Exit this block if no displayable cards
+            # Note: This assumes the 'else' block below handles the case where displayable_cards is empty
+
+        num_cards = len(unique_card_names)
+        num_cols = min(num_cards, MAX_CARDS_PER_ROW)
+        cols = st.columns(num_cols)
+
+        card_render_index = 0 # Index for column assignment
+        for card_name in unique_card_names: # Iterate over unique list
+            col_index = card_render_index % num_cols # Use card_render_index instead of i
+            with cols[col_index]:
+                card_info = POLICY_CARDS.get(card_name, {})
+                is_selected = card_name in selected_cards_this_turn
+                # Define card_type and card_stance *before* boost calculation
+                card_type = card_info.get('type', 'Unknown').lower()
+                card_stance = card_info.get('stance', None)
+                param_name = card_info.get('param')
+                param_effect = card_info.get('effect')
+                param_desc = PARAM_DESCRIPTIONS.get(param_name, "N/A")
+
+                # --- Calculate potential boosted effect for display ---
+                display_effect = param_effect # Start with base effect
+                boost_applied_display = False
+                selected_char_id = st.session_state.get('selected_character_id')
+                # Ensure card_stance and card_type are defined before this check
+                if selected_char_id and selected_char_id in CHARACTERS and card_stance and card_type:
+                    character_data = CHARACTERS[selected_char_id]
+                    bonus_criteria = character_data.get('bonus_criteria', [])
+                    bonus_multiplier = character_data.get('bonus_multiplier', 1.0)
+                    criteria_matched = False
+                    for crit_stance, crit_type in bonus_criteria:
+                        # Compare types case-insensitively (card_type is already lower)
+                        if card_stance == crit_stance and card_type == crit_type.lower():
+                            criteria_matched = True
+                            break
+                    if criteria_matched:
+                        display_effect *= bonus_multiplier
+                        boost_applied_display = True
+                # --- End boosted effect calculation ---
+
+                # Format the potentially boosted effect for display
+                formatted_effect = format_effect(param_name, display_effect)
+
+                boost_indicator = " (Boosted!)" if boost_applied_display else ""
+                # Determine card container class based on selection
+                card_container_class = "card-container"
+                if is_selected:
+                    card_container_class += " selected"
+
+                # --- Card Rendering using Streamlit Elements ---
+                with st.container():
+                    # Apply card container styling via CSS class
+                    # We need to manually construct the top bar HTML here
+                    icon_data_uri = get_icon_data_uri(card_type)
+                    icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
+                    # card_stance defined earlier
+
+                    top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
+                    # Use st.markdown for the top bar structure
+                    st.markdown(f'''
+                    <div class="{card_container_class}"> <!-- Apply container class -->
+                        <div class="card-top-bar {top_bar_color_class}">
+                           {icon_html} <span class="card-title">{card_type.capitalize()}: {card_name}</span>
+                        </div>
+                        <div class="card-main-content">
+                            <div class="card-desc">
+                                {card_info.get('desc', 'No description available.')}<br>
+                                <small><i>Effect: {formatted_effect}{boost_indicator} on {param_name} ({param_desc})</i></small>
+                            </div>
+                            <!-- Button will be placed below by Streamlit -->
+                            {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
+                        </div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+
+                    # Place Button *outside* markdown, but *inside* the column's context
+                    # Use a container to help manage layout within the flex column
+                    with st.container():
+                        button_label = "Deselect" if is_selected else "Select"
+                        button_type = "primary" if is_selected else "secondary"
+                        button_key = f"select_{card_name}_{card_render_index}_{st.session_state.current_year}"
+ # Use render index for unique key
+                        if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
+                            if is_selected:
+                                st.session_state.cards_selected_this_year.remove(card_name)
+                                st.rerun() # Rerun after deselecting
+                            else:
+                                # --- Add Duplicate Name Check ---
+                                # This check might be redundant now if only unique names are displayed, but keep for safety
+                                if card_name in st.session_state.cards_selected_this_year:
+                                    st.warning(f"Cannot select two '{card_name}' cards in the same turn.")
+                                # --- Add Max Card Check before appending ---
+                                elif len(st.session_state.cards_selected_this_year) >= max_cards_allowed:
+                                    st.warning(f"You can only select up to {max_cards_allowed} cards.")
+                                else:
+                                    st.session_state.cards_selected_this_year.append(card_name)
+                                    st.rerun() # Rerun only if selection was successful
+
+                card_render_index += 1 # Increment render index
+
+
+    st.divider()
+    if selected_cards_this_turn:
+        st.write("Selected for this turn:")
+        for card_name in selected_cards_this_turn: st.markdown(f"- {card_name}")
+    else:
+        st.write("No cards selected for this turn.")
+    # --- End of Card Selection UI ---
+
+    # --- Detailed Data Expanders ---
+    st.divider()
  # Keep divider above expanders
-        with st.expander("SFC Matrices"): # Renamed Expander
-            model_state = st.session_state.sfc_model_object # Get current model state
-            current_solution_for_matrix = model_state.solutions[-1] # Latest solution
-            prev_solution_for_matrix = None
-            if st.session_state.current_year == 1:
-                 if len(model_state.solutions) >= 1:
-                     prev_solution_for_matrix = model_state.solutions[0] # Use SOLVED t=0 state
-                 else: logging.error("Cannot find t=0 solution in model_state for Year 1 matrix display.")
-            elif len(model_state.solutions) >= 2:
-                 prev_solution_for_matrix = model_state.solutions[-2]
+    with st.expander("SFC Matrices"): # Renamed Expander
+        model_state = st.session_state.sfc_model_object # Get current model state
+        current_solution_for_matrix = model_state.solutions[-1] # Latest solution
+        prev_solution_for_matrix = None
+        if st.session_state.current_year == 1:
+             if len(model_state.solutions) >= 1:
+                 prev_solution_for_matrix = model_state.solutions[0] # Use SOLVED t=0 state
+             else: logging.error("Cannot find t=0 solution in model_state for Year 1 matrix display.")
+        elif len(model_state.solutions) >= 2:
+             prev_solution_for_matrix = model_state.solutions[-2]
 
-            display_balance_sheet_matrix(current_solution_for_matrix)
-            st.divider()
-            if prev_solution_for_matrix: display_revaluation_matrix(current_solution_for_matrix, prev_solution_for_matrix); st.divider()
-            else: st.caption("Revaluation matrix requires data from the previous period.")
-            if prev_solution_for_matrix: display_transaction_flow_matrix(current_solution_for_matrix, prev_solution_for_matrix)
-            else: st.caption("Transaction flow matrix requires data from the previous period.")
+        display_balance_sheet_matrix(current_solution_for_matrix)
+        st.divider()
+        if prev_solution_for_matrix: display_revaluation_matrix(current_solution_for_matrix, prev_solution_for_matrix); st.divider()
+        else: st.caption("Revaluation matrix requires data from the previous period.")
+        if prev_solution_for_matrix: display_transaction_flow_matrix(current_solution_for_matrix, prev_solution_for_matrix)
+        else: st.caption("Transaction flow matrix requires data from the previous period.")
 
-        with st.expander("View History Table"):
-            if st.session_state.history:
-                # Define mapping for clearer column names
-                column_mapping = {
-                    'year': 'Year', # Keep simple
-                    'Yk': 'Real GDP (Yk)',
-                    'PI': 'Inflation (PI)',
-                    'ER': 'Employment Rate (ER)',
-                    'GRk': 'Capital Growth (GRk)',
-                    'Rb': 'Bill Rate (Rb)',
-                    'Rl': 'Loan Rate (Rl)',
-                    'Rm': 'Deposit Rate (Rm)', # Added
-                    'BUR': 'Debt Burden (BUR)',
-                    'Q': "Tobin's Q (Q)",
-                    'CAR': 'Capital Adequacy (CAR)', # Added
-                    'PSBR': 'Gov Deficit (PSBR)',
-                    'GD': 'Gov Debt Stock (GD)',
-                    'Y': 'Nominal GDP (Y)',
-                    'V': 'Household Wealth (V)', # Added
-                    'Lhs': 'Household Loans (Lhs)', # Added
-                    'Lfs': 'Firm Loans (Lfs)', # Added
-                    'cards_played': 'Cards Played', # Keep simple
-                    'events': 'Active Events' # Keep simple
-                }
-                history_df = pd.DataFrame(st.session_state.history).sort_values(by='year', ascending=False)
-                # Select and rename columns that exist in the DataFrame
-                display_df = history_df[[col for col in column_mapping if col in history_df.columns]].rename(columns=column_mapping)
-                st.dataframe(display_df) # Display the renamed DataFrame
-            else: st.write("No history recorded yet.")
+    with st.expander("View History Table"):
+        if st.session_state.history:
+            # Define mapping for clearer column names
+            column_mapping = {
+                'year': 'Year', # Keep simple
+                'Yk': 'Real GDP (Yk)',
+                'PI': 'Inflation (PI)',
+                'ER': 'Employment Rate (ER)',
+                'GRk': 'Capital Growth (GRk)',
+                'Rb': 'Bill Rate (Rb)',
+                'Rl': 'Loan Rate (Rl)',
+                'Rm': 'Deposit Rate (Rm)', # Added
+                'BUR': 'Debt Burden (BUR)',
+                'Q': "Tobin's Q (Q)",
+                'CAR': 'Capital Adequacy (CAR)', # Added
+                'PSBR': 'Gov Deficit (PSBR)',
+                'GD': 'Gov Debt Stock (GD)',
+                'Y': 'Nominal GDP (Y)',
+                'V': 'Household Wealth (V)', # Added
+                'Lhs': 'Household Loans (Lhs)', # Added
+                'Lfs': 'Firm Loans (Lfs)', # Added
+                'cards_played': 'Cards Played', # Keep simple
+                'events': 'Active Events' # Keep simple
+            }
+            history_df = pd.DataFrame(st.session_state.history).sort_values(by='year', ascending=False)
+            # Select and rename columns that exist in the DataFrame
+            display_df = history_df[[col for col in column_mapping if col in history_df.columns]].rename(columns=column_mapping)
+            st.dataframe(display_df) # Display the renamed DataFrame
+        else: st.write("No history recorded yet.")
 
-        # --- End Detailed Data Expanders ---
+    # --- End Detailed Data Expanders ---
 
 
-        # Button to proceed (for Year > 0)
-        # --- Add Card Limit Check ---
-        max_cards_allowed = 2
-        can_proceed = len(selected_cards_this_turn) <= max_cards_allowed
-        if not can_proceed:
-            st.warning(f"You can select a maximum of {max_cards_allowed} cards per turn.")
+    # Button to proceed (for Year > 0)
+    # --- Add Card Limit Check ---
+    max_cards_allowed = 2
+    can_proceed = len(selected_cards_this_turn) <= max_cards_allowed
+    if not can_proceed:
+        st.warning(f"You can select a maximum of {max_cards_allowed} cards per turn.")
 
-        if st.button("Confirm Policies & Run Simulation", disabled=not can_proceed):
-            st.session_state.game_phase = "SIMULATION"
-            if "year_start_processed" in st.session_state: del st.session_state.year_start_processed
-            st.rerun()
+    if st.button("Confirm Policies & Run Simulation", disabled=not can_proceed):
+        st.session_state.game_phase = "SIMULATION"
+        if "year_start_processed" in st.session_state: del st.session_state.year_start_processed
+        st.rerun()
 
 elif st.session_state.game_phase == "SIMULATION":
     # Note: current_year is the year *starting* the simulation (0 for first run, 1 for second, etc.)
@@ -1523,7 +1677,7 @@ elif st.session_state.game_phase == "SIMULATION":
     else:
         # For subsequent years, start from default parameters + exogenous
         base_numerical_params = copy.deepcopy(growth_parameters)
-        temp_model_for_param_check = create_growth_model()
+        temp_model_for_param_check = create_growth_model() # Fixed potential syntax error here
         defined_param_names = set(temp_model_for_param_check.parameters.keys())
         for key, value in growth_exogenous:
             if key in defined_param_names:
@@ -1537,7 +1691,8 @@ elif st.session_state.game_phase == "SIMULATION":
             base_params=base_numerical_params,
             latest_solution=latest_solution_values,
             cards_played=cards_to_play,
-            active_events=events_active
+            active_events=events_active,
+            character_id=st.session_state.get('selected_character_id') # Pass character ID
         )
         logging.debug("Final numerical parameters calculated.")
     except Exception as e:
@@ -1639,6 +1794,8 @@ elif st.session_state.game_phase == "SIMULATION":
                 current_hand = st.session_state.player_hand
                 if current_hand: # Log discarded cards if hand wasn't already empty
                     logging.info(f"Discarding end-of-turn hand: {', '.join(current_hand)}")
+                    # Add hand cards to discard pile before clearing
+                    st.session_state.discard_pile.extend(current_hand)
                 st.session_state.player_hand = [] # Clear hand completely
 
             # Clear turn-specific state
@@ -1646,9 +1803,15 @@ elif st.session_state.game_phase == "SIMULATION":
             st.session_state.active_events_this_year = []
 
             # --- Auto-advance to next YEAR_START ---
-            st.session_state.current_year += 1
-            st.session_state.game_phase = "YEAR_START"
-            logging.info(f"Simulation complete. Advancing to Year {st.session_state.current_year} YEAR_START.")
+            # Check if game should end (e.g., after Year 10)
+            if st.session_state.current_year + 1 >= GAME_END_YEAR: # Game ends AFTER simulating year 10
+                st.session_state.current_year += 1 # Advance year to 10 for final display
+                st.session_state.game_phase = "GAME_OVER"
+                logging.info(f"Final simulation (Year {st.session_state.current_year}) complete. Proceeding to GAME_OVER.")
+            else:
+                st.session_state.current_year += 1
+                st.session_state.game_phase = "YEAR_START"
+                logging.info(f"Simulation complete. Advancing to Year {st.session_state.current_year} YEAR_START.")
 
 
     except SolutionNotFoundError as e: # Correctly indented except
@@ -1664,12 +1827,133 @@ elif st.session_state.game_phase == "SIMULATION":
         sys.stdout = old_stdout
         st.rerun() # Rerun to display the next YEAR_START or error state
 
-elif st.session_state.game_phase == "SIMULATION_ERROR":
+elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
+    st.header("Game Over!")
+    st.balloons()
+
+    # --- Evaluate Objectives ---
+    objectives = st.session_state.get('game_objectives', {})
+    final_results = st.session_state.history[-1] # Get results from the last year
+    all_objectives_met = True
+    results_summary = []
+
+    if not objectives:
+        st.warning("No game objectives were set.")
+        all_objectives_met = False # Cannot win without objectives
+    else:
+        st.subheader("Objective Results") # Add subheader for clarity
+        for obj_key, details in objectives.items():
+            current_value = None
+            label = details['label']
+            condition = details['condition']
+            target = details['target_value']
+            target_type = details['target_type']
+
+            # Get the actual value from final results
+            if obj_key == "gdp_index":
+                yk_val = final_results.get('Yk', np.nan)
+                base_yk = st.session_state.get('base_yk')
+                if base_yk and np.isfinite(yk_val) and not np.isclose(base_yk, 0):
+                    current_value = (yk_val / base_yk) * 100
+            elif obj_key == "unemployment":
+                er_val = final_results.get('ER', np.nan)
+                if np.isfinite(er_val):
+                    current_value = (1 - er_val) * 100 # As percentage
+            elif obj_key == "inflation":
+                pi_val = final_results.get('PI', np.nan)
+                if np.isfinite(pi_val):
+                    current_value = pi_val * 100 # As percentage
+            elif obj_key == "debt_gdp":
+                gd_val = final_results.get('GD', np.nan)
+                y_val = final_results.get('Y', np.nan)
+                if np.isfinite(gd_val) and np.isfinite(y_val) and not np.isclose(float(y_val), 0):
+                    current_value = (gd_val / y_val) * 100 # As percentage
+
+            # Check if objective met
+            met = False
+            if current_value is not None:
+                if condition == ">=" and current_value >= target: met = True
+                elif condition == "<=" and current_value <= target: met = True
+                elif condition == ">" and current_value > target: met = True
+                elif condition == "<" and current_value < target: met = True
+
+            if not met:
+                all_objectives_met = False
+
+            # Format for display (CORRECTED PLACEMENT)
+            current_str = "N/A"
+            target_str = f"{target:.0f}"
+            if current_value is not None:
+                 if target_type == 'percent':
+                     current_str = f"{current_value:.1f}%"
+                     target_str += "%"
+                 elif target_type == 'index':
+                     current_str = f"{current_value:.1f}"
+                 else: # Default format (CORRECTED INDENTATION)
+                     current_str = f"{current_value:.1f}"
+
+            # Append results (CORRECTED PLACEMENT)
+            results_summary.append({
+                "Objective": label,
+                "Target": f"{condition} {target_str}",
+                "Actual": current_str,
+                "Met?": "✅ Yes" if met else "❌ No"
+            })
+        # --- End of Objective Loop ---
+
+    # Display Summary Table (Moved outside the loop)
+    if results_summary:
+        st.dataframe(pd.DataFrame(results_summary).set_index("Objective"))
+
+    # Display Win/Loss Message (Moved outside the loop)
+    if all_objectives_met:
+        st.success("Congratulations! You met all objectives!")
+    else:
+        st.error("Unfortunately, you did not meet all objectives.")
+
+    # --- Display Final SFC Matrices (Moved after objective results) ---
+    st.divider()
+    st.subheader("Final Economic State (SFC Matrices)")
+
+    # Retrieve final solutions
+    final_solution = None
+    second_last_solution = None
+    model_state = st.session_state.get('sfc_model_object')
+
+    if model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) >= 2:
+        final_solution = model_state.solutions[-1]
+        second_last_solution = model_state.solutions[-2]
+    elif model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) == 1:
+        final_solution = model_state.solutions[-1]
+        second_last_solution = st.session_state.get('initial_state_dict')
+        logging.warning("Game Over after 1 year, using initial state for matrix comparison.")
+    else:
+        logging.error("Could not retrieve sufficient solutions for Game Over matrix display.")
+        st.warning("Could not display final SFC matrices due to missing simulation data.")
+
+    # Display Matrices if solutions are available
+    if final_solution:
+        display_balance_sheet_matrix(final_solution)
+        st.divider()
+        if second_last_solution:
+            display_revaluation_matrix(final_solution, second_last_solution)
+            st.divider()
+            display_transaction_flow_matrix(final_solution, second_last_solution)
+        else:
+            st.caption("Revaluation and Transaction Flow matrices require data from the previous period, which is unavailable.")
+
+    # Option to restart? (Could be added later)
+    # if st.button("Play Again?"):
+    #     # Reset relevant session state keys
+    #     st.session_state.clear() # Or selectively clear
+    #     st.rerun()
+
+elif st.session_state.game_phase == "SIMULATION_ERROR": # Keep this block
     # Correct year display for error message
     st.error(f"Simulation failed for Year {st.session_state.current_year + 1}. Cannot proceed.")
     if st.button("Acknowledge Error (Stops Game)"): st.stop()
 
-else:
+else: # Keep this block
     st.error(f"Unknown game phase: {st.session_state.game_phase}")
 
 # --- Debug Info (Optional) ---
