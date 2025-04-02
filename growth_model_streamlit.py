@@ -1956,5 +1956,47 @@ elif st.session_state.game_phase == "SIMULATION_ERROR": # Keep this block
 else: # Keep this block
     st.error(f"Unknown game phase: {st.session_state.game_phase}")
 
+
+# --- Credits and Model Explanation ---
+with st.expander("Credits and Model Explanation"):
+    st.markdown("""
+    ### Code Credits
+    This game is powered by economic modeling code from two key repositories:
+
+    *   **pylinsolve**: A Python-based equation solving system created by Kent Barber (GitHub: kennt)
+        [https://github.com/kennt/pylinsolve](https://github.com/kennt/pylinsolve)
+
+    *   **monetary-economics**: Implementation of Stock-Flow Consistent (SFC) economic models based on Godley and Lavoie's work, also maintained by Kent Barber
+        [https://github.com/kennt/monetary-economics](https://github.com/kennt/monetary-economics)
+
+    ### About the Model Engine
+    The engine uses pylinsolve, which processes textual descriptions of equations and runs solvers iteratively until converging to a solution. The system offers three solving methods: Gauss-Seidel, Newton-Raphson, and Broyden. It was specifically developed for implementing Stock-Flow Consistent (SFC) economic models.
+
+    ### The GROWTH Model Explained
+    The game is based on the **GROWTH** model from Chapter 11 of Wynne Godley and Marc Lavoie's influential 2007 book *"Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth."*
+
+    #### Key Features of the Model
+    *   **Stock-Flow Consistent Framework**: The model maintains complete accounting consistency between flows (income, spending) and stocks (wealth, debt), with comprehensive balance sheets and transaction matrices.
+    *   **Policy Variables as Exogenous Inputs**:
+        *   Government spending grows at an exogenously determined rate
+        *   Tax rates are set exogenously by policy makers
+        *   The policy interest rate (bill rate) is set exogenously by the central bank
+    *   **Growing Economy**: Unlike simpler models, this describes a growing economy that requires active fiscal and monetary policy management to achieve full employment without inflation.
+    *   **Investment and Capital**: Firms undertake fixed investment with endogenous pricing mark-up, depending on dividend payments and their target for self-financing through retained earnings.
+    *   **Equity Markets**: Firms issue stock market shares which households can purchase, creating a complete capital market.
+    *   **Loan Dynamics**: Both households and firms borrow from banks, with personal loans determined as a proportion of disposable income. The model also accounts for corporate loan defaults.
+    *   **Banking System**: Banks maintain capital reserves to fulfill regulatory obligations, with the loan rate determined as a mark-up on the deposit rate.
+
+    #### Model Structure
+    The economy is divided into five sectors - households, firms, banks, a central bank, and government - each with distinct functions and objectives. These sectors interact through:
+    *   Production and consumption decisions
+    *   Investment and saving
+    *   Wage setting and price formation
+    *   Portfolio allocation (money, bills, bonds, equities)
+    *   Bank lending and capital requirements
+    *   Government fiscal operations
+    """)
+# --- End Credits ---
+
 # --- Debug Info (Optional) ---
 # with st.expander("Debug Info"): st.write("Session State:", st.session_state)

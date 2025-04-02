@@ -25,14 +25,14 @@ POLICY_CARDS = {
         "type": "Monetary",
         "param": "ADDbl", # Spread between long/short rates
         "stance": "expansionary",
-        "effect": -0.008, # Boosted from -0.005, rounded
+        "effect": -0.01, # Boosted from -0.005, rounded
         "desc": "The central bank injects liquidity by purchasing long-term bonds, aiming to reduce the yield spread (ADDbl) and lower long-term borrowing costs, potentially boosting asset prices (Pe)."
     },
     "Quantitative Tightening": { # Added counterpart
         "type": "Monetary",
         "param": "ADDbl", # Spread between long/short rates
         "stance": "contractionary",
-        "effect": 0.008, # Boosted from 0.005, rounded
+        "effect": 0.01, # Boosted from 0.005, rounded
         "desc": "The central bank withdraws liquidity by selling assets or letting them mature, widening the yield spread (ADDbl). Aims to increase long-term borrowing costs and moderate asset prices (Pe)."
     },
     # Note: Bank Liquidity Ratio Targets (bot/top) affect Rm adjustment speed (xim1/xim2), not a direct param change in the same way.
@@ -57,28 +57,28 @@ POLICY_CARDS = {
         "type": "Fiscal",
         "param": "theta",
         "stance": "expansionary",
-        "effect": -0.019, # Boosted from -0.0125, rounded
+        "effect": -0.02, # Boosted from -0.0125, rounded
         "desc": "Implement a broad cut in the average income tax rate (theta). This increases household disposable income (YDr) and typically stimulates consumption (Ck)."
     },
     "Raise Income Tax Rate": {
         "type": "Fiscal",
         "param": "theta",
         "stance": "contractionary",
-        "effect": 0.019, # Boosted from 0.0125, rounded
+        "effect": 0.02, # Boosted from 0.0125, rounded
         "desc": "Implement a broad increase in the average income tax rate (theta). This reduces household disposable income (YDr) and typically dampens consumption (Ck)."
     },
     "Make Tax System More Progressive": { # Renamed, uses alpha1 as proxy
         "type": "Fiscal",
         "param": "alpha1", # Propensity to consume
         "stance": "expansionary",
-        "effect": 0.023, # Boosted from 0.015, rounded
+        "effect": 0.025, # Boosted from 0.015, rounded
         "desc": "Restructure the tax system to increase the burden on higher incomes relative to lower incomes. This tends to increase the overall propensity to consume (alpha1), boosting aggregate demand."
     },
     "Make Tax System Less Progressive": { # Renamed, uses alpha1 as proxy
         "type": "Fiscal",
         "param": "alpha1", # Propensity to consume
         "stance": "contractionary",
-        "effect": -0.023, # Boosted from -0.015, rounded
+        "effect": -0.025, # Boosted from -0.015, rounded
         "desc": "Restructure the tax system to decrease the burden on higher incomes relative to lower incomes. This tends to decrease the overall propensity to consume (alpha1), dampening aggregate demand."
     },
 }
