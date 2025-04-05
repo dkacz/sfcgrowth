@@ -183,6 +183,49 @@ def get_delta_percent(current_val, prev_val):
      # Format as percentage points, including sign
      return f"{delta:+.2f} % pts" # More explicit label
 
+
+def get_delta_points(current_val, prev_val):
+    """ Helper to calculate absolute point delta string for st.metric """
+    # Check for invalid inputs first
+    if not np.isfinite(current_val) or prev_val is None or not np.isfinite(prev_val):
+        return None
+
+    # Handle cases where values are very close (treat as no change)
+    if np.isclose(current_val, prev_val):
+        return None # Or return "→ 0.0 pts" if explicit zero change is desired
+
+    delta = current_val - prev_val
+    arrow = "↑" if delta >= 0 else "↓"
+    sign = "+" if delta >= 0 else "" # Explicit sign for positive/zero
+
+def get_delta_percentage_formatted(current_val, prev_val):
+    """ Helper to calculate PERCENTAGE delta string with arrow format """
+    # Check for invalid inputs first
+    if not np.isfinite(current_val) or prev_val is None or not np.isfinite(prev_val):
+        return None
+
+    # Handle zero previous value
+    if np.isclose(prev_val, 0):
+        if np.isclose(current_val, 0):
+            return None # No change from zero, treat as no delta
+        else:
+            return "N/A" # Undefined percentage change from zero
+
+    # Handle cases where values are very close (treat as no change)
+    if np.isclose(current_val, prev_val):
+        return None # Treat as no delta
+
+    # Calculate percentage change
+    delta_pct = ((current_val - prev_val) / abs(prev_val)) * 100 # Use abs(prev_val) to avoid issues with negative base
+
+    arrow = "↑" if delta_pct >= 0 else "↓"
+    sign = "+" if delta_pct >= 0 else "" # Explicit sign for positive/zero
+    # Format as percentage change, including sign, arrow, and one decimal place
+    return f"{arrow} {sign}{delta_pct:.1f}%"
+
+    # Format as points change, including sign and arrow
+    return f"{arrow} {sign}{delta:.1f} pts"
+
 # --- Icon Handling with Base64 ---
 @st.cache_data # Cache the encoded icons
 def get_base64_of_bin_file(bin_file):
@@ -1107,9 +1150,7 @@ else: # Only display if Year > 0 and history exists
 
 
     # Display core metrics (Using original metrics from commit)
-    # Display core metrics (Using original metrics from commit) - Modified Yk_Index to include delta
-    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", None) # Delta handled separately below
-    # --- Calculate and Display Real GDP Delta ---
+    # --- Calculate and Display Real GDP Index Delta ---
     current_gdp_index = np.nan
     previous_gdp_index = np.nan
     base_yk = st.session_state.get('base_yk')
@@ -1133,23 +1174,11 @@ else: # Only display if Year > 0 and history exists
         else:
              previous_gdp_index = np.nan
 
-    # Calculate percentage delta
-    gdp_delta_pct_str = "N/A"
-    if not is_first_result_year and np.isfinite(current_gdp_index) and np.isfinite(previous_gdp_index) and not np.isclose(previous_gdp_index, 0):
-        gdp_delta_pct = ((current_gdp_index / previous_gdp_index) - 1) * 100
-        gdp_arrow = "↑" if gdp_delta_pct >= 0 else "↓"
-        gdp_sign = "+" if gdp_delta_pct >= 0 else "" # Explicit sign for positive
-        # Apply the new format here:
-        gdp_delta_pct_str = f"{gdp_arrow} {gdp_sign}{gdp_delta_pct:.1f}%" # Removed ' vs PY'
-    elif is_first_result_year:
-         gdp_delta_pct_str = "N/A (First Year)"
+    # Calculate formatted percentage delta using the new helper
+    delta_yk_index_formatted = None if is_first_result_year else get_delta_percentage_formatted(current_gdp_index, previous_gdp_index)
 
-
-    # Display the delta using markdown below the metric
-    # Use columns to align it roughly under the metric value
-    _col1, _col2, _col3 = st.sidebar.columns([1, 5, 2]) # Match metric columns
-    with _col2: # Place in the middle column
-        st.markdown(f"<small style='color: #555555; margin-top: -10px; display: block;'>{gdp_delta_pct_str}</small>", unsafe_allow_html=True)
+    # Display core metrics (Using original metrics from commit) - Pass formatted delta to Yk_Index
+    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index_formatted)
     display_metric_sparkline('PI', 'Inflation Rate', 'PI', format_percent, delta_pi)
     display_metric_sparkline('Unemployment', 'Unemployment Rate', 'ER', format_percent, delta_unemp)
     display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp) # Moved here
@@ -1173,7 +1202,7 @@ else: # Only display if Year > 0 and history exists
     delta_rb = None if is_first_result_year else get_delta_percent(rb_val, rb_prev)
     delta_rl = None if is_first_result_year else get_delta_percent(rl_val, rl_prev)
     delta_rm = None if is_first_result_year else get_delta_percent(rm_val, rm_prev)
-    delta_q = None if is_first_result_year else get_delta(q_val, q_prev)
+    delta_q = None if is_first_result_year else get_delta(q_val, q_prev) # Keep original delta for Q
     delta_bur = None if is_first_result_year else get_delta_percent(bur_val, bur_prev)
     delta_car = None if is_first_result_year else get_delta_percent(car_val, car_prev)
 
