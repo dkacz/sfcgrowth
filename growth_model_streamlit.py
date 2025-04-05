@@ -226,6 +226,7 @@ def get_delta_percentage_formatted(current_val, prev_val):
     arrow = "↑" if delta_pct >= 0 else "↓"
     sign = "+" if delta_pct >= 0 else "" # Explicit sign for positive/zero
     # Format as percentage change, including sign, arrow, and one decimal place
+    # Remove the extra arrow, keep sign and percentage
     return f"{arrow} {sign}{delta_pct:.1f}%"
 
     # Format as points change, including sign and arrow
@@ -1184,7 +1185,7 @@ else: # Only display if Year > 0 and history exists
     delta_yk_index_formatted = None if is_first_result_year else get_delta_percentage_formatted(current_gdp_index, previous_gdp_index)
 
     # Display core metrics (Using original metrics from commit) - Pass formatted delta to Yk_Index
-    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index_formatted)
+    display_metric_sparkline('Yk_Index', 'GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index_formatted) # Shortened label
     display_metric_sparkline('PI', 'Inflation Rate', 'PI', format_percent, delta_pi)
     display_metric_sparkline('Unemployment', 'Unemployment Rate', 'ER', format_percent, delta_unemp)
     display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp) # Moved here
@@ -2309,44 +2310,24 @@ User Identity: {user_identity if user_identity else 'Anonymous'}
     #     st.session_state.clear() # Or selectively clear
     #     st.rerun()
 
-    # --- Credits and Model Explanation (Now part of GAME_OVER phase) ---
-    with st.expander("Credits and Model Explanation"):
-        st.markdown("""
-        ### Code Credits
-        This game is powered by economic modeling code from two key repositories:
+    # Credits and Model Explanation moved to the end of the script to appear globally.
 
-        *   **pylinsolve**: A Python-based equation solving system created by Kent Barber (GitHub: kennt)
-            [https://github.com/kennt/pylinsolve](https://github.com/kennt/pylinsolve)
-
-        *   **monetary-economics**: Implementation of Stock-Flow Consistent (SFC) economic models based on Godley and Lavoie's work, also maintained by Kent Barber
-            [https://github.com/kennt/monetary-economics](https://github.com/kennt/monetary-economics)
-
-        ### About the Model Engine
-        The engine uses pylinsolve, which processes textual descriptions of equations and runs solvers iteratively until converging to a solution. The system offers three solving methods: Gauss-Seidel, Newton-Raphson, and Broyden. It was specifically developed for implementing Stock-Flow Consistent (SFC) economic models.
-
-        ### The GROWTH Model Explained
-        The game is based on the **GROWTH** model from Chapter 11 of Wynne Godley and Marc Lavoie's influential 2007 book *"Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth."*
-
-        #### Key Features of the Model
-        *   **Stock-Flow Consistent Framework**: The model maintains complete accounting consistency between flows (income, spending) and stocks (wealth, debt), with comprehensive balance sheets and transaction matrices.
-        *   **Policy Variables as Exogenous Inputs**:
-            *   Government spending grows at an exogenously determined rate
-            *   Tax rates are set exogenously by policy makers
-            *   The policy interest rate (bill rate) is set exogenously by the central bank
-        *   **Growing Economy**: Unlike simpler models, this describes a growing economy that requires active fiscal and monetary policy management to achieve full employment without inflation.
-        *   **Investment and Capital**: Firms undertake fixed investment with endogenous pricing mark-up, depending on dividend payments and their target for self-financing through retained earnings.
-        *   **Equity Markets**: Firms issue stock market shares which households can purchase, creating a complete capital market.
-        *   **Loan Dynamics**: Both households and firms borrow from banks, with personal loans determined as a proportion of disposable income. The model also accounts for corporate loan defaults.
-        *   **Banking System**: Banks maintain capital reserves to fulfill regulatory obligations, with the loan rate determined as a mark-up on the deposit rate.
-        """)
+# Cleaned up placeholder comments.
 
 elif st.session_state.game_phase == "SIMULATION_ERROR": # Keep this block
-    # Correct year display for error message
+# Correct year display for error message
     st.error(f"Simulation failed for Year {st.session_state.current_year + 1}. Cannot proceed.")
     if st.button("Acknowledge Error (Stops Game)"): st.stop()
 
 else: # Keep this block
     st.error(f"Unknown game phase: {st.session_state.game_phase}")
+    # Credits and Model Explanation moved to the end of the script to appear globally.
+# --- End Credits ---
+
+
+# --- Global Credits and Model Explanation ---
+st.divider() # Add a divider before the expander
+with st.expander("Credits and Model Explanation", expanded=False):
     st.markdown("""
     ### Code Credits
     This game is powered by economic modeling code from two key repositories:
@@ -2384,7 +2365,6 @@ else: # Keep this block
     *   Bank lending and capital requirements
     *   Government fiscal operations
     """)
-# --- End Credits ---
 
 # --- Debug Info (Optional) ---
 # with st.expander("Debug Info"): st.write("Session State:", st.session_state)
