@@ -347,7 +347,7 @@ def create_kpi_plot(metric_key, y_axis_title):
 
         # --- Common Chart Configuration (Applied to both single point and line) ---
         chart = chart.properties(
-            height=200
+            height=200,
             padding={"left": 20} # Added left padding
         ).configure_view(
             fill=None,
