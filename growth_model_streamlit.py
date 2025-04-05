@@ -1930,8 +1930,8 @@ elif st.session_state.game_phase == "SIMULATION":
     else:
         # For subsequent years, start from default parameters + exogenous
         base_numerical_params = copy.deepcopy(growth_parameters)
-        temp_model_for_param_check = create_growth_model() # Fixed potential syntax error here
-        defined_param_names = set(temp_model_for_param_check.parameters.keys())
+        # Get parameter names directly from the imported dictionary, avoid creating a temp model.
+        defined_param_names = set(growth_parameters.keys())
         for key, value in growth_exogenous:
             if key in defined_param_names:
                  try: base_numerical_params[key] = float(value)
