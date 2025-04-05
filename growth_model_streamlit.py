@@ -2228,12 +2228,19 @@ elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
     # SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com") # Default if not set
     # SMTP_PORT = int(os.getenv("SMTP_PORT", 587)) # Default if not set
 
-    # --- Hardcoded Credentials (Replace with actual values or use environment variables/secrets) ---
-    SENDER_EMAIL = "your_sender_email@example.com" # Replace with your actual sender email (e.g., Gmail)
-    SENDER_PASSWORD = "your_app_password"       # Replace with your app password (for Gmail) or actual password (less secure)
-    SMTP_SERVER = "smtp.gmail.com"              # Replace with your SMTP server (e.g., 'smtp.gmail.com')
-    SMTP_PORT = 587                             # Standard TLS port
-    RECIPIENT_EMAIL = "omareth@gmail.com"       # The email address to send feedback to
+    # --- Email Configuration from Streamlit Secrets ---
+    # Ensure secrets are configured in .streamlit/secrets.toml
+    # [email_config]
+    # sender_email = "..."
+    # sender_password = "..."
+    # smtp_server = "..."
+    # smtp_port = 587
+    email_secrets = st.secrets.get("email_config", {})
+    SENDER_EMAIL = email_secrets.get("sender_email")
+    SENDER_PASSWORD = email_secrets.get("sender_password")
+    SMTP_SERVER = email_secrets.get("smtp_server", "smtp.gmail.com") # Default if not set
+    SMTP_PORT = int(email_secrets.get("smtp_port", 587)) # Default if not set
+    RECIPIENT_EMAIL = "omareth@gmail.com"       # Keep recipient hardcoded or move to secrets if preferred
 
     with st.form("feedback_form"):
         enjoyment = st.text_area("What did you enjoy most about the game? (Optional)")
@@ -2246,7 +2253,8 @@ elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
 
         if submitted:
             # Basic check if credentials seem configured (replace with more robust check if using env vars)
-            if not SENDER_EMAIL or SENDER_EMAIL == "your_sender_email@example.com" or not SENDER_PASSWORD or SENDER_PASSWORD == "your_app_password":
+            # Check if necessary secrets are available
+            if not SENDER_EMAIL or not SENDER_PASSWORD or not SMTP_SERVER:
                 st.error("Email sending is not configured. Please set up sender credentials.")
                 logging.error("Feedback submission attempted but email credentials are not configured.")
             else:
@@ -2272,17 +2280,17 @@ elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
                     msg = EmailMessage()
                     msg.set_content(feedback_body)
                     msg['Subject'] = "SFCGame Feedback"
-                    msg['From'] = SENDER_EMAIL
+                    msg['From'] = SENDER_EMAIL # Use email from secrets
                     msg['To'] = RECIPIENT_EMAIL
 
                     # Connect to SMTP server and send email
-                    logging.info(f"Attempting to send feedback email via {SMTP_SERVER}:{SMTP_PORT} from {SENDER_EMAIL}")
-                    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                    logging.info(f"Attempting to send feedback email via {SMTP_SERVER}:{SMTP_PORT} from {SENDER_EMAIL}") # Use secrets
+                    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server: # Use secrets
                         server.ehlo() # Identify ourselves to the server
                         server.starttls() # Secure the connection
                         server.ehlo() # Re-identify ourselves over TLS
                         # TODO: Add proper error handling for login failure
-                        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+                        server.login(SENDER_EMAIL, SENDER_PASSWORD) # Use secrets
                         server.send_message(msg)
                     st.success("Thank you for your feedback!")
                     logging.info(f"Feedback submitted successfully. User: {user_identity if user_identity else 'Anonymous'}")
