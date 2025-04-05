@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 import logging
 import os
 import json
+import urllib.parse # For mailto link generation
 import base64 # Import base64 encoding
 import altair as alt # Keep altair import for potential future use if needed
 import smtplib
@@ -2227,76 +2228,50 @@ elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
     # SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
     # SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com") # Default if not set
     # SMTP_PORT = int(os.getenv("SMTP_PORT", 587)) # Default if not set
+# --- Feedback Form using mailto: link ---
+RECIPIENT_EMAIL = "omareth@gmail.com" # Define recipient
 
-    # --- Hardcoded Credentials (Replace with actual values or use environment variables/secrets) ---
-    SENDER_EMAIL = "your_sender_email@example.com" # Replace with your actual sender email (e.g., Gmail)
-    SENDER_PASSWORD = "your_app_password"       # Replace with your app password (for Gmail) or actual password (less secure)
-    SMTP_SERVER = "smtp.gmail.com"              # Replace with your SMTP server (e.g., 'smtp.gmail.com')
-    SMTP_PORT = 587                             # Standard TLS port
-    RECIPIENT_EMAIL = "omareth@gmail.com"       # The email address to send feedback to
+with st.form("feedback_form"):
+    enjoyment = st.text_area("What did you enjoy most about the game? (Optional)")
+    confusion = st.text_area("Was anything confusing or unclear? (Optional)")
+    suggestions = st.text_area("Do you have any suggestions for improvement? (Optional)")
+    other_comments = st.text_area("Any other comments? (Optional)")
+    user_identity = st.text_input("Your Name/Email (Optional - leave blank for anonymous feedback):")
 
-    with st.form("feedback_form"):
-        enjoyment = st.text_area("What did you enjoy most about the game? (Optional)")
-        confusion = st.text_area("Was anything confusing or unclear? (Optional)")
-        suggestions = st.text_area("Do you have any suggestions for improvement? (Optional)")
-        other_comments = st.text_area("Any other comments? (Optional)")
-        user_identity = st.text_input("Your Name/Email (Optional - leave blank for anonymous feedback):")
+    submitted = st.form_submit_button("Prepare Feedback Email") # Changed button label
 
-        submitted = st.form_submit_button("Submit Feedback")
+    if submitted:
+        # Construct feedback body
+        feedback_body = f"""
+SFCGame Feedback Received:
 
-        if submitted:
-            # Basic check if credentials seem configured (replace with more robust check if using env vars)
-            if not SENDER_EMAIL or SENDER_EMAIL == "your_sender_email@example.com" or not SENDER_PASSWORD or SENDER_PASSWORD == "your_app_password":
-                st.error("Email sending is not configured. Please set up sender credentials.")
-                logging.error("Feedback submission attempted but email credentials are not configured.")
-            else:
-                feedback_body = f"""
-                SFCGame Feedback Received:
+Enjoyment:
+{enjoyment if enjoyment else 'N/A'}
 
-                Enjoyment:
-                {enjoyment if enjoyment else 'N/A'}
+Confusion:
+{confusion if confusion else 'N/A'}
 
-                Confusion:
-                {confusion if confusion else 'N/A'}
+Suggestions:
+{suggestions if suggestions else 'N/A'}
 
-                Suggestions:
-                {suggestions if suggestions else 'N/A'}
+Other Comments:
+{other_comments if other_comments else 'N/A'}
 
-                Other Comments:
-                {other_comments if other_comments else 'N/A'}
+User Identity: {user_identity if user_identity else 'Anonymous'}
+        """
+        subject = "SFCGame Feedback"
 
-                User Identity: {user_identity if user_identity else 'Anonymous'}
-                """
+        # URL Encode subject and body
+        encoded_subject = urllib.parse.quote(subject)
+        encoded_body = urllib.parse.quote(feedback_body)
 
-                try:
-                    msg = EmailMessage()
-                    msg.set_content(feedback_body)
-                    msg['Subject'] = "SFCGame Feedback"
-                    msg['From'] = SENDER_EMAIL
-                    msg['To'] = RECIPIENT_EMAIL
+        # Construct mailto URL
+        mailto_url = f"mailto:{RECIPIENT_EMAIL}?subject={encoded_subject}&body={encoded_body}"
 
-                    # Connect to SMTP server and send email
-                    logging.info(f"Attempting to send feedback email via {SMTP_SERVER}:{SMTP_PORT} from {SENDER_EMAIL}")
-                    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                        server.ehlo() # Identify ourselves to the server
-                        server.starttls() # Secure the connection
-                        server.ehlo() # Re-identify ourselves over TLS
-                        # TODO: Add proper error handling for login failure
-                        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-                        server.send_message(msg)
-                    st.success("Thank you for your feedback!")
-                    logging.info(f"Feedback submitted successfully. User: {user_identity if user_identity else 'Anonymous'}")
-                except smtplib.SMTPAuthenticationError:
-                     st.error("Feedback submission failed: Could not authenticate with the email server. Please check sender credentials (email/password/app password). Ensure 'less secure app access' is enabled if using Gmail password directly, or use an App Password.")
-                     logging.error("SMTP Authentication Error during feedback submission.")
-                except smtplib.SMTPConnectError:
-                     st.error(f"Feedback submission failed: Could not connect to the email server ({SMTP_SERVER}:{SMTP_PORT}). Please check server address and port.")
-                     logging.error(f"SMTP Connection Error during feedback submission to {SMTP_SERVER}:{SMTP_PORT}.")
-                except smtplib.SMTPServerDisconnected:
-                     st.error("Feedback submission failed: Server disconnected unexpectedly. Please try again later.")
-                     logging.error("SMTP Server Disconnected Error during feedback submission.")
-                except Exception as e:
-                    st.error(f"Feedback submission failed: An unexpected error occurred ({type(e).__name__}). Please check the logs.")
+        # Display success message and the mailto link
+        st.success("Thank you! Click the link below to open your email client and send the feedback:")
+        st.markdown(f'<a href="{mailto_url}" target="_blank">Click here to send feedback email</a>', unsafe_allow_html=True)
+        logging.info(f"Feedback prepared for user: {user_identity if user_identity else 'Anonymous'}. Mailto link generated.")
                     logging.error(f"Unexpected error during feedback submission: {e}", exc_info=True)
 
 # --- Display Final SFC Matrices (Moved after feedback form) ---
