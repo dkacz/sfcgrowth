@@ -92,7 +92,7 @@ CHARACTERS = {
                 "label": "Inflation", "condition": "<=", "target_value": 2, "target_type": "percent"
             },
             "debt_gdp": {
-                "label": "Gov Debt/GDP", "condition": "<=", "target_value": 50, "target_type": "percent"
+                "label": "Gov Debt/GDP", "condition": "<=", "target_value": 55, "target_type": "percent"
             }
         }
     }
