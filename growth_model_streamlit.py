@@ -2270,56 +2270,83 @@ User Identity: {user_identity if user_identity else 'Anonymous'}
             st.success("Feedback prepared! Click the link below to open your email client.")
             st.markdown(f'<a href="{mailto_url}" target="_blank">Click here to send feedback via email</a>', unsafe_allow_html=True)
             logging.info(f"Generated mailto link for feedback. User: {user_identity if user_identity else 'Anonymous'}")
-# --- Display Final SFC Matrices (Moved after feedback form) ---
-st.divider()
-st.subheader("Final Economic State (SFC Matrices)")
 
-# Retrieve final solutions
-final_solution = None
-second_last_solution = None
-model_state = st.session_state.get('sfc_model_object')
-
-if model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) >= 2:
-    final_solution = model_state.solutions[-1]
-    second_last_solution = model_state.solutions[-2]
-elif model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) == 1:
-    final_solution = model_state.solutions[-1]
-    second_last_solution = st.session_state.get('initial_state_dict')
-    logging.warning("Game Over after 1 year, using initial state for matrix comparison.")
-else:
-    logging.error("Could not retrieve sufficient solutions for Game Over matrix display.")
-    st.warning("Could not display final SFC matrices due to missing simulation data.")
-
-# Display Matrices if solutions are available
-if final_solution:
-    display_balance_sheet_matrix(final_solution)
+    # --- Display Final SFC Matrices (Moved after feedback form) ---
     st.divider()
-    if second_last_solution:
-        display_revaluation_matrix(final_solution, second_last_solution)
-        st.divider()
-        display_transaction_flow_matrix(final_solution, second_last_solution)
+    st.subheader("Final Economic State (SFC Matrices)")
+
+    # Retrieve final solutions
+    final_solution = None
+    second_last_solution = None
+    model_state = st.session_state.get('sfc_model_object')
+
+    if model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) >= 2:
+        final_solution = model_state.solutions[-1]
+        second_last_solution = model_state.solutions[-2]
+    elif model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) == 1:
+        final_solution = model_state.solutions[-1]
+        second_last_solution = st.session_state.get('initial_state_dict')
+        logging.warning("Game Over after 1 year, using initial state for matrix comparison.")
     else:
-        st.caption("Revaluation and Transaction Flow matrices require data from the previous period, which is unavailable.")
+        logging.error("Could not retrieve sufficient solutions for Game Over matrix display.")
+        st.warning("Could not display final SFC matrices due to missing simulation data.")
+
+    # Display Matrices if solutions are available
+    if final_solution:
+        display_balance_sheet_matrix(final_solution)
+        st.divider()
+        if second_last_solution:
+            display_revaluation_matrix(final_solution, second_last_solution)
+            st.divider()
+            display_transaction_flow_matrix(final_solution, second_last_solution)
+        else:
+            st.caption("Revaluation and Transaction Flow matrices require data from the previous period, which is unavailable.")
 
 
-# Option to restart? (Could be added later)
-# if st.button("Play Again?"):
-#     # Reset relevant session state keys
-#     st.session_state.clear() # Or selectively clear
-#     st.rerun()
+    # Option to restart? (Could be added later)
+    # if st.button("Play Again?"):
+    #     # Reset relevant session state keys
+    #     st.session_state.clear() # Or selectively clear
+    #     st.rerun()
+
+    # --- Credits and Model Explanation (Now part of GAME_OVER phase) ---
+    with st.expander("Credits and Model Explanation"):
+        st.markdown("""
+        ### Code Credits
+        This game is powered by economic modeling code from two key repositories:
+
+        *   **pylinsolve**: A Python-based equation solving system created by Kent Barber (GitHub: kennt)
+            [https://github.com/kennt/pylinsolve](https://github.com/kennt/pylinsolve)
+
+        *   **monetary-economics**: Implementation of Stock-Flow Consistent (SFC) economic models based on Godley and Lavoie's work, also maintained by Kent Barber
+            [https://github.com/kennt/monetary-economics](https://github.com/kennt/monetary-economics)
+
+        ### About the Model Engine
+        The engine uses pylinsolve, which processes textual descriptions of equations and runs solvers iteratively until converging to a solution. The system offers three solving methods: Gauss-Seidel, Newton-Raphson, and Broyden. It was specifically developed for implementing Stock-Flow Consistent (SFC) economic models.
+
+        ### The GROWTH Model Explained
+        The game is based on the **GROWTH** model from Chapter 11 of Wynne Godley and Marc Lavoie's influential 2007 book *"Monetary Economics: An Integrated Approach to Credit, Money, Income, Production and Wealth."*
+
+        #### Key Features of the Model
+        *   **Stock-Flow Consistent Framework**: The model maintains complete accounting consistency between flows (income, spending) and stocks (wealth, debt), with comprehensive balance sheets and transaction matrices.
+        *   **Policy Variables as Exogenous Inputs**:
+            *   Government spending grows at an exogenously determined rate
+            *   Tax rates are set exogenously by policy makers
+            *   The policy interest rate (bill rate) is set exogenously by the central bank
+        *   **Growing Economy**: Unlike simpler models, this describes a growing economy that requires active fiscal and monetary policy management to achieve full employment without inflation.
+        *   **Investment and Capital**: Firms undertake fixed investment with endogenous pricing mark-up, depending on dividend payments and their target for self-financing through retained earnings.
+        *   **Equity Markets**: Firms issue stock market shares which households can purchase, creating a complete capital market.
+        *   **Loan Dynamics**: Both households and firms borrow from banks, with personal loans determined as a proportion of disposable income. The model also accounts for corporate loan defaults.
+        *   **Banking System**: Banks maintain capital reserves to fulfill regulatory obligations, with the loan rate determined as a mark-up on the deposit rate.
+        """)
 
 elif st.session_state.game_phase == "SIMULATION_ERROR": # Keep this block
-# Correct year display for error message
     # Correct year display for error message
     st.error(f"Simulation failed for Year {st.session_state.current_year + 1}. Cannot proceed.")
     if st.button("Acknowledge Error (Stops Game)"): st.stop()
 
 else: # Keep this block
     st.error(f"Unknown game phase: {st.session_state.game_phase}")
-
-
-# --- Credits and Model Explanation ---
-with st.expander("Credits and Model Explanation"):
     st.markdown("""
     ### Code Credits
     This game is powered by economic modeling code from two key repositories:
