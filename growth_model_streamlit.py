@@ -8,6 +8,7 @@ import io
 from contextlib import redirect_stdout
 import logging
 import os
+import json
 import base64 # Import base64 encoding
 import altair as alt # Keep altair import for potential future use if needed
 
@@ -24,6 +25,8 @@ try:
     from game_mechanics import (
         create_deck, draw_cards, check_for_events, apply_effects
     )
+    from dilemmas import DILEMMAS
+    from game_mechanics import select_dilemma, apply_dilemma_choice # Add new functions
     from cards import POLICY_CARDS
     from events import ECONOMIC_EVENTS
     from matrix_display import (
@@ -38,7 +41,10 @@ except ImportError as e:
 
 
 # --- Logging Setup ---
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filename='debug_session.log',
+                    filemode='w') # 'w' overwrites the file each time
 
 # --- Constants ---
 INITIAL_HAND_SIZE = 5
@@ -617,7 +623,11 @@ if "game_initialized" not in st.session_state:
     st.session_state.history = [] # Initialize history as empty
     st.session_state.initial_params = {} # For year 0 adjustments
     st.session_state.temporary_effects = [] # Initialize list to track temporary event effects
+    st.session_state.persistent_effects = {} # Initialize dict to track cumulative persistent card effects
 
+    st.session_state.seen_dilemmas = set() # Initialize set to track seen dilemmas
+    st.session_state.current_dilemma = None # To store the currently active dilemma
+    st.session_state.dilemma_processed_for_year = -1 # Initialize to a non-valid year
     logging.info("Game Initialized at Year 0.")
     st.rerun() # Rerun to start the flow
 
@@ -627,6 +637,9 @@ if "game_initialized" not in st.session_state:
 if st.session_state.get('selected_character_id'):
     char_id = st.session_state.selected_character_id
     char_data = CHARACTERS.get(char_id)
+
+    if char_data: # Check if character data was found
+        st.sidebar.header(f"Advisor: {char_data['name']}") # Display the name
 
     # Create two columns in the sidebar
     col1, col2 = st.sidebar.columns([1, 2]) # Adjust ratio if needed (e.g., [1, 3])
@@ -695,7 +708,7 @@ else: # Only display if Year > 0 and history exists
 
     # Display Metrics in Sidebar using columns and Base64 icons
     # --- Helper function to create sparkline data ---
-    def get_sparkline_data(metric_key, num_years):
+    def get_sparkline_data(metric_key, num_years, fetch_full_history=False): # Added fetch_full_history flag
         if not hasattr(st.session_state, 'sfc_model_object') or not st.session_state.sfc_model_object.solutions:
             return None
         solutions = st.session_state.sfc_model_object.solutions
@@ -703,14 +716,26 @@ else: # Only display if Year > 0 and history exists
         if not solutions: # Check if solutions list is empty
             return None
 
-        start_index = max(0, len(solutions) - num_years)
+        # Determine start index based on flag
+        if fetch_full_history:
+            # Fetch from Year 1 (index 1) onwards for full history plots
+            start_index = 1
+        else:
+            # Fetch last num_years for sparklines (including year 0 if within window)
+            start_index = max(0, len(solutions) - num_years)
+
+        # Ensure start_index is valid (e.g., don't try to fetch index 1 if only index 0 exists)
+        if start_index >= len(solutions):
+             logging.warning(f"SPARKLINE {metric_key} - start_index {start_index} out of bounds for solutions length {len(solutions)}. Returning None.")
+             return None # Avoid slicing error if start_index is too large
+
         history_slice = solutions[start_index:]
 
         # Extract data, handling potential missing keys or non-numeric values gracefully
         data = []
         years = []
         # Assuming solutions[0] corresponds to year 0, solutions[1] to year 1 etc.
-        start_actual_year = start_index # Adjust if year numbering is different
+        start_actual_year = start_index # Year number corresponds to the index in solutions list (0=Year 0, 1=Year 1, etc.)
 
         for i, sol in enumerate(history_slice):
             # Get the raw value first, default to NaN
@@ -772,9 +797,13 @@ else: # Only display if Year > 0 and history exists
                 df[metric_key] = np.nan
             logging.debug(f"SPARKLINE Yk_Index - Calculated Index DF:\n{df}")
 
+        # Filter out rows where the metric value is exactly zero
+        # Do this *before* dropping NaNs to handle cases where zero might be valid but unwanted
+        df = df[~np.isclose(df[metric_key], 0.0)]
+
         # Explicitly drop rows where the metric value is NaN BEFORE setting index
         # This ensures Altair receives only valid points for the y-axis
-        # Important: Do this *after* potential post-loop calculations
+        # Important: Do this *after* potential post-loop calculations and zero filtering
         df.dropna(subset=[metric_key], inplace=True)
 
         # Check again if enough points remain after dropping NaNs
@@ -1182,470 +1211,598 @@ if st.session_state.game_phase == "CHARACTER_SELECTION":
             st.session_state.active_events_this_year = [] # No events in year 0
             logging.info("Proceeding to first simulation (Year 0 -> Year 1).")
             st.rerun()
+
+    # --- NORMAL CHARACTER SELECTION LOGIC (No dilemma here) ---
+
     else:
         st.warning("Please select an economic advisor to begin.")
 
 
 elif st.session_state.game_phase == "YEAR_START":
-    # --- Display Current Year ---
-    st.header(f"Year {st.session_state.current_year}") # ADDED YEAR DISPLAY
+    logging.debug(f"--- Entering YEAR_START for Year {st.session_state.current_year} ---")
+    logging.debug(f"Value of 'dilemma_processed_for_year' at phase start: {st.session_state.get('dilemma_processed_for_year', 'Not Set')}")
+    # --- RESTRUCTURED DILEMMA LOGIC ---
+    current_year = st.session_state.current_year
+    dilemma_already_processed_this_year = st.session_state.get('dilemma_processed_for_year', -1) == current_year
+    logging.debug(f"Year {current_year}: Start YEAR_START phase. Dilemma processed flag = {dilemma_already_processed_this_year}")
 
-    # Helper to create simple KPI plots
-    def create_kpi_plot(metric_key, y_axis_title): # Renamed 'title' arg to 'y_axis_title'
-        plot_df = get_sparkline_data(metric_key, SPARKLINE_YEARS) # Reuse sparkline data getter
-        if plot_df is not None and not plot_df.empty:
-            # Check if data exists
-            # Define colors based on metric_key (using theme/standard colors)
-            # Using Blue, Green, Grey, Black for theme alignment
-            if metric_key == 'Yk_Index':
-                plot_color = "#1FB25A" # Green (Fiscal card color)
-            elif metric_key == 'PI':
-                plot_color = "#000000" # Black
-            elif metric_key == 'Unemployment':
-                plot_color = "#0072BB" # Blue (Monetary card color)
-            elif metric_key == 'GD_GDP':
-                plot_color = "#555555" # Dark Grey
-            else:
-                plot_color = "#1FB25A" # Default Green
-
-            # Determine axis format
-            y_axis_format = ".1f" # Default format for index
-            if metric_key in ['PI', 'Unemployment', 'GD_GDP']:
-                y_axis_format = ".1%" # Percentage format
-
-            # --- Correction for Percentage Scaling ---
-            # Divide values by 100 if the axis format is percentage,
-            # as Altair's format expects raw proportions (e.g., 0.20 for 20%)
-            plot_df_corrected = plot_df.copy() # Avoid modifying original df used elsewhere
-            if y_axis_format.endswith('%'):
-                plot_df_corrected[metric_key] = plot_df_corrected[metric_key] / 100.0
-            # --- End Correction ---
-
-            # Base chart
-            # Use the corrected DataFrame for plotting
-            base = alt.Chart(plot_df_corrected.reset_index()).encode(
-                # X-Axis: Remove title and labels for top row plots
-                x=alt.X('Year:O', axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
-                                                labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
-                                                labelAngle=-45, grid=False)),
-                tooltip=[
-                    alt.Tooltip('Year:O', title='Simulation Year'),
-                    # Use y_axis_title for tooltip, format based on corrected data
-                    alt.Tooltip(f'{metric_key}:Q', format=y_axis_format, title=y_axis_title)
-                ]
-            )
-
-            # Handle single data point case (e.g., first year)
-            # Use corrected df for single point value as well
-            if len(plot_df_corrected) == 1:
-                # Define Y-axis scale for single point
-                single_value = plot_df_corrected[metric_key].iloc[0]
-                # Add padding for single point to avoid label truncation
-                if np.isclose(single_value, 0):
-                    padding = 0.01 # Add small absolute padding if value is zero
+    # --- Step 1: Check if a dilemma needs to be selected ---
+    if not dilemma_already_processed_this_year and not st.session_state.current_dilemma:
+        # Only try to select if year is valid (not first or last year)
+        if current_year > 0 and current_year < (GAME_END_YEAR - 1):
+            advisor_id = st.session_state.get('selected_character_id')
+            if advisor_id:
+                dilemma_id, dilemma_data = select_dilemma(advisor_id, st.session_state.seen_dilemmas)
+                if dilemma_id and dilemma_data:
+                    st.session_state.current_dilemma = {"id": dilemma_id, "data": dilemma_data}
+                    st.session_state.seen_dilemmas.add(dilemma_id)
+                    logging.info(f"Selected new dilemma: {dilemma_id} for year {current_year}")
+                    # Rerun needed to display the newly selected dilemma cleanly before card selection etc.
+                    st.rerun() # Rerun immediately after selecting a *new* dilemma
                 else:
-                    padding = abs(single_value) * 0.15 # 15% padding relative to value
-                y_domain_single = [single_value - padding, single_value + padding]
-                # Ensure lower bound is not unnecessarily negative for rates/ratios
-                if metric_key in ['Unemployment', 'GD_GDP', 'PI']:
-                     y_domain_single[0] = max(0, y_domain_single[0])
-
-                y_axis_scale_single = alt.Scale(domain=y_domain_single, zero=False) # Explicit domain, don't force zero
-
-                # Create a chart with just a point
-                chart = base.mark_point(
-                    size=100, # Make point visible
-                    filled=True,
-                    color=plot_color
-                ).encode(
-                     y=alt.Y(f'{metric_key}:Q',
-                             # Use y_axis_title for axis title
-                             axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
-                             scale=y_axis_scale_single # Apply explicit scale with padding
-                            )
-                ).properties(
-                     # Removed title property
-                     height=200 # Increased height
-                ).configure_view(
-                    fill=None,         # Make background transparent
-                    stroke='#cccccc'   # Add a light grey border
-                ).configure_axis(
-                    labelFont='Lato',    # Font for axis numbers/ticks
-                    titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
-                    titleFontSize=12,    # Adjust size if needed
-                    labelFontSize=11     # Adjust size if needed
-                ).interactive()
+                    logging.info(f"No unseen dilemmas available for advisor '{advisor_id}' in year {current_year}.")
             else:
-                # Existing logic for line chart (now indented)
-                # Calculate Y-axis domain with padding
-                min_val = plot_df_corrected[metric_key].min()
-                max_val = plot_df_corrected[metric_key].max()
-                data_range = max_val - min_val
-                if np.isclose(data_range, 0): # Handle flat line case
-                    if np.isclose(max_val, 0): padding = 0.01 # Small absolute padding if value is zero
-                    else: padding = abs(max_val) * 0.15 # 15% padding relative to value
+                logging.warning("Cannot select dilemma: advisor_id not found.")
+
+    # --- Step 2: If a dilemma is active, display it and stop ---
+    if st.session_state.current_dilemma:
+        st.header(f"Year {st.session_state.current_year} - Advisor's Dilemma")
+        dilemma_info = st.session_state.current_dilemma['data']
+        st.subheader(dilemma_info['title'])
+        st.markdown(f"_{dilemma_info['flavor_text']}_")
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        option_a = dilemma_info['option_a']
+        option_b = dilemma_info['option_b']
+        with col1:
+            st.markdown(f"**Option A: {option_a['name']}**")
+            # --- Option A UI Enhancement ---
+            add_a = option_a.get('add_cards', [])
+            remove_a = option_a.get('remove_cards', [])
+            tooltip_a = ""
+            if add_a: tooltip_a += f"Adds: {', '.join(add_a)}\n"
+            if remove_a: tooltip_a += f"Removes: {', '.join(remove_a)}"
+            tooltip_a = tooltip_a.strip() # Remove trailing newline if only one effect type
+
+            if st.button(f"Choose: {option_a['name']}", key="dilemma_a", use_container_width=True):
+                # Caption moved outside this block
+                logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option A chosen.")
+                st.session_state.deck, st.session_state.discard_pile = apply_dilemma_choice(
+                    option_a, st.session_state.deck, st.session_state.discard_pile
+                )
+                st.session_state.current_dilemma = None # Clear dilemma state
+                st.session_state.dilemma_processed_for_year = st.session_state.current_year # Mark as processed for this year
+                st.toast("Deck modified by dilemma choice!")
+                st.rerun() # Rerun to proceed to normal YEAR_START (without dilemma)
+            if tooltip_a: st.caption(tooltip_a) # Display tooltip content as caption
+        with col2:
+            st.markdown(f"**Option B: {option_b['name']}**")
+            # --- Option B UI Enhancement ---
+            add_b = option_b.get('add_cards', [])
+            remove_b = option_b.get('remove_cards', [])
+            tooltip_b = ""
+            if add_b: tooltip_b += f"Adds: {', '.join(add_b)}\n"
+            if remove_b: tooltip_b += f"Removes: {', '.join(remove_b)}"
+            tooltip_b = tooltip_b.strip() # Remove trailing newline if only one effect type
+
+            if st.button(f"Choose: {option_b['name']}", key="dilemma_b", use_container_width=True):
+                # Caption moved outside this block
+                logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option B chosen.")
+                st.session_state.deck, st.session_state.discard_pile = apply_dilemma_choice(
+                    option_b, st.session_state.deck, st.session_state.discard_pile
+                )
+                st.session_state.current_dilemma = None # Clear dilemma state
+                st.session_state.dilemma_processed_for_year = st.session_state.current_year # Mark as processed for this year
+                st.toast("Deck modified by dilemma choice!")
+                st.rerun() # Rerun to proceed to normal YEAR_START (without dilemma)
+            if tooltip_b: st.caption(tooltip_b) # Display tooltip content as caption
+        st.stop() # Stop execution HERE to prevent normal year start logic while dilemma is active
+
+    # --- Step 3: NORMAL YEAR START LOGIC (Executes only if no dilemma was active/displayed above) ---
+    else:
+        # Display Current Year
+        st.header(f"Year {st.session_state.current_year}") # ADDED YEAR DISPLAY
+
+        # Helper to create simple KPI plots
+        def create_kpi_plot(metric_key, y_axis_title): # Renamed 'title' arg to 'y_axis_title'
+            # Fetch full history starting from Year 1 for KPI plots
+            plot_df = get_sparkline_data(metric_key, st.session_state.current_year, fetch_full_history=True)
+            if plot_df is not None and not plot_df.empty:
+                # Check if data exists
+                # Define colors based on metric_key (using theme/standard colors)
+                # Using Blue, Green, Grey, Black for theme alignment
+                if metric_key == 'Yk_Index':
+                    plot_color = "#1FB25A" # Green (Fiscal card color)
+                elif metric_key == 'PI':
+                    plot_color = "#000000" # Black
+                elif metric_key == 'Unemployment':
+                    plot_color = "#0072BB" # Blue (Monetary card color)
+                elif metric_key == 'GD_GDP':
+                    plot_color = "#555555" # Dark Grey
                 else:
-                    padding = data_range * 0.15 # 15% padding relative to range
+                    plot_color = "#1FB25A" # Default Green
 
-                y_domain_line = [min_val - padding, max_val + padding]
-                # Ensure lower bound is not unnecessarily negative for rates/ratios
-                if metric_key in ['Unemployment', 'GD_GDP', 'PI']:
-                     y_domain_line[0] = max(0, y_domain_line[0])
+                # Determine axis format
+                y_axis_format = ".1f" # Default format for index
+                if metric_key in ['PI', 'Unemployment', 'GD_GDP']:
+                    y_axis_format = ".1%" # Percentage format
 
-                y_axis_scale_line = alt.Scale(domain=y_domain_line, zero=False) # Explicit domain, don't force zero unless appropriate
+                # --- Correction for Percentage Scaling ---
+                # Divide values by 100 if the axis format is percentage,
+                # as Altair's format expects raw proportions (e.g., 0.20 for 20%)
+                plot_df_corrected = plot_df.copy() # Avoid modifying original df used elsewhere
+                if y_axis_format.endswith('%'):
+                    plot_df_corrected[metric_key] = plot_df_corrected[metric_key] / 100.0
+                # --- End Correction ---
 
-                line = base.mark_line(
-                    point=alt.OverlayMarkDef(color=plot_color), # Style points to match line
-                    color=plot_color, # Use defined color
-                    strokeWidth=2 # Slightly thicker line
-                ).encode(
-                    y=alt.Y(f'{metric_key}:Q', # Fixed parenthesis
-                            axis=alt.Axis(
-                                title=y_axis_title, # Use y_axis_title for axis title
-                                format=y_axis_format, # Use dynamic format
-                                grid=True, # Add Y-axis gridlines
-                                titlePadding=10 # Add padding to title
-                            ),
-                            scale=y_axis_scale_line # Apply explicit scale with padding
-                    ) # Fixed parenthesis
+                # Base chart
+                # Use the corrected DataFrame for plotting
+                base = alt.Chart(plot_df_corrected.reset_index()).encode(
+                    # X-Axis: Set domain explicitly from Year 1 to current year
+                    x=alt.X('Year:O',
+                            axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
+                                          labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
+                                          labelAngle=-45, grid=False),
+                            # Ensure x-axis starts at 1 and goes to the current year
+                            scale=alt.Scale(domain=[1, max(1, st.session_state.current_year)])
+                           ),
+                    tooltip=[
+                        alt.Tooltip('Year:O', title='Simulation Year'),
+                        # Use y_axis_title for tooltip, format based on corrected data
+                        alt.Tooltip(f'{metric_key}:Q', format=y_axis_format, title=y_axis_title)
+                    ]
                 )
 
-                # Add text label for the last point
-                # Use corrected df for label position and format
-                last_point_df_corrected = plot_df_corrected.reset_index().iloc[[-1]]
-                labels = alt.Chart(last_point_df_corrected).mark_text(
-                    align='left',
-                    baseline='middle',
-                    dx=7, # Offset text to the right of the point
-                    fontSize=11
-                ).encode(
-                    x=alt.X('Year:O'),
-                    y=alt.Y(f'{metric_key}:Q'),
-                    text=alt.Text(f'{metric_key}:Q', format=y_axis_format),
-                    color=alt.value(plot_color) # Match label color to line
-                )
+                # Handle single data point case (e.g., first year)
+                # Use corrected df for single point value as well
+                if len(plot_df_corrected) == 1:
+                    # Define Y-axis scale for single point
+                    single_value = plot_df_corrected[metric_key].iloc[0]
+                    # Add padding for single point to avoid label truncation
+                    if np.isclose(single_value, 0):
+                        padding = 0.01 # Add small absolute padding if value is zero
+                    else:
+                        padding = abs(single_value) * 0.15 # 15% padding relative to value
+                    y_domain_single = [single_value - padding, single_value + padding]
+                    # Ensure lower bound is not unnecessarily negative for rates/ratios (except PI)
+                    if metric_key in ['Unemployment', 'GD_GDP']: # Removed 'PI'
+                         y_domain_single[0] = max(0, y_domain_single[0])
 
-                # Add zero reference line for specific metrics if scale includes zero
-                if metric_key in ['PI', 'Unemployment'] and y_domain_line[0] <= 0:
-                    zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
-                        color='grey', strokeDash=[2,2], size=1
-                    ).encode(y='y')
-                    chart_layers = [line, labels, zero_line]
+                    y_axis_scale_single = alt.Scale(domain=y_domain_single, zero=False) # Explicit domain, don't force zero
+
+                    # Create a chart with just a point
+                    chart = base.mark_point(
+                        size=100, # Make point visible
+                        filled=True,
+                        color=plot_color
+                    ).encode(
+                         y=alt.Y(f'{metric_key}:Q',
+                                 # Use y_axis_title for axis title
+                                 axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
+                                 scale=y_axis_scale_single # Apply explicit scale with padding
+                                )
+                    ).properties(
+                         # Removed title property
+                         height=200 # Increased height
+                    ).configure_view(
+                        fill=None,         # Make background transparent
+                        stroke='#cccccc'   # Add a light grey border
+                    ).configure_axis(
+                        labelFont='Lato',    # Font for axis numbers/ticks
+                        titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
+                        titleFontSize=12,    # Adjust size if needed
+                        labelFontSize=11     # Adjust size if needed
+                    ).interactive()
                 else:
-                    chart_layers = [line, labels]
+                    # Existing logic for line chart (now indented)
+                    # Calculate Y-axis domain with padding
+                    min_val = plot_df_corrected[metric_key].min()
+                    max_val = plot_df_corrected[metric_key].max()
+                    data_range = max_val - min_val
+                    if np.isclose(data_range, 0): # Handle flat line case
+                        if np.isclose(max_val, 0): padding = 0.01 # Small absolute padding if value is zero
+                        else: padding = abs(max_val) * 0.15 # 15% padding relative to value
+                    else:
+                        padding = data_range * 0.15 # 15% padding relative to range
 
-                # Configure overall chart properties
-                # Layer the components
-                chart = alt.layer(*chart_layers).properties(
-                    # Removed title property
-                    height=200 # Increased height
-                ).configure_view(
-                    fill=None,         # Make background transparent
-                    stroke='#cccccc'   # Add a light grey border
-                ).configure_axis(
-                    labelFont='Lato',    # Font for axis numbers/ticks
-                    titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
-                    titleFontSize=12,    # Adjust size if needed
-                    labelFontSize=11     # Adjust size if needed
-                ).interactive() # Allow zooming/panning
+                    y_domain_line = [min_val - padding, max_val + padding]
+                    # Ensure lower bound is not unnecessarily negative for rates/ratios (except PI)
+                    if metric_key in ['Unemployment', 'GD_GDP']: # Removed 'PI'
+                         y_domain_line[0] = max(0, y_domain_line[0])
 
-            return chart # Return the styled line or point chart
-        return None # Return None if plot_df is None or empty
+                    y_axis_scale_line = alt.Scale(domain=y_domain_line, zero=False) # Explicit domain, don't force zero unless appropriate
 
-    # Check if it's the very first year start (Year 1)
-    if st.session_state.current_year == 1 and not st.session_state.history:
-        st.info("Welcome to your first year as economic advisor! Review the initial state and select your policies.")
-        # Display initial state details if needed (e.g., from initial_state_dict)
-        # with st.expander("Initial Economic State (Year 0)"):
-        #     st.write(st.session_state.initial_state_dict) # Example
+                    line = base.mark_line(
+                        point=alt.OverlayMarkDef(color=plot_color), # Style points to match line
+                        color=plot_color, # Use defined color
+                        strokeWidth=2 # Slightly thicker line
+                    ).encode(
+                        y=alt.Y(f'{metric_key}:Q', # Fixed parenthesis
+                                axis=alt.Axis(
+                                    title=y_axis_title, # Use y_axis_title for axis title
+                                    format=y_axis_format, # Use dynamic format
+                                    grid=True, # Add Y-axis gridlines
+                                    titlePadding=10 # Add padding to title
+                                ),
+                                scale=y_axis_scale_line # Apply explicit scale with padding
+                        ) # Fixed parenthesis
+                    )
 
-    # --- Display KPI Plots in 2x2 Grid ---
-    st.markdown("##### Key Economic Indicators")
-    row1_cols = st.columns(2)
-    with row1_cols[0]:
-        # Use shorter title
-        st.altair_chart(create_kpi_plot('Yk_Index', 'GDP Index (Y1=100)'), use_container_width=True)
-    with row1_cols[1]:
-         # Use shorter title
-        st.altair_chart(create_kpi_plot('PI', 'Inflation Rate'), use_container_width=True)
+                    # Add text label for the last point
+                    # Use corrected df for label position and format
+                    last_point_df_corrected = plot_df_corrected.reset_index().iloc[[-1]]
+                    labels = alt.Chart(last_point_df_corrected).mark_text(
+                        align='left',
+                        baseline='middle',
+                        dx=7, # Offset text to the right of the point
+                        fontSize=11
+                    ).encode(
+                        x=alt.X('Year:O'),
+                        y=alt.Y(f'{metric_key}:Q'),
+                        text=alt.Text(f'{metric_key}:Q', format=y_axis_format),
+                        color=alt.value(plot_color) # Match label color to line
+                    )
 
-    row2_cols = st.columns(2)
-    with row2_cols[0]:
-         # Use shorter title
-        st.altair_chart(create_kpi_plot('Unemployment', 'Unemployment Rate'), use_container_width=True)
-    with row2_cols[1]:
-         # Use shorter title
-        st.altair_chart(create_kpi_plot('GD_GDP', 'Debt/GDP Ratio'), use_container_width=True)
+                    # Add zero reference line for specific metrics if scale includes zero
+                    if metric_key in ['PI', 'Unemployment'] and y_domain_line[0] <= 0:
+                        zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
+                            color='grey', strokeDash=[2,2], size=1
+                        ).encode(y='y')
+                        chart_layers = [line, labels, zero_line]
+                    else:
+                        chart_layers = [line, labels]
 
-    # --- Display Active Events Below Plots (Original Vertical Layout) ---
-    st.markdown("##### Active Events")
-    active_events = st.session_state.get('active_events_this_year', []) # Use .get for safety
-    if active_events:
-        num_event_cols = min(len(active_events), 3) # Max 3 columns, adjust if fewer events
-        event_cols = st.columns(num_event_cols)
-        event_index = 0
-        for event_name in active_events:
-            col_index = event_index % num_event_cols
-            with event_cols[col_index]:
-                event_details = ECONOMIC_EVENTS.get(event_name, {})
-                event_desc = event_details.get('desc', 'No description available.')
-                direct_param = event_details.get('param')
-                indirect_commentary = event_details.get('indirect_effects')
+                    # Configure overall chart properties
+                    # Layer the components
+                    chart = alt.layer(*chart_layers).properties(
+                        # Removed title property
+                        height=200 # Increased height
+                    ).configure_view(
+                        fill=None,         # Make background transparent
+                        stroke='#cccccc'   # Add a light grey border
+                    ).configure_axis(
+                        labelFont='Lato',    # Font for axis numbers/ticks
+                        titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
+                        titleFontSize=12,    # Adjust size if needed
+                        labelFontSize=11     # Adjust size if needed
+                    ).interactive() # Allow zooming/panning
 
-                # Use a container for each card within the column
-                with st.container():
-                    # Use markdown with CSS classes for styling
-                    st.markdown(f"""
-                    <div class="event-card" style="height: 180px; display: flex; flex-direction: column; justify-content: space-between;"> <!-- Added fixed height and flex -->
-                        <div> <!-- Content div -->
-                            <div class="event-card-title">{event_name}</div>
-                            <div class="event-card-desc">{event_desc}</div>
-                        </div>
-                        <div> <!-- Expander div -->
-                            <!-- Expander will be placed here by Streamlit -->
-                        </div>
-                    </div>
+                return chart # Return the styled line or point chart
+            return None # Return None if plot_df is None or empty
 
-                """, unsafe_allow_html=True)
+        # Check if it's the very first year start (Year 1)
+        if st.session_state.current_year == 1 and not st.session_state.history:
+            st.info("Welcome to your first year as economic advisor! Review the initial state and select your policies.")
 
-                    # Add expander for affected variables inside the container but outside the markdown
-                    if direct_param or indirect_commentary:
-                        with st.expander("Details"):
-                            if direct_param:
-                                param_desc = PARAM_DESCRIPTIONS.get(direct_param, "No description available.")
-                                st.markdown(f"**Directly Affects:** `{direct_param}` ({param_desc})")
-                            if indirect_commentary:
-                                st.markdown(f"**Potential Indirect Effects:** _{indirect_commentary}_")
-            event_index += 1
-    else:
-        st.caption("None")
+        # --- Display KPI Plots in 2x2 Grid ---
+        st.markdown("##### Key Economic Indicators")
+        row1_cols = st.columns(2)
+        with row1_cols[0]:
+            # Use shorter title
+            st.altair_chart(create_kpi_plot('Yk_Index', 'GDP Index (Y1=100)'), use_container_width=True)
+        with row1_cols[1]:
+             # Use shorter title
+            st.altair_chart(create_kpi_plot('PI', 'Inflation Rate'), use_container_width=True)
 
+        row2_cols = st.columns(2)
+        with row2_cols[0]:
+             # Use shorter title
+            st.altair_chart(create_kpi_plot('Unemployment', 'Unemployment Rate'), use_container_width=True)
+        with row2_cols[1]:
+             # Use shorter title
+            st.altair_chart(create_kpi_plot('GD_GDP', 'Debt/GDP Ratio'), use_container_width=True)
 
-    st.markdown("---") # Divider
+        # --- Display Active Events Below Plots (Original Vertical Layout) ---
+        st.markdown("##### Active Events")
+        active_events = st.session_state.get('active_events_this_year', []) # Use .get for safety
+        if active_events:
+            num_event_cols = min(len(active_events), 3) # Max 3 columns, adjust if fewer events
+            event_cols = st.columns(num_event_cols)
+            event_index = 0
+            for event_name in active_events:
+                col_index = event_index % num_event_cols
+                with event_cols[col_index]:
+                    event_details = ECONOMIC_EVENTS.get(event_name, {})
+                    event_desc = event_details.get('desc', 'No description available.')
+                    direct_param = event_details.get('param')
+                    indirect_commentary = event_details.get('indirect_effects')
 
-    # --- Draw Cards and Check Events (Run only once per YEAR_START phase) ---
-    if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != st.session_state.current_year:
-        # Draw cards - Now includes discard pile
-        st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
-            st.session_state.deck,
-            st.session_state.player_hand,
-            st.session_state.discard_pile,
-            CARDS_TO_DRAW_PER_YEAR
-        )
-        st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
-
-        # Check for events based on the *previous* year's state
-        if st.session_state.history:
-             previous_year_results = st.session_state.history[-1] # Use last year's results
-        else:
-             # Should not happen in Year > 0 if logic is correct
-             logging.error("History is empty when checking events for Year > 0.")
-             previous_year_results = st.session_state.initial_state_dict # Fallback
-
-        if previous_year_results:
-            st.session_state.active_events_this_year = check_for_events(previous_year_results)
-            if st.session_state.active_events_this_year:
-                 st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
-        else:
-             st.session_state.active_events_this_year = []
-
-        st.session_state.year_start_processed = st.session_state.current_year
-        st.session_state.cards_selected_this_year = []
-        st.rerun()
-
-    # --- Card Selection UI ---
-    st.subheader("Select Policy Cards to Play")
-
-    available_cards = st.session_state.player_hand
-    selected_cards_this_turn = st.session_state.cards_selected_this_year
-    max_cards_allowed = 2 # Define max cards here for use in selection logic
-
-    if not available_cards:
-        st.write("No policy cards currently in hand.")
-    else:
-        # Filter cards to only show Fiscal and Monetary
-        # Show only UNIQUE card names for selection
-        unique_card_names = sorted(list(set(
-            card_name for card_name in available_cards
-            if POLICY_CARDS.get(card_name, {}).get('type') in ["Fiscal", "Monetary"]
-        )))
-
-        if not unique_card_names:
-            st.write("No Fiscal or Monetary policy cards currently in hand.")
-            # Exit this block if no displayable cards
-            # Note: This assumes the 'else' block below handles the case where displayable_cards is empty
-
-        num_cards = len(unique_card_names)
-        num_cols = min(num_cards, MAX_CARDS_PER_ROW)
-        cols = st.columns(num_cols)
-
-        card_render_index = 0 # Index for column assignment
-        for card_name in unique_card_names: # Iterate over unique list
-            col_index = card_render_index % num_cols # Use card_render_index instead of i
-            with cols[col_index]:
-                card_info = POLICY_CARDS.get(card_name, {})
-                is_selected = card_name in selected_cards_this_turn
-                # Define card_type and card_stance *before* boost calculation
-                card_type = card_info.get('type', 'Unknown').lower()
-                card_stance = card_info.get('stance', None)
-                param_name = card_info.get('param')
-                param_effect = card_info.get('effect')
-                param_desc = PARAM_DESCRIPTIONS.get(param_name, "N/A")
-
-                # --- Calculate potential boosted effect for display ---
-                display_effect = param_effect # Start with base effect
-                boost_applied_display = False
-                selected_char_id = st.session_state.get('selected_character_id')
-                # Ensure card_stance and card_type are defined before this check
-                if selected_char_id and selected_char_id in CHARACTERS and card_stance and card_type:
-                    character_data = CHARACTERS[selected_char_id]
-                    bonus_criteria = character_data.get('bonus_criteria', [])
-                    bonus_multiplier = character_data.get('bonus_multiplier', 1.0)
-                    criteria_matched = False
-                    for crit_stance, crit_type in bonus_criteria:
-                        # Compare types case-insensitively (card_type is already lower)
-                        if card_stance == crit_stance and card_type == crit_type.lower():
-                            criteria_matched = True
-                            break
-                    if criteria_matched:
-                        display_effect *= bonus_multiplier
-                        boost_applied_display = True
-                # --- End boosted effect calculation ---
-
-                # Format the potentially boosted effect for display
-                formatted_effect = format_effect(param_name, display_effect)
-
-                boost_indicator = " (Boosted!)" if boost_applied_display else ""
-                # Determine card container class based on selection
-                card_container_class = "card-container"
-                if is_selected:
-                    card_container_class += " selected"
-
-                # --- Card Rendering using Streamlit Elements ---
-                with st.container():
-                    # Apply card container styling via CSS class
-                    # We need to manually construct the top bar HTML here
-                    icon_data_uri = get_icon_data_uri(card_type)
-                    icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
-                    # card_stance defined earlier
-
-                    top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
-                    # Use st.markdown for the top bar structure
-                    st.markdown(f'''
-                    <div class="{card_container_class}"> <!-- Apply container class -->
-                        <div class="card-top-bar {top_bar_color_class}">
-                           {icon_html} <span class="card-title">{card_type.capitalize()}: {card_name}</span>
-                        </div>
-                        <div class="card-main-content">
-                            <div class="card-desc">
-                                {card_info.get('desc', 'No description available.')}<br>
-                                <small><i>Effect: {formatted_effect}{boost_indicator} on {param_name} ({param_desc})</i></small>
-                            </div>
-                            <!-- Button will be placed below by Streamlit -->
-                            {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
-                        </div>
-                    </div>
-                    ''', unsafe_allow_html=True)
-
-                    # Place Button *outside* markdown, but *inside* the column's context
-                    # Use a container to help manage layout within the flex column
+                    # Use a container for each card within the column
                     with st.container():
-                        button_label = "Deselect" if is_selected else "Select"
-                        button_type = "primary" if is_selected else "secondary"
-                        button_key = f"select_{card_name}_{card_render_index}_{st.session_state.current_year}"
- # Use render index for unique key
-                        if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
-                            if is_selected:
-                                st.session_state.cards_selected_this_year.remove(card_name)
-                                st.rerun() # Rerun after deselecting
+                        # Use markdown with CSS classes for styling
+                        st.markdown(f"""
+                        <div class="event-card" style="height: 180px; display: flex; flex-direction: column; justify-content: space-between;"> <!-- Added fixed height and flex -->
+                            <div> <!-- Content div -->
+                                <div class="event-card-title">{event_name}</div>
+                                <div class="event-card-desc">{event_desc}</div>
+                            </div>
+                            <div> <!-- Expander div -->
+                                <!-- Expander will be placed here by Streamlit -->
+                            </div>
+                        </div>
+
+                    """, unsafe_allow_html=True)
+
+                        # Add expander for affected variables inside the container but outside the markdown
+                        if direct_param or indirect_commentary:
+                            with st.expander("Details"):
+                                if direct_param:
+                                    param_desc = PARAM_DESCRIPTIONS.get(direct_param, "No description available.")
+                                    st.markdown(f"**Directly Affects:** `{direct_param}` ({param_desc})")
+                                if indirect_commentary:
+                                    st.markdown(f"**Potential Indirect Effects:** _{indirect_commentary}_")
+                event_index += 1
+        else:
+            st.caption("None")
+
+
+        st.markdown("---") # Divider
+
+        # --- Draw Cards and Check Events (Run only once per YEAR_START phase) ---
+        if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != st.session_state.current_year:
+            # Draw cards - Now includes discard pile
+            logging.debug(f"Hand BEFORE draw_cards (Year {st.session_state.current_year}): {st.session_state.player_hand}")
+            st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+                st.session_state.deck,
+                st.session_state.player_hand,
+                st.session_state.discard_pile,
+                CARDS_TO_DRAW_PER_YEAR
+            )
+            logging.debug(f"Hand AFTER draw_cards (Year {st.session_state.current_year}): {st.session_state.player_hand}")
+            st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
+
+            # Check for events based on the *previous* year's state
+            if st.session_state.history:
+                 previous_year_results = st.session_state.history[-1] # Use last year's results
+            else:
+                 # Should not happen in Year > 0 if logic is correct
+                 logging.error("History is empty when checking events for Year > 0.")
+                 previous_year_results = st.session_state.initial_state_dict # Fallback
+
+            if previous_year_results:
+                st.session_state.active_events_this_year = check_for_events(previous_year_results)
+                if st.session_state.active_events_this_year:
+                     st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
+            else:
+                 st.session_state.active_events_this_year = []
+
+            st.session_state.year_start_processed = st.session_state.current_year
+            st.session_state.cards_selected_this_year = []
+            st.rerun()
+
+        # --- Card Selection UI ---
+        st.subheader("Select Policy Cards to Play")
+
+        available_cards = st.session_state.player_hand
+        selected_cards_this_turn = st.session_state.cards_selected_this_year
+        max_cards_allowed = 2 # Define max cards here for use in selection logic
+
+        if not available_cards:
+            st.write("No policy cards currently in hand.")
+        else:
+            # Filter cards to only show Fiscal and Monetary
+            # Show only UNIQUE card names for selection
+            unique_card_names = sorted(list(set(
+                card_name for card_name in available_cards
+                if POLICY_CARDS.get(card_name, {}).get('type') in ["Fiscal", "Monetary"]
+            )))
+
+            if not unique_card_names:
+                st.write("No Fiscal or Monetary policy cards currently in hand.")
+                # Exit this block if no displayable cards
+                # Note: This assumes the 'else' block below handles the case where displayable_cards is empty
+
+            num_cards = len(unique_card_names)
+            num_cols = min(num_cards, MAX_CARDS_PER_ROW)
+            cols = st.columns(num_cols)
+
+            card_render_index = 0 # Index for column assignment
+            for card_name in unique_card_names: # Iterate over unique list
+                col_index = card_render_index % num_cols # Use card_render_index instead of i
+                with cols[col_index]:
+                    card_info = POLICY_CARDS.get(card_name, {})
+                    is_selected = card_name in selected_cards_this_turn
+                    # Define card_type and card_stance *before* boost calculation
+                    card_type = card_info.get('type', 'Unknown').lower()
+                    card_stance = card_info.get('stance', None)
+                    # --- Prepare Effect String (Revised for 'effects' list) ---
+                    effect_str_parts = []
+                    boost_applied_display = False # Track if *any* effect was boosted
+
+                    # Check if character bonus applies to this card
+                    bonus_multiplier_to_apply = 1.0
+                    selected_char_id = st.session_state.get('selected_character_id')
+                    if selected_char_id and selected_char_id in CHARACTERS and card_stance and card_type:
+                        character_data = CHARACTERS[selected_char_id]
+                        bonus_criteria = character_data.get('bonus_criteria', [])
+                        bonus_multiplier = character_data.get('bonus_multiplier', 1.0)
+                        criteria_matched = any(
+                            card_stance == crit_stance and card_type.lower() == crit_type.lower()
+                            for crit_stance, crit_type in bonus_criteria
+                        )
+                        if criteria_matched:
+                            bonus_multiplier_to_apply = bonus_multiplier
+                            boost_applied_display = True # Mark boost if criteria match
+                            logging.debug(f"Card '{card_name}': Character bonus {bonus_multiplier_to_apply}x applies.")
+
+                    # Iterate through the list of effects for the card
+                    card_effects_list = card_info.get('effects', [])
+                    if not card_effects_list:
+                         logging.warning(f"Card '{card_name}' has no 'effects' list or it's empty.")
+
+                    for effect_detail in card_effects_list:
+                        param_name = effect_detail.get('param')
+                        base_effect = effect_detail.get('effect')
+                        logging.debug(f"Card '{card_name}': Processing effect detail - Param: '{param_name}', Base Effect: '{base_effect}'")
+
+                        # Basic validation for this effect entry
+                        if param_name and isinstance(base_effect, (int, float)) and np.isfinite(base_effect):
+                            # Apply bonus multiplier
+                            actual_effect = base_effect * bonus_multiplier_to_apply
+                            logging.debug(f"Card '{card_name}': Param '{param_name}', Actual Effect (after bonus): {actual_effect}")
+
+                            # Format the effect value
+                            formatted_effect = format_effect(param_name, actual_effect)
+                            logging.debug(f"Card '{card_name}': Param '{param_name}', Formatted Effect: '{formatted_effect}'")
+
+                            # Get parameter description
+                            param_desc = PARAM_DESCRIPTIONS.get(param_name, "Unknown Parameter")
+                            if param_desc == "Unknown Parameter":
+                                logging.warning(f"Card '{card_name}': param_name '{param_name}' not found in PARAM_DESCRIPTIONS.")
                             else:
-                                # --- Add Duplicate Name Check ---
-                                # This check might be redundant now if only unique names are displayed, but keep for safety
-                                if card_name in st.session_state.cards_selected_this_year:
-                                    st.warning(f"Cannot select two '{card_name}' cards in the same turn.")
-                                # --- Add Max Card Check before appending ---
-                                elif len(st.session_state.cards_selected_this_year) >= max_cards_allowed:
-                                    st.warning(f"You can only select up to {max_cards_allowed} cards.")
+                                logging.debug(f"Card '{card_name}': Param '{param_name}', Description: '{param_desc}'")
+
+
+                            # Add to list if valid
+                            if formatted_effect != "N/A":
+                                effect_str_parts.append(f"{formatted_effect} on {param_name} ({param_desc})")
+                            else:
+                                logging.warning(f"Card '{card_name}': format_effect returned N/A for param={param_name}, effect={actual_effect}.")
+                        else:
+                            logging.warning(f"Card '{card_name}': Invalid or missing effect detail skipped: {effect_detail}")
+
+                    # Construct the final display string
+                    if effect_str_parts:
+                        boost_indicator = " (Boosted!)" if boost_applied_display else ""
+                        # Join multiple effects with a separator, e.g., a line break or semicolon
+                        effects_combined = "; ".join(effect_str_parts)
+                        effect_str = f'<small><i>Effect{boost_indicator}: {effects_combined}</i></small>'
+                        logging.debug(f"Card '{card_name}': Final effect string: {effect_str}")
+                    else:
+                        # If no valid effects were found after iterating
+                        logging.debug(f"Card '{card_name}': No valid effects found in 'effects' list. Displaying 'Effect details missing'.")
+                        effect_str = '<small><i>Effect details missing.</i></small>'
+                    # --- End Revised Effect String Logic ---
+
+                    # Determine card container class based on selection
+                    card_container_class = "card-container"
+                    if is_selected:
+                        card_container_class += " selected"
+
+                    # --- Card Rendering using Streamlit Elements ---
+                    with st.container():
+                        # Apply card container styling via CSS class
+                        # We need to manually construct the top bar HTML here
+                        icon_data_uri = get_icon_data_uri(card_type)
+                        icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
+
+                        top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
+                        # Use st.markdown for the top bar structure
+                        st.markdown(f'''
+                        <div class="{card_container_class}"> <!-- Apply container class -->
+                            <div class="card-top-bar {top_bar_color_class}">
+                               {icon_html} <span class="card-title">{card_type.capitalize()}: {card_name}</span>
+                            </div>
+                            <div class="card-main-content">
+                                <div class="card-desc">
+                                    {card_info.get('desc', 'No description available.')}<br>
+                                    {effect_str}
+                                </div>
+                                <!-- Button will be placed below by Streamlit -->
+                                {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
+                            </div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+
+                        # Place Button *outside* markdown, but *inside* the column's context
+                        # Use a container to help manage layout within the flex column
+                        with st.container():
+                            button_label = "Deselect" if is_selected else "Select"
+                            button_type = "primary" if is_selected else "secondary"
+                            button_key = f"select_{card_name}_{card_render_index}_{st.session_state.current_year}"
+     # Use render index for unique key
+                            if st.button(button_label, key=button_key, type=button_type, use_container_width=True):
+                                if is_selected:
+                                    st.session_state.cards_selected_this_year.remove(card_name)
+                                    st.rerun() # Rerun after deselecting
                                 else:
-                                    st.session_state.cards_selected_this_year.append(card_name)
-                                    st.rerun() # Rerun only if selection was successful
+                                    # --- Add Duplicate Name Check ---
+                                    # This check might be redundant now if only unique names are displayed, but keep for safety
+                                    if card_name in st.session_state.cards_selected_this_year:
+                                        st.warning(f"Cannot select two '{card_name}' cards in the same turn.")
+                                    # --- Add Max Card Check before appending ---
+                                    elif len(st.session_state.cards_selected_this_year) >= max_cards_allowed:
+                                        st.warning(f"You can only select up to {max_cards_allowed} cards.")
+                                    else:
+                                        st.session_state.cards_selected_this_year.append(card_name)
+                                        st.rerun() # Rerun only if selection was successful
 
-                card_render_index += 1 # Increment render index
+                    card_render_index += 1 # Increment render index
 
 
-    st.divider()
-    if selected_cards_this_turn:
-        st.write("Selected for this turn:")
-        for card_name in selected_cards_this_turn: st.markdown(f"- {card_name}")
-    else:
-        st.write("No cards selected for this turn.")
-    # --- End of Card Selection UI ---
-
-    # --- Detailed Data Expanders ---
-    st.divider()
- # Keep divider above expanders
-    with st.expander("SFC Matrices"): # Renamed Expander
-        model_state = st.session_state.sfc_model_object # Get current model state
-        current_solution_for_matrix = model_state.solutions[-1] # Latest solution
-        prev_solution_for_matrix = None
-        if st.session_state.current_year == 1:
-             if len(model_state.solutions) >= 1:
-                 prev_solution_for_matrix = model_state.solutions[0] # Use SOLVED t=0 state
-             else: logging.error("Cannot find t=0 solution in model_state for Year 1 matrix display.")
-        elif len(model_state.solutions) >= 2:
-             prev_solution_for_matrix = model_state.solutions[-2]
-
-        display_balance_sheet_matrix(current_solution_for_matrix)
         st.divider()
-        if prev_solution_for_matrix: display_revaluation_matrix(current_solution_for_matrix, prev_solution_for_matrix); st.divider()
-        else: st.caption("Revaluation matrix requires data from the previous period.")
-        if prev_solution_for_matrix: display_transaction_flow_matrix(current_solution_for_matrix, prev_solution_for_matrix)
-        else: st.caption("Transaction flow matrix requires data from the previous period.")
+        if selected_cards_this_turn:
+            st.write("Selected for this turn:")
+            for card_name in selected_cards_this_turn: st.markdown(f"- {card_name}")
+        else:
+            st.write("No cards selected for this turn.")
+        # --- End of Card Selection UI ---
 
-    with st.expander("View History Table"):
-        if st.session_state.history:
-            # Define mapping for clearer column names
-            column_mapping = {
-                'year': 'Year', # Keep simple
-                'Yk': 'Real GDP (Yk)',
-                'PI': 'Inflation (PI)',
-                'ER': 'Employment Rate (ER)',
-                'GRk': 'Capital Growth (GRk)',
-                'Rb': 'Bill Rate (Rb)',
-                'Rl': 'Loan Rate (Rl)',
-                'Rm': 'Deposit Rate (Rm)', # Added
-                'BUR': 'Debt Burden (BUR)',
-                'Q': "Tobin's Q (Q)",
-                'CAR': 'Capital Adequacy (CAR)', # Added
-                'PSBR': 'Gov Deficit (PSBR)',
-                'GD': 'Gov Debt Stock (GD)',
-                'Y': 'Nominal GDP (Y)',
-                'V': 'Household Wealth (V)', # Added
-                'Lhs': 'Household Loans (Lhs)', # Added
-                'Lfs': 'Firm Loans (Lfs)', # Added
-                'cards_played': 'Cards Played', # Keep simple
-                'events': 'Active Events' # Keep simple
-            }
-            history_df = pd.DataFrame(st.session_state.history).sort_values(by='year', ascending=False)
-            # Select and rename columns that exist in the DataFrame
-            display_df = history_df[[col for col in column_mapping if col in history_df.columns]].rename(columns=column_mapping)
-            st.dataframe(display_df) # Display the renamed DataFrame
-        else: st.write("No history recorded yet.")
+        # --- Detailed Data Expanders ---
+        st.divider()
+     # Keep divider above expanders
+        with st.expander("SFC Matrices"): # Renamed Expander
+            model_state = st.session_state.sfc_model_object # Get current model state
+            current_solution_for_matrix = model_state.solutions[-1] # Latest solution
+            prev_solution_for_matrix = None
+            if st.session_state.current_year == 1:
+                 if len(model_state.solutions) >= 1:
+                     prev_solution_for_matrix = model_state.solutions[0] # Use SOLVED t=0 state
+                 else: logging.error("Cannot find t=0 solution in model_state for Year 1 matrix display.")
+            elif len(model_state.solutions) >= 2:
+                 prev_solution_for_matrix = model_state.solutions[-2]
 
-    # --- End Detailed Data Expanders ---
+            display_balance_sheet_matrix(current_solution_for_matrix)
+            st.divider()
+            if prev_solution_for_matrix: display_revaluation_matrix(current_solution_for_matrix, prev_solution_for_matrix); st.divider()
+            else: st.caption("Revaluation matrix requires data from the previous period.")
+            if prev_solution_for_matrix: display_transaction_flow_matrix(current_solution_for_matrix, prev_solution_for_matrix)
+            else: st.caption("Transaction flow matrix requires data from the previous period.")
+
+        with st.expander("View History Table"):
+            if st.session_state.history:
+                # Define mapping for clearer column names
+                column_mapping = {
+                    'year': 'Year', # Keep simple
+                    'Yk': 'Real GDP (Yk)',
+                    'PI': 'Inflation (PI)',
+                    'ER': 'Employment Rate (ER)',
+                    'GRk': 'Capital Growth (GRk)',
+                    'Rb': 'Bill Rate (Rb)',
+                    'Rl': 'Loan Rate (Rl)',
+                    'Rm': 'Deposit Rate (Rm)', # Added
+                    'BUR': 'Debt Burden (BUR)',
+                    'Q': "Tobin's Q (Q)",
+                    'CAR': 'Capital Adequacy (CAR)', # Added
+                    'PSBR': 'Gov Deficit (PSBR)',
+                    'GD': 'Gov Debt Stock (GD)',
+                    'Y': 'Nominal GDP (Y)',
+                    'V': 'Household Wealth (V)', # Added
+                    'Lhs': 'Household Loans (Lhs)', # Added
+                    'Lfs': 'Firm Loans (Lfs)', # Added
+                    'cards_played': 'Cards Played', # Keep simple
+                    'events': 'Active Events' # Keep simple
+                }
+                history_df = pd.DataFrame(st.session_state.history).sort_values(by='year', ascending=False)
+                # Select and rename columns that exist in the DataFrame
+                display_df = history_df[[col for col in column_mapping if col in history_df.columns]].rename(columns=column_mapping)
+                st.dataframe(display_df) # Display the renamed DataFrame
+            else: st.write("No history recorded yet.")
+
+        # --- End Detailed Data Expanders ---
 
 
-    # Button to proceed (for Year > 0)
-    # --- Add Card Limit Check ---
-    max_cards_allowed = 2
-    can_proceed = len(selected_cards_this_turn) <= max_cards_allowed
-    if not can_proceed:
-        st.warning(f"You can select a maximum of {max_cards_allowed} cards per turn.")
+        # Button to proceed (for Year > 0)
+        # --- Add Card Limit Check ---
+        max_cards_allowed = 2
+        can_proceed = len(selected_cards_this_turn) <= max_cards_allowed
+        if not can_proceed:
+            st.warning(f"You can select a maximum of {max_cards_allowed} cards per turn.")
 
-    if st.button("Confirm Policies & Run Simulation", disabled=not can_proceed):
-        st.session_state.game_phase = "SIMULATION"
-        if "year_start_processed" in st.session_state: del st.session_state.year_start_processed
-        st.rerun()
+        if st.button("Confirm Policies & Run Simulation", disabled=not can_proceed):
+            st.session_state.game_phase = "SIMULATION"
+            if "year_start_processed" in st.session_state: del st.session_state.year_start_processed
+            st.rerun()
 
 elif st.session_state.game_phase == "SIMULATION":
     # Note: current_year is the year *starting* the simulation (0 for first run, 1 for second, etc.)
@@ -1729,10 +1886,61 @@ elif st.session_state.game_phase == "SIMULATION":
 
 
         # --- Run the simulation for one year ---
+        st.session_state.debug_last_params = final_numerical_params # Store for logging
         with st.spinner(f"Simulating Year {st.session_state.current_year + 1}..."):
             sys.stdout = NullIO()
             logging.debug(f"Attempting model.solve() for year {st.session_state.current_year + 1}...")
             model_to_simulate.solve(iterations=1000, threshold=1e-6)
+            # --- BEGIN SINGLE FILE LOGGING ---
+            current_year = st.session_state.current_year + 1
+            log_prefix = f"Year {current_year} SOLVED"
+
+            # Log Variables
+            log_output_vars = f"{log_prefix} - Variables:"
+            variables_logged = False
+            if hasattr(model_to_simulate, 'solutions') and model_to_simulate.solutions and len(model_to_simulate.solutions) > 0:
+                last_solution = model_to_simulate.solutions[-1]
+                all_vars = list(last_solution.keys()) # Get keys from the solution dict
+                sorted_vars = sorted(all_vars)
+                for var in sorted_vars:
+                    val = last_solution.get(var, 'N/A')
+                    # Format value for logging
+                    val_str = f"{val:.4f}" if isinstance(val, (int, float)) else str(val)
+                    log_output_vars += f" | {var}={val_str}"
+                variables_logged = True
+            else:
+                 log_output_vars += " | ERROR: Model solutions not found or empty."
+            logging.info(log_output_vars)
+
+            # Log Parameters
+            log_output_params = f"{log_prefix} - Parameters Used:"
+            params_logged = False
+            final_params_to_log = {}
+            # Retrieve parameters stored in session state before the solve step
+            if hasattr(st.session_state, 'debug_last_params'):
+                final_params_to_log = st.session_state.debug_last_params
+            elif hasattr(st.session_state, 'current_turn_params'): # Keep fallback just in case
+                 final_params_to_log = st.session_state.current_turn_params
+
+            if final_params_to_log:
+                # Also include parameters defined directly in the model object if needed
+                # all_params_model = list(model_to_simulate.parameters.keys())
+                # combined_param_keys = sorted(list(set(final_params_to_log.keys()) | set(all_params_model)))
+                combined_param_keys = sorted(final_params_to_log.keys()) # Log only params used in solve
+
+                for param in combined_param_keys:
+                    # Prioritize value from final_params_to_log (reflects runtime changes)
+                    val = final_params_to_log.get(param, 'N/A')
+                    val_str = f"{val:.4f}" if isinstance(val, (int, float)) else str(val)
+                    log_output_params += f" | {param}={val_str}"
+                params_logged = True
+            else:
+                 log_output_params += " | ERROR: final_params not accessible for logging"
+            logging.info(log_output_params)
+
+            if not variables_logged or not params_logged:
+                 logging.error(f"Year {current_year}: Failed to log full debug information.")
+            # --- END SINGLE FILE LOGGING ---
             logging.debug(f"model.solve() completed for year {st.session_state.current_year + 1}.")
             sys.stdout = old_stdout
 
@@ -1809,6 +2017,8 @@ elif st.session_state.game_phase == "SIMULATION":
                 st.session_state.game_phase = "GAME_OVER"
                 logging.info(f"Final simulation (Year {st.session_state.current_year}) complete. Proceeding to GAME_OVER.")
             else:
+                logging.debug(f"--- End of SIMULATION for Year {st.session_state.current_year} ---")
+                logging.debug(f"Value of 'dilemma_processed_for_year' BEFORE year increment: {st.session_state.get('dilemma_processed_for_year', 'Not Set')}")
                 st.session_state.current_year += 1
                 st.session_state.game_phase = "YEAR_START"
                 logging.info(f"Simulation complete. Advancing to Year {st.session_state.current_year} YEAR_START.")

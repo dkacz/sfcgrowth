@@ -30,13 +30,16 @@ except ImportError as e:
 # Run for exactly 5 turns as requested
 TOTAL_TURNS = 5
  # Keep at 5 turns
-TARGET_VARIABLE = 'PI' # Change target to Inflation Rate
-OUTPUT_COLUMN_NAME = 'inflation_change_abs_turn5' # Change output column name
+TARGET_VARIABLES = ['PI', 'Yk'] # Track both Inflation and Real GDP
+OUTPUT_COLUMNS = {
+    'PI': 'inflation_change_abs_turn5',
+    'Yk': 'gdp_change_pct_turn5'
+}
 
-def run_and_get_final_value(params, exogenous, variables, turns, target_var):
+def run_and_get_final_values(params, exogenous, variables, turns, target_vars):
     """
     Creates a model instance, sets values, solves for 'turns' steps,
-    and returns the final value for the target variable.
+    and returns a dictionary of final values for the target variables.
     """
     model = create_growth_model()
     # Use deep copies to avoid modifying the original dicts/lists
@@ -65,7 +68,8 @@ def run_and_get_final_value(params, exogenous, variables, turns, target_var):
         print("Solver failed to complete all turns.")
         return None
 
-    # Extract the final value for the target variable only if solve completed
+    # Extract final values for target variables only if solve completed
+    final_values = {}
     try:
         # Access model.solutions as a list of dictionaries
         # Index for the final turn (turn 5) is 4 (0-based)
@@ -88,22 +92,27 @@ def run_and_get_final_value(params, exogenous, variables, turns, target_var):
             print(f"Error: Element at index {iteration_index} in model.solutions is not a dictionary (type: {type(solution_dict)}).")
             return None
 
-        # Access the value using the target variable name (string)
-        if target_var not in solution_dict:
-            print(f"Error: Target variable '{target_var}' not found in solutions dictionary for iteration {iteration_index}.")
-            return None
+        # Extract values for all target variables
+        for target_var in target_vars:
+            if target_var not in solution_dict:
+                print(f"Error: Target variable '{target_var}' not found in solutions dictionary for iteration {iteration_index}.")
+                 # Return None or partial results? Returning None for simplicity.
+                return None
 
-        final_value = solution_dict[target_var]
+            value = solution_dict[target_var]
 
-        # Ensure it's a float or can be converted
-        if final_value is None:
-             print(f"Warning: Final value for '{target_var}' at iteration {iteration_index} is None.")
-             return None
-        return float(final_value)
+            # Ensure it's a float or can be converted
+            if value is None:
+                print(f"Warning: Final value for '{target_var}' at iteration {iteration_index} is None.")
+                # Return None or partial results? Returning None for simplicity.
+                return None
+            final_values[target_var] = float(value)
+
+        return final_values
 
     except Exception as e:
         # Catch any other unexpected error during extraction
-        print(f"Unexpected error extracting solution for {target_var}: {e}")
+        print(f"Unexpected error extracting solutions: {e}")
         # Also print type/value of model.solutions if possible
         try:
             print(f"DEBUG: Type of model.solutions during error: {type(model.solutions)}")
@@ -158,8 +167,6 @@ def main():
     parser.add_argument('--parameter', required=True, help="Name of the parameter/exogenous variable to change.")
     parser.add_argument('--change', required=True, type=float, help="Absolute change to apply to the parameter.")
     parser.add_argument('--output', required=True, help="Path to the output CSV file.")
-    # Turns are now fixed internally based on TOTAL_TURNS constant
-    # parser.add_argument('--turns', type=int, default=TOTAL_TURNS, help="Total simulation turns.")
 
     args = parser.parse_args()
 
@@ -167,14 +174,14 @@ def main():
 
     # --- Run Baseline Simulation ---
     print("Running baseline simulation...")
-    # Run baseline for TOTAL_TURNS, get final PI
-    baseline_pi_final = run_and_get_final_value(
-        growth_parameters, growth_exogenous, growth_variables, TOTAL_TURNS, TARGET_VARIABLE
-    )
-    if baseline_pi_final is None:
+    # Run baseline for TOTAL_TURNS, get final values for target variables
+    baseline_final_values = run_and_get_final_values(growth_parameters, growth_exogenous, growth_variables, TOTAL_TURNS, TARGET_VARIABLES)
+    if baseline_final_values is None:
         print("Baseline simulation failed or did not complete. Exiting.")
         sys.exit(1) # Exit this specific subprocess run
-    print(f"Baseline {TARGET_VARIABLE} at turn {TOTAL_TURNS}: {baseline_pi_final:.6f}") # Increased precision
+    print(f"Baseline values at turn {TOTAL_TURNS}:")
+    for var, val in baseline_final_values.items():
+        print(f"  {var}: {val:.6f}")
 
 
     # --- Run Modified Simulation ---
@@ -188,28 +195,38 @@ def main():
         sys.exit(1) # Exit if parameter not found
 
     # Run modified simulation for TOTAL_TURNS
-    modified_pi_final = run_and_get_final_value(
-        modified_params, modified_exogenous, growth_variables, TOTAL_TURNS, TARGET_VARIABLE
-    )
+    modified_final_values = run_and_get_final_values(modified_params, modified_exogenous, growth_variables, TOTAL_TURNS, TARGET_VARIABLES)
 
-    if modified_pi_final is None:
+    if modified_final_values is None:
         print("Modified simulation failed or did not complete. Exiting.")
         sys.exit(1) # Exit this specific subprocess run
-    print(f"Modified {TARGET_VARIABLE} at turn {TOTAL_TURNS}: {modified_pi_final:.6f}")
- # Increased precision
+    print(f"Modified values at turn {TOTAL_TURNS}:")
+    for var, val in modified_final_values.items():
+        print(f"  {var}: {val:.6f}")
 
-    # --- Calculate Absolute Change in Percentage Points ---
-    # PI is already a rate (e.g., 0.02 for 2%), so absolute difference is the change in percentage points
-    inflation_change_abs = modified_pi_final - baseline_pi_final
-    print(f"Absolute change in {TARGET_VARIABLE} at turn {TOTAL_TURNS}: {inflation_change_abs*100:.4f} p.p.") # Display as p.p.
+     # --- Calculate Changes ---
+    results = {}
+     # PI: Absolute change
+    pi_change_abs = modified_final_values['PI'] - baseline_final_values['PI']
+    results[OUTPUT_COLUMNS['PI']] = f"{pi_change_abs:.8f}"
+    print(f"Absolute change in PI at turn {TOTAL_TURNS}: {pi_change_abs*100:.4f} p.p.")
+
+     # Yk: Percentage change
+    if baseline_final_values['Yk'] != 0: # Avoid division by zero
+        yk_change_pct = ((modified_final_values['Yk'] - baseline_final_values['Yk']) / baseline_final_values['Yk'])
+        results[OUTPUT_COLUMNS['Yk']] = f"{yk_change_pct:.8f}"
+        print(f"Percentage change in Yk at turn {TOTAL_TURNS}: {yk_change_pct*100:.4f}%")
+    else:
+        results[OUTPUT_COLUMNS['Yk']] = "N/A (baseline Yk is zero)"
+        print(f"Percentage change in Yk at turn {TOTAL_TURNS}: N/A (baseline Yk is zero)")
 
 
     # --- Append Result to CSV ---
     file_exists = os.path.isfile(args.output)
     try:
         with open(args.output, 'a', newline='') as csvfile:
-            # Use the updated column name
-            fieldnames = ['parameter', 'change', OUTPUT_COLUMN_NAME]
+             # Define fieldnames including the new GDP column
+            fieldnames = ['parameter', 'change'] + list(OUTPUT_COLUMNS.values())
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             if not file_exists:
@@ -218,7 +235,7 @@ def main():
             writer.writerow({
                 'parameter': args.parameter,
                 'change': f"{args.change:.6f}", # Store change with precision
-                OUTPUT_COLUMN_NAME: f"{inflation_change_abs:.8f}" # Store absolute change with high precision
+                **results # Unpack the results dictionary into the row
             })
         print(f"Result appended to {args.output}")
     except IOError as e:

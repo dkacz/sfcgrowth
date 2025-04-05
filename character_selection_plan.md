@@ -5,17 +5,17 @@
 ## Character Details
 
 *   **Mapping (Left-to-Right in `assets/economists.png`):**
-    1.  The Demand-Side Savior
+    1.  The Demand Side Devotee
     2.  The Money Monk
     3.  The Class-Conscious Crusader
     4.  The Austerity Apostle
 *   **Starting Decks (Fixed Lists - 8 cards each):**
-    *   **Demand-Side Savior:** 3x "Increase Government Spending", 2x "Cut Income Tax Rate", 1x "Interest Rate Cut", 1x "Quantitative Easing", 1x "Make Tax System More Progressive"
+    *   **Demand Side Devotee:** 3x "Increase Government Spending", 2x "Cut Income Tax Rate", 1x "Interest Rate Cut", 1x "Quantitative Easing", 1x "Make Tax System More Progressive"
     *   **Money Monk:** 3x "Interest Rate Hike", 2x "Quantitative Tightening", 1x "Decrease Government Spending", 1x "Raise Income Tax Rate", 1x "Make Tax System Less Progressive"
     *   **Class-Conscious Crusader:** 3x "Increase Government Spending", 2x "Make Tax System More Progressive", 1x "Cut Income Tax Rate", 1x "Interest Rate Cut", 1x "Quantitative Easing"
     *   **Austerity Apostle:** 3x "Decrease Government Spending", 2x "Raise Income Tax Rate", 1x "Make Tax System Less Progressive", 1x "Interest Rate Hike", 1x "Quantitative Tightening"
 *   **Bonus:** Apply a `* 1.20` multiplier to the `effect` value of any played card that matches *both* the character's preferred stance (Expansionary/Contractionary) and type (Fiscal/Monetary).
-    *   Demand-Side Savior: Boosts Expansionary Fiscal & Expansionary Monetary cards.
+    *   Demand Side Devotee: Boosts Expansionary Fiscal & Expansionary Monetary cards.
     *   Money Monk: Boosts Contractionary Monetary cards.
     *   Class-Conscious Crusader: Boosts Expansionary Fiscal cards.
     *   Austerity Apostle: Boosts Contractionary Fiscal & Contractionary Monetary cards.
@@ -25,7 +25,7 @@
 **Phase 1: Data Definition & Asset Preparation**
 
 1.  **Create `characters.py`:** Define a new file to hold the character data dictionary (`CHARACTERS`) mapping IDs to attributes (name, description, image_path, starting_deck list, bonus_criteria list of tuples, bonus_multiplier).
-2.  **Split Character Portraits:** Create/modify a script (`scripts/split_characters.py`) to split `assets/economists.png` into individual files (e.g., `demand_side_savior.png`) saved in `assets/characters/`. Update `image_path` in `characters.py`. Assume roughly equal width splitting initially.
+2.  **Split Character Portraits:** Create/modify a script (`scripts/split_characters.py`) to split `assets/economists.png` into individual files (e.g., `demand_side_devotee.png`) saved in `assets/characters/`. Update `image_path` in `characters.py`. Assume roughly equal width splitting initially.
 3.  **Import Characters:** Import `CHARACTERS` from `characters.py` into `growth_model_streamlit.py` and `game_mechanics.py`.
 
 **Phase 2: Core Logic Modifications**
