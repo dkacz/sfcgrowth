@@ -17,7 +17,7 @@ CHARACTERS = {
         ],
         "objectives": { # Objectives for Demand Side Devotee (Year 10)
             "gdp_index": {
-                "label": "GDP Index", "condition": ">=", "target_value": 140, "target_type": "index"
+                "label": "GDP Index", "condition": ">=", "target_value": 130, "target_type": "index"
             },
             "unemployment": {
                 "label": "Unemployment", "condition": "<=", "target_value": 4, "target_type": "percent"
@@ -41,7 +41,7 @@ CHARACTERS = {
         ],
         "objectives": { # Objectives for Money Monk (Year 10)
             "gdp_index": {
-                "label": "GDP Index", "condition": ">=", "target_value": 130, "target_type": "index"
+                "label": "GDP Index", "condition": ">=", "target_value": 120, "target_type": "index"
             },
             "inflation": {
                 "label": "Inflation", "condition": "<=", "target_value": 2, "target_type": "percent"
@@ -65,7 +65,7 @@ CHARACTERS = {
         ],
         "objectives": { # Objectives for Class-Conscious Crusader (Year 10)
             "gdp_index": {
-                "label": "GDP Index", "condition": ">=", "target_value": 150, "target_type": "index"
+                "label": "GDP Index", "condition": ">=", "target_value": 140, "target_type": "index"
             },
             "unemployment": {
                 "label": "Unemployment", "condition": "<=", "target_value": 3, "target_type": "percent"
@@ -86,7 +86,7 @@ CHARACTERS = {
         ],
         "objectives": { # Objectives for Austerity Apostle (Year 10)
             "gdp_index": {
-                "label": "GDP Index", "condition": ">=", "target_value": 120, "target_type": "index"
+                "label": "GDP Index", "condition": ">=", "target_value": 110, "target_type": "index"
             },
             "inflation": {
                 "label": "Inflation", "condition": "<=", "target_value": 2, "target_type": "percent"

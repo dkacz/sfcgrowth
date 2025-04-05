@@ -88,7 +88,7 @@ def find_and_replace_random_by_type(policy_type, card_to_add, deck, discard_pile
 
     if not candidates:
         logging.warning(f"No cards of type '{policy_type}' found to replace randomly.")
-        return False
+        return None # Return None if no candidates
 
     # Choose a random candidate to replace
     chosen_candidate = random.choice(candidates)
@@ -98,7 +98,11 @@ def find_and_replace_random_by_type(policy_type, card_to_add, deck, discard_pile
     logging.info(f"Randomly selected '{card_to_remove}' of type '{policy_type}' in {location} for replacement.")
 
     # Perform the replacement
-    return replace_card_in_location(location, card_to_remove, card_to_add, deck, discard_pile)
+    # Perform the replacement and return the removed card's name on success
+    if replace_card_in_location(location, card_to_remove, card_to_add, deck, discard_pile):
+        return card_to_remove # Return name of removed card
+    else:
+        return None # Return None if replacement failed
 
 
 # --- Deck and Hand Management (Basic Functions - To be expanded) ---
@@ -548,6 +552,7 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
     Returns:
         tuple: (updated_deck, updated_discard_pile)
     """
+    action_descriptions = [] # Initialize list to store descriptions
     cards_to_add_specific = chosen_option.get('add_cards', [])
     cards_to_remove = chosen_option.get('remove_cards', [])
     added_directly = [] # Keep track of cards added without replacement
@@ -571,13 +576,19 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
                 replaced = replace_card_in_location(generic_location, generic_equivalent, specific_card, deck, discard_pile)
                 if replaced:
                      logging.info(f"Successfully replaced generic '{generic_equivalent}' with specific '{specific_card}'.")
+                     action_descriptions.append(f"Added '{specific_card}', replacing '{generic_equivalent}'")
 
             # 2. If generic not found or replacement failed, try replacing random of same type
             if not replaced:
                 logging.debug(f"Generic '{generic_equivalent}' not found or replacement failed. Trying random replacement of type '{policy_type}'.")
-                replaced = find_and_replace_random_by_type(policy_type, specific_card, deck, discard_pile)
-                if replaced:
-                    logging.info(f"Successfully replaced random card of type '{policy_type}' with specific '{specific_card}'.")
+                # Now returns the name of the replaced card or None
+                replaced_card_name = find_and_replace_random_by_type(policy_type, specific_card, deck, discard_pile)
+                if replaced_card_name:
+                    logging.info(f"Successfully replaced random card '{replaced_card_name}' of type '{policy_type}' with specific '{specific_card}'.")
+                    action_descriptions.append(f"Added '{specific_card}', replacing '{replaced_card_name}' (random {policy_type})")
+                    replaced = True # Mark as replaced for the next step's logic
+                else:
+                    replaced = False # Ensure replaced is False if random replacement failed
 
         # 3. If no replacement occurred (no generic, no same type, or invalid type), add directly
         if not replaced:
@@ -589,10 +600,12 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
                  logging.warning(f"Could not find any card of type '{policy_type}' (including generic '{generic_equivalent}') to replace with '{specific_card}'. Adding directly to deck.")
             added_directly.append(specific_card)
 
-    # Add cards that couldn't be used for replacement
+    # Add cards that couldn't be used for replacement to the discard pile
     if added_directly:
-        deck.extend(added_directly)
-        logging.info(f"Added cards directly to deck (no replacement possible): {', '.join(added_directly)}")
+        discard_pile.extend(added_directly) # Changed from deck to discard_pile
+        logging.info(f"Added cards directly to discard pile (no replacement possible): {', '.join(added_directly)}") # Updated log message
+        for card_added in added_directly:
+            action_descriptions.append(f"Added '{card_added}' to discard pile")
 
     # --- Original Logic for Removing Cards ---
     # Process removals *after* additions/replacements to avoid conflicts if a removed card was also a replacement target
@@ -629,4 +642,4 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
     logging.debug(f"Final deck size: {len(deck)}, discard size: {len(discard_pile)}")
     logging.info(f"--- Finished Applying Dilemma Choice ---")
 
-    return deck, discard_pile
+    return deck, discard_pile, action_descriptions # Return descriptions as well

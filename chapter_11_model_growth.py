@@ -259,7 +259,7 @@ def create_growth_model():
     model.add('W - W(-1) = omega3*(omegat*P(-1) - W(-1))')  # 11.21 : Nominal wage
     model.add('PR = PR(-1)*(1 + GRpr) + 0*GRpr')    # 11.22 : Labor productivity (Added +0*GRpr to force update)
     model.add('Nt = Yk/PR')                         # 11.23 : Desired employment
-    model.add('N - N(-1) = etan*(Nt - N(-1))')      # 11.24 : Actual employment
+    model.add('N = min(N(-1) + etan*(Nt - N(-1)), 0.99 * Nfe)')  # 11.24 : Actual employment (capped at 0.99*Nfe)
     model.add('WB = N*W')                           # 11.25 : Nominal wage bill
     model.add('UC = WB/Yk')                         # 11.26 : Actual unit cost
     model.add('NUC = W/PR')                         # 11.27 : Normal unit cost
@@ -282,7 +282,7 @@ def create_growth_model():
     model.add('Ff = S - WB + d(IN) - Rl(-1)*IN(-1)')  # 11.37 : Realized entrepeneurial profits
     model.add('FUf = Ff - FDf - Rl(-1)*(Lfd(-1) - IN(-1)) + Rl(-1)*NPL')  # 11.38 : Retained earnings of firms
     # 11.39 : Demand for loans by firms
-    model.add('Lfd - Lfd(-1) = INV + d(IN) - FUf - d(Eks)*Pe - NPL')
+    model.add('Lfd = max(0, Lfd(-1) + INV + d(IN) - FUf - d(Eks)*Pe - NPL)')
     model.add('NPL = NPLk*Lfs(-1)')                 # 11.40 : Defaulted loans
     model.add('Eks - Eks(-1) = ((1 - psiu)*INV(-1))/Pe')  # 11.41 : Supply of equities issued by firms
     model.add('Rk = FDf/(Pe(-1)*Ekd(-1))')          # 11.42 : Dividend yield of firms

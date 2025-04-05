@@ -52,7 +52,7 @@ CARDS_TO_DRAW_PER_YEAR = 4 # Draw 4 cards per year as requested
 MAX_CARDS_PER_ROW = 4 # For card display layout
 ICON_DIR = "assets/icons" # Define icon directory
 SPARKLINE_YEARS = 10 # Number of years for sparkline history
-GAME_END_YEAR = 15 # Define the final year (Increased to 15)
+GAME_END_YEAR = 10 # Define the final year
 
 # --- Icon Mapping ---
 # Maps internal keys/types to filenames in ICON_DIR
@@ -117,7 +117,11 @@ PARAM_DESCRIPTIONS = {
     'eta0': 'Ratio of new loans to personal income - exogenous component',
     'delta': 'Rate of depreciation of fixed capital',
     'beta': 'Parameter in expectation formations on real sales',
-    'omega3': 'Speed of adjustment of wages to target value'
+    'omega3': 'Speed of adjustment of wages to target value',
+    'omega0': 'Constant term in wage Phillips curve',
+    'omega1': 'Coefficient on expected inflation in wage Phillips curve',
+    'omega2': 'Coefficient on unemployment gap in wage Phillips curve',
+    'alpha2': 'Propensity to consume out of wealth',
     # Add others if needed by cards/events
 }
 
@@ -223,6 +227,146 @@ def get_logo_data_uri(logo_filename="sfcgamelogo.png"):
         return None
 
 # Removed get_emoji_for_key function
+
+# --- Helper function to create KPI plots ---
+def create_kpi_plot(metric_key, y_axis_title):
+    logging.debug(f"Entering create_kpi_plot for metric: {metric_key}")
+    # Fetch full history starting from Year 1 for KPI plots
+    plot_df = get_sparkline_data(metric_key, st.session_state.current_year, fetch_full_history=True)
+    logging.debug(f"create_kpi_plot({metric_key}) - plot_df from get_sparkline_data:\n{plot_df}")
+    if plot_df is not None and not plot_df.empty:
+        # Check if data exists
+        # Define colors based on metric_key (using theme/standard colors)
+        # Using Blue, Green, Grey, Black for theme alignment
+        if metric_key == 'Yk_Index':
+            plot_color = "#1FB25A" # Green (Fiscal card color)
+        elif metric_key == 'PI':
+            plot_color = "#000000" # Black
+        elif metric_key == 'Unemployment':
+            plot_color = "#0072BB" # Blue (Monetary card color)
+        elif metric_key == 'GD_GDP':
+            plot_color = "#555555" # Dark Grey
+        else:
+            plot_color = "#1FB25A" # Default Green
+
+        # Determine axis format
+        y_axis_format = ".1f" # Default format for index
+        if metric_key in ['PI', 'Unemployment', 'GD_GDP']:
+            y_axis_format = ".1%" # Percentage format
+
+        # --- Correction for Percentage Scaling ---
+        # Divide values by 100 if the axis format is percentage,
+        # as Altair's format expects raw proportions (e.g., 0.20 for 20%)
+        plot_df_corrected = plot_df.copy() # Avoid modifying original df used elsewhere
+        if y_axis_format.endswith('%'):
+            plot_df_corrected[metric_key] = plot_df_corrected[metric_key] / 100.0
+        # --- End Correction ---
+
+        # Base chart
+        # Use the corrected DataFrame for plotting
+        base = alt.Chart(plot_df_corrected.reset_index()).encode(
+            # X-Axis: Set domain explicitly from Year 1 to current year
+            x=alt.X('Year:O',
+                    axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
+                                  labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
+                                  labelAngle=-45, grid=False),
+                    # Explicit domain based on data, with padding
+                    scale=alt.Scale(domain=[plot_df.index.min(), plot_df.index.max()], paddingOuter=0.1)
+                   ),
+            tooltip=[
+                alt.Tooltip('Year:O', title='Simulation Year'),
+                # Use y_axis_title for tooltip, format based on corrected data
+                alt.Tooltip(f'{metric_key}:Q', format=y_axis_format, title=y_axis_title)
+            ]
+        ) # Added missing closing parenthesis for encode()
+        # Handle single data point case (e.g., first year) OR line chart case
+        if len(plot_df_corrected) == 1:
+            # --- Single Point Chart Logic ---
+            single_value = plot_df_corrected[metric_key].iloc[0]
+            if np.isclose(single_value, 0): padding = 0.01
+            else: padding = abs(single_value) * 0.15
+            y_domain = [single_value - padding, single_value + padding]
+            # Ensure lower bound is not unnecessarily negative (allow negative for PI)
+            if metric_key in ['Unemployment', 'GD_GDP', 'Yk_Index']: # Added Yk_Index here
+                 y_domain[0] = max(0, y_domain[0])
+
+            y_axis_scale = alt.Scale(domain=y_domain, zero=False)
+
+            chart = base.mark_point(size=100, filled=True, color=plot_color).encode(
+                 y=alt.Y(f'{metric_key}:Q',
+                         axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
+                         scale=y_axis_scale # Apply explicit scale
+                        )
+            ) # Closed parenthesis for encode() here
+        else: # Correctly placed else statement
+            # --- Line Chart Logic (for 2+ points) ---
+            min_val = plot_df_corrected[metric_key].min()
+            max_val = plot_df_corrected[metric_key].max()
+            data_range = max_val - min_val
+            if np.isclose(data_range, 0):
+                if np.isclose(max_val, 0): padding = 0.01
+                else: padding = abs(max_val) * 0.15
+            else:
+                padding = data_range * 0.15
+
+            y_domain = [min_val - padding, max_val + padding]
+            # Ensure lower bound is not unnecessarily negative (allow negative for PI)
+            if metric_key in ['Unemployment', 'GD_GDP', 'Yk_Index']: # Added Yk_Index here
+                 y_domain[0] = max(0, y_domain[0])
+
+            y_axis_scale = alt.Scale(domain=y_domain, zero=False)
+
+            line = base.mark_line(
+                point=alt.OverlayMarkDef(color=plot_color),
+                color=plot_color,
+                strokeWidth=2
+            ).encode(
+                y=alt.Y(f'{metric_key}:Q',
+                        axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
+                        scale=y_axis_scale # Apply explicit scale
+                )
+            )
+
+            last_point_df_corrected = plot_df_corrected.reset_index().iloc[[-1]]
+            labels = alt.Chart(last_point_df_corrected).mark_text(
+                align='left', baseline='middle', dx=7, fontSize=11
+            ).encode(
+                x=alt.X('Year:O'),
+                y=alt.Y(f'{metric_key}:Q'),
+                text=alt.Text(f'{metric_key}:Q', format=y_axis_format),
+                color=alt.value(plot_color)
+            )
+
+            chart_layers = [line, labels]
+            # Add zero reference line only if the calculated domain includes zero
+            if y_domain[0] <= 0 <= y_domain[1]:
+                 zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
+                     color='grey', strokeDash=[2,2], size=1
+                 ).encode(y='y')
+                 chart_layers.append(zero_line)
+
+            chart = alt.layer(*chart_layers)
+
+        # --- Common Chart Configuration (Applied to both single point and line) ---
+        chart = chart.properties(
+            height=200,
+            padding={"left": 20} # Added left padding
+        ).configure_view(
+            fill=None,
+            stroke='#cccccc'
+        ).configure_axis(
+            labelFont='Lato',
+            titleFont='Oswald',
+            titleFontSize=12,
+            labelFontSize=11
+        ).interactive()
+
+        return chart # Return the configured chart (point or line)
+    else: # Case where plot_df is None or empty
+        logging.warning(f"create_kpi_plot({metric_key}) - Returning None because plot_df is None or empty.")
+        return None # Return None if plot_df is None or empty
+
+
 
 # --- Dynamic Page Title ---
 # Initialize year for title before config if possible, otherwise default
@@ -722,7 +866,7 @@ else: # Only display if Year > 0 and history exists
             start_index = 1
         else:
             # Fetch last num_years for sparklines (including year 0 if within window)
-            start_index = max(0, len(solutions) - num_years)
+            start_index = max(1, len(solutions) - num_years) # Ensure sparklines start from Year 1
 
         # Ensure start_index is valid (e.g., don't try to fetch index 1 if only index 0 exists)
         if start_index >= len(solutions):
@@ -798,8 +942,10 @@ else: # Only display if Year > 0 and history exists
             logging.debug(f"SPARKLINE Yk_Index - Calculated Index DF:\n{df}")
 
         # Filter out rows where the metric value is exactly zero
+        if not fetch_full_history: logging.debug(f"SPARKLINE({metric_key}) DF before zero filter:\n{df}")
         # Do this *before* dropping NaNs to handle cases where zero might be valid but unwanted
         df = df[~np.isclose(df[metric_key], 0.0)]
+        if not fetch_full_history: logging.debug(f"SPARKLINE({metric_key}) DF after zero filter:\n{df}")
 
         # Explicitly drop rows where the metric value is NaN BEFORE setting index
         # This ensures Altair receives only valid points for the y-axis
@@ -811,10 +957,8 @@ else: # Only display if Year > 0 and history exists
         if df.empty:
             logging.debug(f"SPARKLINE {metric_key} - Not enough valid points after dropna.")
             return None
-        # If only one point remains after dropna, return None for line chart
-        elif len(df) < 2 and metric_key != 'Yk_Index': # Allow single point for Yk_Index
-             logging.debug(f"SPARKLINE {metric_key} - Only one valid point after dropna, returning None for line chart.")
-             return None
+        # Allow returning a DataFrame with a single point (handled by create_kpi_plot)
+    # Removed elif len(df) < 2 check here
 
 
         # Set index after cleaning
@@ -945,6 +1089,7 @@ else: # Only display if Year > 0 and history exists
 
     # Calculate deltas (handle potential division by zero or NaN)
     delta_yk_index = None # Delta for index is tricky, maybe show absolute change?
+    delta_yk_percent = None if is_first_result_year else get_delta(yk_val, yk_prev) # Calculate Real GDP % Change
     delta_pi = None if is_first_result_year else get_delta_percent(pi_val, pi_prev)
     delta_unemp = None if is_first_result_year else get_delta_percent((1-er_val), (1-er_prev))
     delta_rb = None if is_first_result_year else get_delta_percent(rb_val, rb_prev)
@@ -963,7 +1108,8 @@ else: # Only display if Year > 0 and history exists
 
 
     # Display core metrics (Using original metrics from commit)
-    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index)
+    # Display core metrics (Using original metrics from commit) - Modified Yk_Index to include delta
+    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_percent) # Pass pre-formatted string directly
     display_metric_sparkline('PI', 'Inflation Rate', 'PI', format_percent, delta_pi)
     display_metric_sparkline('Unemployment', 'Unemployment Rate', 'ER', format_percent, delta_unemp)
     display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp) # Moved here
@@ -1086,6 +1232,31 @@ def display_sector_summary(latest_solution):
         # cb_as = latest_solution.get('As', np.nan) # Removed - 'As' not found in model vars
         st.metric(label="Bills Held (Bcb)", value=format_value(cb_bcb))
         # st.metric(label="Advances to Banks (As)", value=format_value(cb_as)) # Removed
+    # Log solutions state before attempting to plot KPIs
+    solutions_exist = hasattr(st.session_state, 'sfc_model_object') and hasattr(st.session_state.sfc_model_object, 'solutions')
+    solutions_len = len(st.session_state.sfc_model_object.solutions) if solutions_exist and st.session_state.sfc_model_object.solutions is not None else 0
+    logging.debug(f"Year {st.session_state.current_year} YEAR_START: Before KPI plots. Solutions exist: {solutions_exist}, Length: {solutions_len}")
+    if solutions_exist and solutions_len > 0:
+        logging.debug(f"Solutions keys (first entry): {list(st.session_state.sfc_model_object.solutions[0].keys())[:10]}...") # Log first few keys
+
+        # Generate KPI plots and store them in variables
+        st.markdown("##### Key Economic Indicators") # Re-add header here
+        row1_cols = st.columns(2)
+        with row1_cols[0]:
+            # Use shorter title and display immediately
+            st.altair_chart(create_kpi_plot('Yk_Index', 'GDP Index (Y1=100)'), use_container_width=True)
+        with row1_cols[1]:
+             # Use shorter title and display immediately
+            st.altair_chart(create_kpi_plot('PI', 'Inflation Rate'), use_container_width=True)
+
+        row2_cols = st.columns(2)
+        with row2_cols[0]:
+             # Use shorter title and display immediately
+            st.altair_chart(create_kpi_plot('Unemployment', 'Unemployment Rate'), use_container_width=True)
+        with row2_cols[1]:
+             # Use shorter title and display immediately
+             st.altair_chart(create_kpi_plot('GD_GDP', 'Debt/GDP Ratio'), use_container_width=True)
+
 
 # Call the sector summary function if results are available
 if st.session_state.current_year > 0 and st.session_state.history:
@@ -1180,42 +1351,37 @@ if st.session_state.game_phase == "CHARACTER_SELECTION":
             # Selection Button
             button_label = "Selected" if char_id == selected_id else "Select"
             button_type = "primary" if char_id == selected_id else "secondary"
+            # When a character button is clicked, start the game immediately
             if st.button(button_label, key=f"select_{char_id}", type=button_type, use_container_width=True):
+                # Set the selected character ID first
                 st.session_state.selected_character_id = char_id
-                st.rerun()
+                selected_id = char_id # Update local variable for immediate use
 
-    st.divider()
-    if selected_id:
-        st.write(f"You have selected: **{CHARACTERS[selected_id]['name']}**")
-        if st.button("Confirm Character & Start Game", type="primary"):
-            # --- Set Game Objectives based on Character ---
-            st.session_state.game_objectives = CHARACTERS[selected_id].get('objectives', {})
-            logging.info(f"Character '{CHARACTERS[selected_id]['name']}' confirmed. Objectives set: {st.session_state.game_objectives}")
+                # --- Set Game Objectives based on Character ---
+                st.session_state.game_objectives = CHARACTERS[selected_id].get('objectives', {})
+                logging.info(f"Character '{CHARACTERS[selected_id]['name']}' selected. Objectives set: {st.session_state.game_objectives}")
 
-            # --- Create Deck based on Character ---
-            st.session_state.deck = create_deck(character_id=selected_id)
-            logging.info(f"Deck created based on character '{selected_id}'. Deck size: {len(st.session_state.deck)}")
+                # --- Create Deck based on Character ---
+                st.session_state.deck = create_deck(character_id=selected_id)
+                logging.info(f"Deck created based on character '{selected_id}'. Deck size: {len(st.session_state.deck)}")
 
-            # --- Initial Draw ---
-            st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
-                st.session_state.deck,
-                st.session_state.player_hand,
-                st.session_state.discard_pile,
-                INITIAL_HAND_SIZE
-            )
-            logging.info(f"Drew initial hand of {INITIAL_HAND_SIZE} cards. Hand size: {len(st.session_state.player_hand)}")
+                # --- Initial Draw ---
+                st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+                    st.session_state.deck,
+                    st.session_state.player_hand,
+                    st.session_state.discard_pile,
+                    INITIAL_HAND_SIZE
+                )
+                logging.info(f"Drew initial hand of {INITIAL_HAND_SIZE} cards. Hand size: {len(st.session_state.player_hand)}")
 
-            # --- Start First Simulation (Year 0 -> Year 1) ---
-            st.session_state.game_phase = "SIMULATION" # Trigger first simulation
-            st.session_state.cards_selected_this_year = [] # No cards played in year 0
-            st.session_state.active_events_this_year = [] # No events in year 0
-            logging.info("Proceeding to first simulation (Year 0 -> Year 1).")
-            st.rerun()
+                # --- Start First Simulation (Year 0 -> Year 1) ---
+                st.session_state.game_phase = "SIMULATION" # Trigger first simulation
+                st.session_state.cards_selected_this_year = [] # No cards played in year 0
+                st.session_state.active_events_this_year = [] # No events in year 0
+                logging.info("Proceeding to first simulation (Year 0 -> Year 1).")
+                st.rerun() # Rerun to start the simulation phase
 
-    # --- NORMAL CHARACTER SELECTION LOGIC (No dilemma here) ---
-
-    else:
-        st.warning("Please select an economic advisor to begin.")
+    # Confirmation button and related logic removed. Game starts on character button click.
 
 
 elif st.session_state.game_phase == "YEAR_START":
@@ -1238,7 +1404,7 @@ elif st.session_state.game_phase == "YEAR_START":
                     st.session_state.seen_dilemmas.add(dilemma_id)
                     logging.info(f"Selected new dilemma: {dilemma_id} for year {current_year}")
                     # Rerun needed to display the newly selected dilemma cleanly before card selection etc.
-                    st.rerun() # Rerun immediately after selecting a *new* dilemma
+                    # st.rerun() # Rerun immediately after selecting a *new* dilemma
                 else:
                     logging.info(f"No unseen dilemmas available for advisor '{advisor_id}' in year {current_year}.")
             else:
@@ -1267,12 +1433,17 @@ elif st.session_state.game_phase == "YEAR_START":
             if st.button(f"Choose: {option_a['name']}", key="dilemma_a", use_container_width=True):
                 # Caption moved outside this block
                 logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option A chosen.")
-                st.session_state.deck, st.session_state.discard_pile = apply_dilemma_choice(
+                # Unpack the action descriptions
+                st.session_state.deck, st.session_state.discard_pile, action_descriptions = apply_dilemma_choice(
                     option_a, st.session_state.deck, st.session_state.discard_pile
                 )
                 st.session_state.current_dilemma = None # Clear dilemma state
                 st.session_state.dilemma_processed_for_year = st.session_state.current_year # Mark as processed for this year
-                st.toast("Deck modified by dilemma choice!")
+                # Display the action descriptions in the toast message
+                display_message = "Deck modified by dilemma choice!"
+                if action_descriptions:
+                    display_message += "\nChanges:\n* " + "\n* ".join(action_descriptions)
+                st.toast(display_message)
                 st.rerun() # Rerun to proceed to normal YEAR_START (without dilemma)
             if tooltip_a: st.caption(tooltip_a) # Display tooltip content as caption
         with col2:
@@ -1288,210 +1459,26 @@ elif st.session_state.game_phase == "YEAR_START":
             if st.button(f"Choose: {option_b['name']}", key="dilemma_b", use_container_width=True):
                 # Caption moved outside this block
                 logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option B chosen.")
-                st.session_state.deck, st.session_state.discard_pile = apply_dilemma_choice(
+                # Unpack the action descriptions
+                st.session_state.deck, st.session_state.discard_pile, action_descriptions = apply_dilemma_choice(
                     option_b, st.session_state.deck, st.session_state.discard_pile
                 )
                 st.session_state.current_dilemma = None # Clear dilemma state
                 st.session_state.dilemma_processed_for_year = st.session_state.current_year # Mark as processed for this year
-                st.toast("Deck modified by dilemma choice!")
+                # Display the action descriptions in the toast message
+                display_message = "Deck modified by dilemma choice!"
+                if action_descriptions:
+                    display_message += "\nChanges:\n* " + "\n* ".join(action_descriptions)
+                st.toast(display_message)
                 st.rerun() # Rerun to proceed to normal YEAR_START (without dilemma)
             if tooltip_b: st.caption(tooltip_b) # Display tooltip content as caption
-        st.stop() # Stop execution HERE to prevent normal year start logic while dilemma is active
 
-    # --- Step 3: NORMAL YEAR START LOGIC (Executes only if no dilemma was active/displayed above) ---
+        # Removed deferred plot display block. Plots are now displayed immediately after creation.
+
     else:
+        # --- Step 3: NORMAL YEAR START LOGIC (Executes only if no dilemma was active/displayed above) ---
         # Display Current Year
         st.header(f"Year {st.session_state.current_year}") # ADDED YEAR DISPLAY
-
-        # Helper to create simple KPI plots
-        def create_kpi_plot(metric_key, y_axis_title): # Renamed 'title' arg to 'y_axis_title'
-            # Fetch full history starting from Year 1 for KPI plots
-            plot_df = get_sparkline_data(metric_key, st.session_state.current_year, fetch_full_history=True)
-            if plot_df is not None and not plot_df.empty:
-                # Check if data exists
-                # Define colors based on metric_key (using theme/standard colors)
-                # Using Blue, Green, Grey, Black for theme alignment
-                if metric_key == 'Yk_Index':
-                    plot_color = "#1FB25A" # Green (Fiscal card color)
-                elif metric_key == 'PI':
-                    plot_color = "#000000" # Black
-                elif metric_key == 'Unemployment':
-                    plot_color = "#0072BB" # Blue (Monetary card color)
-                elif metric_key == 'GD_GDP':
-                    plot_color = "#555555" # Dark Grey
-                else:
-                    plot_color = "#1FB25A" # Default Green
-
-                # Determine axis format
-                y_axis_format = ".1f" # Default format for index
-                if metric_key in ['PI', 'Unemployment', 'GD_GDP']:
-                    y_axis_format = ".1%" # Percentage format
-
-                # --- Correction for Percentage Scaling ---
-                # Divide values by 100 if the axis format is percentage,
-                # as Altair's format expects raw proportions (e.g., 0.20 for 20%)
-                plot_df_corrected = plot_df.copy() # Avoid modifying original df used elsewhere
-                if y_axis_format.endswith('%'):
-                    plot_df_corrected[metric_key] = plot_df_corrected[metric_key] / 100.0
-                # --- End Correction ---
-
-                # Base chart
-                # Use the corrected DataFrame for plotting
-                base = alt.Chart(plot_df_corrected.reset_index()).encode(
-                    # X-Axis: Set domain explicitly from Year 1 to current year
-                    x=alt.X('Year:O',
-                            axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
-                                          labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
-                                          labelAngle=-45, grid=False),
-                            # Ensure x-axis starts at 1 and goes to the current year
-                            scale=alt.Scale(domain=[1, max(1, st.session_state.current_year)])
-                           ),
-                    tooltip=[
-                        alt.Tooltip('Year:O', title='Simulation Year'),
-                        # Use y_axis_title for tooltip, format based on corrected data
-                        alt.Tooltip(f'{metric_key}:Q', format=y_axis_format, title=y_axis_title)
-                    ]
-                )
-
-                # Handle single data point case (e.g., first year)
-                # Use corrected df for single point value as well
-                if len(plot_df_corrected) == 1:
-                    # Define Y-axis scale for single point
-                    single_value = plot_df_corrected[metric_key].iloc[0]
-                    # Add padding for single point to avoid label truncation
-                    if np.isclose(single_value, 0):
-                        padding = 0.01 # Add small absolute padding if value is zero
-                    else:
-                        padding = abs(single_value) * 0.15 # 15% padding relative to value
-                    y_domain_single = [single_value - padding, single_value + padding]
-                    # Ensure lower bound is not unnecessarily negative for rates/ratios (except PI)
-                    if metric_key in ['Unemployment', 'GD_GDP']: # Removed 'PI'
-                         y_domain_single[0] = max(0, y_domain_single[0])
-
-                    y_axis_scale_single = alt.Scale(domain=y_domain_single, zero=False) # Explicit domain, don't force zero
-
-                    # Create a chart with just a point
-                    chart = base.mark_point(
-                        size=100, # Make point visible
-                        filled=True,
-                        color=plot_color
-                    ).encode(
-                         y=alt.Y(f'{metric_key}:Q',
-                                 # Use y_axis_title for axis title
-                                 axis=alt.Axis(title=y_axis_title, format=y_axis_format, grid=True, titlePadding=10),
-                                 scale=y_axis_scale_single # Apply explicit scale with padding
-                                )
-                    ).properties(
-                         # Removed title property
-                         height=200 # Increased height
-                    ).configure_view(
-                        fill=None,         # Make background transparent
-                        stroke='#cccccc'   # Add a light grey border
-                    ).configure_axis(
-                        labelFont='Lato',    # Font for axis numbers/ticks
-                        titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
-                        titleFontSize=12,    # Adjust size if needed
-                        labelFontSize=11     # Adjust size if needed
-                    ).interactive()
-                else:
-                    # Existing logic for line chart (now indented)
-                    # Calculate Y-axis domain with padding
-                    min_val = plot_df_corrected[metric_key].min()
-                    max_val = plot_df_corrected[metric_key].max()
-                    data_range = max_val - min_val
-                    if np.isclose(data_range, 0): # Handle flat line case
-                        if np.isclose(max_val, 0): padding = 0.01 # Small absolute padding if value is zero
-                        else: padding = abs(max_val) * 0.15 # 15% padding relative to value
-                    else:
-                        padding = data_range * 0.15 # 15% padding relative to range
-
-                    y_domain_line = [min_val - padding, max_val + padding]
-                    # Ensure lower bound is not unnecessarily negative for rates/ratios (except PI)
-                    if metric_key in ['Unemployment', 'GD_GDP']: # Removed 'PI'
-                         y_domain_line[0] = max(0, y_domain_line[0])
-
-                    y_axis_scale_line = alt.Scale(domain=y_domain_line, zero=False) # Explicit domain, don't force zero unless appropriate
-
-                    line = base.mark_line(
-                        point=alt.OverlayMarkDef(color=plot_color), # Style points to match line
-                        color=plot_color, # Use defined color
-                        strokeWidth=2 # Slightly thicker line
-                    ).encode(
-                        y=alt.Y(f'{metric_key}:Q', # Fixed parenthesis
-                                axis=alt.Axis(
-                                    title=y_axis_title, # Use y_axis_title for axis title
-                                    format=y_axis_format, # Use dynamic format
-                                    grid=True, # Add Y-axis gridlines
-                                    titlePadding=10 # Add padding to title
-                                ),
-                                scale=y_axis_scale_line # Apply explicit scale with padding
-                        ) # Fixed parenthesis
-                    )
-
-                    # Add text label for the last point
-                    # Use corrected df for label position and format
-                    last_point_df_corrected = plot_df_corrected.reset_index().iloc[[-1]]
-                    labels = alt.Chart(last_point_df_corrected).mark_text(
-                        align='left',
-                        baseline='middle',
-                        dx=7, # Offset text to the right of the point
-                        fontSize=11
-                    ).encode(
-                        x=alt.X('Year:O'),
-                        y=alt.Y(f'{metric_key}:Q'),
-                        text=alt.Text(f'{metric_key}:Q', format=y_axis_format),
-                        color=alt.value(plot_color) # Match label color to line
-                    )
-
-                    # Add zero reference line for specific metrics if scale includes zero
-                    if metric_key in ['PI', 'Unemployment'] and y_domain_line[0] <= 0:
-                        zero_line = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(
-                            color='grey', strokeDash=[2,2], size=1
-                        ).encode(y='y')
-                        chart_layers = [line, labels, zero_line]
-                    else:
-                        chart_layers = [line, labels]
-
-                    # Configure overall chart properties
-                    # Layer the components
-                    chart = alt.layer(*chart_layers).properties(
-                        # Removed title property
-                        height=200 # Increased height
-                    ).configure_view(
-                        fill=None,         # Make background transparent
-                        stroke='#cccccc'   # Add a light grey border
-                    ).configure_axis(
-                        labelFont='Lato',    # Font for axis numbers/ticks
-                        titleFont='Oswald',  # Font for axis titles (e.g., "Year", "Inflation")
-                        titleFontSize=12,    # Adjust size if needed
-                        labelFontSize=11     # Adjust size if needed
-                    ).interactive() # Allow zooming/panning
-
-                return chart # Return the styled line or point chart
-            return None # Return None if plot_df is None or empty
-
-        # Check if it's the very first year start (Year 1)
-        if st.session_state.current_year == 1 and not st.session_state.history:
-            st.info("Welcome to your first year as economic advisor! Review the initial state and select your policies.")
-
-        # --- Display KPI Plots in 2x2 Grid ---
-        st.markdown("##### Key Economic Indicators")
-        row1_cols = st.columns(2)
-        with row1_cols[0]:
-            # Use shorter title
-            st.altair_chart(create_kpi_plot('Yk_Index', 'GDP Index (Y1=100)'), use_container_width=True)
-        with row1_cols[1]:
-             # Use shorter title
-            st.altair_chart(create_kpi_plot('PI', 'Inflation Rate'), use_container_width=True)
-
-        row2_cols = st.columns(2)
-        with row2_cols[0]:
-             # Use shorter title
-            st.altair_chart(create_kpi_plot('Unemployment', 'Unemployment Rate'), use_container_width=True)
-        with row2_cols[1]:
-             # Use shorter title
-            st.altair_chart(create_kpi_plot('GD_GDP', 'Debt/GDP Ratio'), use_container_width=True)
-
         # --- Display Active Events Below Plots (Original Vertical Layout) ---
         st.markdown("##### Active Events")
         active_events = st.session_state.get('active_events_this_year', []) # Use .get for safety
@@ -1536,6 +1523,16 @@ elif st.session_state.game_phase == "YEAR_START":
             st.caption("None")
 
 
+
+        # Helper to create simple KPI plots
+        # Removed create_kpi_plot definition from here to move it earlier
+
+        # Check if it's the very first year start (Year 1)
+        if st.session_state.current_year == 1 and not st.session_state.history:
+            st.info("Welcome to your first year as economic advisor! Review the initial state and select your policies.")
+
+        # --- Display KPI Plots in 2x2 Grid ---
+        # KPI Plots and Active Events moved before dilemma check
         st.markdown("---") # Divider
 
         # --- Draw Cards and Check Events (Run only once per YEAR_START phase) ---
