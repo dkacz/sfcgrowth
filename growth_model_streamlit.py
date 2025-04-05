@@ -1137,8 +1137,10 @@ else: # Only display if Year > 0 and history exists
     gdp_delta_pct_str = "N/A"
     if not is_first_result_year and np.isfinite(current_gdp_index) and np.isfinite(previous_gdp_index) and not np.isclose(previous_gdp_index, 0):
         gdp_delta_pct = ((current_gdp_index / previous_gdp_index) - 1) * 100
-        arrow = "↑" if gdp_delta_pct >= 0 else "↓"
-        gdp_delta_pct_str = f"{arrow} {abs(gdp_delta_pct):.1f}% vs PY"
+        gdp_arrow = "↑" if gdp_delta_pct >= 0 else "↓"
+        gdp_sign = "+" if gdp_delta_pct >= 0 else "" # Explicit sign for positive
+        # Apply the new format here:
+        gdp_delta_pct_str = f"{gdp_arrow} {gdp_sign}{gdp_delta_pct:.1f}%" # Removed ' vs PY'
     elif is_first_result_year:
          gdp_delta_pct_str = "N/A (First Year)"
 
