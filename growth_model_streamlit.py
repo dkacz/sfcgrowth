@@ -266,11 +266,9 @@ def create_kpi_plot(metric_key, y_axis_title):
         # Use the corrected DataFrame for plotting
         base = alt.Chart(plot_df_corrected.reset_index()).encode(
             # X-Axis: Set domain explicitly from Year 1 to current year
-            x=alt.X('Year:O',
-                    axis=alt.Axis(title='Year' if metric_key in ['Unemployment', 'GD_GDP'] else None,
-                                  labels=True if metric_key in ['Unemployment', 'GD_GDP'] else False,
-                                  labelAngle=-45, grid=False),
-                    # Explicit domain based on data, with padding
+            # X-Axis: Set type to Quantitative, format as integer, and define scale
+            x=alt.X('Year:Q',
+                    axis=alt.Axis(title='Year', format='d', labelAngle=-45, grid=False),
                     scale=alt.Scale(domain=[plot_df.index.min(), plot_df.index.max()], paddingOuter=0.1)
                    ),
             tooltip=[
@@ -349,7 +347,7 @@ def create_kpi_plot(metric_key, y_axis_title):
 
         # --- Common Chart Configuration (Applied to both single point and line) ---
         chart = chart.properties(
-            height=200,
+            height=200
             padding={"left": 20} # Added left padding
         ).configure_view(
             fill=None,
