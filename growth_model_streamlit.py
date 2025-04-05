@@ -1107,7 +1107,46 @@ else: # Only display if Year > 0 and history exists
 
     # Display core metrics (Using original metrics from commit)
     # Display core metrics (Using original metrics from commit) - Modified Yk_Index to include delta
-    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_percent) # Pass pre-formatted string directly
+    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", None) # Delta handled separately below
+    # --- Calculate and Display Real GDP Delta ---
+    current_gdp_index = np.nan
+    previous_gdp_index = np.nan
+    base_yk = st.session_state.get('base_yk')
+
+    # Calculate current index
+    if is_first_result_year and np.isfinite(yk_val): # Year 1 result
+        current_gdp_index = 100.0
+    elif base_yk and np.isfinite(yk_val) and not np.isclose(base_yk, 0): # Subsequent years
+        current_gdp_index = (yk_val / base_yk) * 100
+    else:
+        current_gdp_index = np.nan
+
+    # Calculate previous index (only if not first result year)
+    if not is_first_result_year and prev_year_data:
+        yk_prev_val = prev_year_data.get('Yk')
+        # Check if previous year was Year 1
+        if len(model_state.solutions) == 3: # Current is Year 2, previous is Year 1
+             previous_gdp_index = 100.0
+        elif base_yk and np.isfinite(yk_prev_val) and not np.isclose(base_yk, 0):
+             previous_gdp_index = (yk_prev_val / base_yk) * 100
+        else:
+             previous_gdp_index = np.nan
+
+    # Calculate percentage delta
+    gdp_delta_pct_str = "N/A"
+    if not is_first_result_year and np.isfinite(current_gdp_index) and np.isfinite(previous_gdp_index) and not np.isclose(previous_gdp_index, 0):
+        gdp_delta_pct = ((current_gdp_index / previous_gdp_index) - 1) * 100
+        arrow = "↑" if gdp_delta_pct >= 0 else "↓"
+        gdp_delta_pct_str = f"{arrow} {abs(gdp_delta_pct):.1f}% vs PY"
+    elif is_first_result_year:
+         gdp_delta_pct_str = "N/A (First Year)"
+
+
+    # Display the delta using markdown below the metric
+    # Use columns to align it roughly under the metric value
+    _col1, _col2, _col3 = st.sidebar.columns([1, 5, 2]) # Match metric columns
+    with _col2: # Place in the middle column
+        st.markdown(f"<small style='color: #555555; margin-top: -10px; display: block;'>{gdp_delta_pct_str}</small>", unsafe_allow_html=True)
     display_metric_sparkline('PI', 'Inflation Rate', 'PI', format_percent, delta_pi)
     display_metric_sparkline('Unemployment', 'Unemployment Rate', 'ER', format_percent, delta_unemp)
     display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp) # Moved here
@@ -1494,28 +1533,18 @@ elif st.session_state.game_phase == "YEAR_START":
 
                     # Use a container for each card within the column
                     with st.container():
-                        # Use markdown with CSS classes for styling
+                        # Use markdown with CSS classes for styling - REMOVED EXPANDER LOGIC
                         st.markdown(f"""
-                        <div class="event-card" style="height: 180px; display: flex; flex-direction: column; justify-content: space-between;"> <!-- Added fixed height and flex -->
+                        <div class="event-card" style="min-height: 100px; display: flex; flex-direction: column; justify-content: flex-start;"> <!-- Adjusted height and flex -->
                             <div> <!-- Content div -->
                                 <div class="event-card-title">{event_name}</div>
                                 <div class="event-card-desc">{event_desc}</div>
                             </div>
-                            <div> <!-- Expander div -->
-                                <!-- Expander will be placed here by Streamlit -->
-                            </div>
+                            <!-- Removed expander section -->
                         </div>
+                        """, unsafe_allow_html=True)
+                        # Removed the st.expander block entirely
 
-                    """, unsafe_allow_html=True)
-
-                        # Add expander for affected variables inside the container but outside the markdown
-                        if direct_param or indirect_commentary:
-                            with st.expander("Details"):
-                                if direct_param:
-                                    param_desc = PARAM_DESCRIPTIONS.get(direct_param, "No description available.")
-                                    st.markdown(f"**Directly Affects:** `{direct_param}` ({param_desc})")
-                                if indirect_commentary:
-                                    st.markdown(f"**Potential Indirect Effects:** _{indirect_commentary}_")
                 event_index += 1
         else:
             st.caption("None")
