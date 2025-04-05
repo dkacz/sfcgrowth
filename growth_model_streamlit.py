@@ -2215,38 +2215,6 @@ elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
     else:
         st.error("Unfortunately, you did not meet all objectives.")
 
-    # --- Display Final SFC Matrices (Moved after objective results) ---
-    st.divider()
-    st.subheader("Final Economic State (SFC Matrices)")
-
-    # Retrieve final solutions
-    final_solution = None
-    second_last_solution = None
-    model_state = st.session_state.get('sfc_model_object')
-
-    if model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) >= 2:
-        final_solution = model_state.solutions[-1]
-        second_last_solution = model_state.solutions[-2]
-    elif model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) == 1:
-        final_solution = model_state.solutions[-1]
-        second_last_solution = st.session_state.get('initial_state_dict')
-        logging.warning("Game Over after 1 year, using initial state for matrix comparison.")
-    else:
-        logging.error("Could not retrieve sufficient solutions for Game Over matrix display.")
-        st.warning("Could not display final SFC matrices due to missing simulation data.")
-
-    # Display Matrices if solutions are available
-    if final_solution:
-        display_balance_sheet_matrix(final_solution)
-        st.divider()
-        if second_last_solution:
-            display_revaluation_matrix(final_solution, second_last_solution)
-            st.divider()
-            display_transaction_flow_matrix(final_solution, second_last_solution)
-        else:
-            st.caption("Revaluation and Transaction Flow matrices require data from the previous period, which is unavailable.")
-
-
     # --- Feedback Form ---
     st.divider() # Add a separator
     st.subheader("Feedback")
@@ -2331,14 +2299,46 @@ elif st.session_state.game_phase == "GAME_OVER": # Added GAME_OVER phase logic
                     st.error(f"Feedback submission failed: An unexpected error occurred ({type(e).__name__}). Please check the logs.")
                     logging.error(f"Unexpected error during feedback submission: {e}", exc_info=True)
 
+# --- Display Final SFC Matrices (Moved after feedback form) ---
+st.divider()
+st.subheader("Final Economic State (SFC Matrices)")
 
-    # Option to restart? (Could be added later)
-    # if st.button("Play Again?"):
-    #     # Reset relevant session state keys
-    #     st.session_state.clear() # Or selectively clear
-    #     st.rerun()
+# Retrieve final solutions
+final_solution = None
+second_last_solution = None
+model_state = st.session_state.get('sfc_model_object')
+
+if model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) >= 2:
+    final_solution = model_state.solutions[-1]
+    second_last_solution = model_state.solutions[-2]
+elif model_state and hasattr(model_state, 'solutions') and len(model_state.solutions) == 1:
+    final_solution = model_state.solutions[-1]
+    second_last_solution = st.session_state.get('initial_state_dict')
+    logging.warning("Game Over after 1 year, using initial state for matrix comparison.")
+else:
+    logging.error("Could not retrieve sufficient solutions for Game Over matrix display.")
+    st.warning("Could not display final SFC matrices due to missing simulation data.")
+
+# Display Matrices if solutions are available
+if final_solution:
+    display_balance_sheet_matrix(final_solution)
+    st.divider()
+    if second_last_solution:
+        display_revaluation_matrix(final_solution, second_last_solution)
+        st.divider()
+        display_transaction_flow_matrix(final_solution, second_last_solution)
+    else:
+        st.caption("Revaluation and Transaction Flow matrices require data from the previous period, which is unavailable.")
+
+
+# Option to restart? (Could be added later)
+# if st.button("Play Again?"):
+#     # Reset relevant session state keys
+#     st.session_state.clear() # Or selectively clear
+#     st.rerun()
 
 elif st.session_state.game_phase == "SIMULATION_ERROR": # Keep this block
+# Correct year display for error message
     # Correct year display for error message
     st.error(f"Simulation failed for Year {st.session_state.current_year + 1}. Cannot proceed.")
     if st.button("Acknowledge Error (Stops Game)"): st.stop()
