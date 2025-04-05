@@ -146,3 +146,47 @@ ECONOMIC_EVENTS = {
         # Consider making temporary? "duration": 1
     },
 }
+
+# Character-Specific Events
+CHARACTER_EVENTS = {
+    "Consumer Confidence Craze": {
+        "character": "Demand Side Devotee",
+        "desc": "Your latest speech was SO inspiring, people are spending like there's no tomorrow (especially on imports)!",
+        "param": "alpha1",
+        "effect": 0.025,
+        "duration": 1,
+        "probability": 0.1,
+        "type": "Character",
+        "indirect_effects": "Increased consumption propensity might boost GDP but worsen trade balance."
+    },
+    "Surplus Surprise": {
+        "character": "Austerity Apostle",
+        "desc": "You cut so much, the government accidentally ran a surplus! Markets are... confused, and autonomous investment sentiment dips.",
+        "param": "gamma0",
+        "effect": -0.01,
+        "duration": 2,
+        "probability": 0.1,
+        "type": "Character",
+        "indirect_effects": "Reduced investment could hinder long-term growth despite the surplus."
+    },
+    "Inflationary Epiphany": {
+        "character": "Money Monk",
+        "desc": "Meditating on price stability, you briefly misjudged how strongly inflation expectations influence wages.",
+        "param": "omega1",
+        "effect": 0.025,
+        "duration": 1,
+        "probability": 0.1,
+        "type": "Character",
+        "indirect_effects": "Higher wage sensitivity to inflation expectations could make inflation stickier."
+    },
+    "Productivity Puzzle": {
+        "character": "Class Conscious Crusader",
+        "desc": "Empowered workers rearranged the factory floor for 'better vibes'. Output temporarily dipped while they figured out the new layout.",
+        "param": "eta0",
+        "effect": -0.01,
+        "duration": 1,
+        "probability": 0.1,
+        "type": "Character",
+        "indirect_effects": "Short-term productivity dip might be offset by long-term morale boost (or not)."
+    }
+}

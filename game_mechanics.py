@@ -1,6 +1,7 @@
 # game_mechanics.py
 """
 This module defines the data structures and initial logic for cards and events
+from events import CHARACTER_EVENTS
 in the SFC Economic Strategy Game.
 """
 import numpy as np # Needed for default value
@@ -253,6 +254,20 @@ def check_for_events(model_state):
         if random.random() < probability:
              triggered_events.append(event_name)
              logging.info(f"Event Triggered (Prob: {probability:.2f}): {event_name}")
+
+    # --- Check Character Specific Events ---
+    if 'selected_character' in st.session_state: # Check if character selection has happened
+        character_name = st.session_state.selected_character
+        logging.debug(f"Checking character events for: {character_name}")
+        for event_name, event_data in CHARACTER_EVENTS.items():
+            if event_data.get("character") == character_name:
+                probability = event_data.get('probability', 0.0)
+                if random.random() < probability:
+                    triggered_events.append(event_name)
+                    logging.info(f"Character Event Triggered (Prob: {probability:.2f}): {event_name} for {character_name}")
+    else:
+        logging.warning("selected_character not found in session_state. Skipping character event checks.")
+
     # --- Resolve Contradictory Events ---
     contradiction_sets = [
         {"Global Recession", "Global Boom"},
