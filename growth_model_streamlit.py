@@ -227,10 +227,8 @@ def get_delta_percentage_formatted(current_val, prev_val):
     sign = "+" if delta_pct >= 0 else "" # Explicit sign for positive/zero
     # Format as percentage change, including sign, arrow, and one decimal place
     # Remove the extra arrow, keep sign and percentage
-    return f"{arrow} {sign}{delta_pct:.1f}%"
-
-    # Format as points change, including sign and arrow
-    return f"{arrow} {sign}{delta:.1f} pts"
+    return f"{sign}{delta_pct:.1f}%"
+    # Line 233 was unreachable code and has been removed.
 
 # --- Icon Handling with Base64 ---
 @st.cache_data # Cache the encoded icons
@@ -1185,7 +1183,7 @@ else: # Only display if Year > 0 and history exists
     delta_yk_index_formatted = None if is_first_result_year else get_delta_percentage_formatted(current_gdp_index, previous_gdp_index)
 
     # Display core metrics (Using original metrics from commit) - Pass formatted delta to Yk_Index
-    display_metric_sparkline('Yk_Index', 'GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index_formatted) # Shortened label
+    display_metric_sparkline('Yk_Index', 'Real GDP Index (Y1=100)', 'Yk', lambda x: f"{x:.1f}", delta_yk_index_formatted) # Restored original label
     display_metric_sparkline('PI', 'Inflation Rate', 'PI', format_percent, delta_pi)
     display_metric_sparkline('Unemployment', 'Unemployment Rate', 'ER', format_percent, delta_unemp)
     display_metric_sparkline("GD_GDP", "Gov Debt / GDP", "GD_GDP", format_percent, delta_gd_gdp) # Moved here
