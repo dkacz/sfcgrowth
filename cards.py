@@ -439,7 +439,7 @@ POLICY_CARDS = {
         "type": "Fiscal", # Mixed fiscal/investment params
         "stance": "expansionary",
         "effects": [{'param': 'theta', 'effect': -0.005}, {'param': 'gamma0', 'effect': 0.005}, {'param': 'gammau', 'effect': 0.005}],
-        "desc": "Sparks business investment through targeted tax relief and boosting investment parameters."
+        "desc": "Sparks business investment through targeted tax relief (theta) and by boosting baseline investment (gamma0) and its sensitivity to economic activity (gammau)."
     },
 
     # --- Money Monk Cards ---
@@ -674,7 +674,7 @@ POLICY_CARDS = {
         "type": "Fiscal", # Regulatory effect on consumption
         "stance": "expansionary",
         "effects": [{'param': 'alpha1', 'effect': 0.010}, {'param': 'gamma0', 'effect': 0.000}, {'param': 'gammau', 'effect': -0.005}],
-        "desc": "Implements strict rent controls, boosting consumption but potentially deterring private housing investment."
+        "desc": "Implements strict rent controls, boosting consumption propensity (alpha1) but potentially deterring private housing investment by reducing baseline investment (gamma0) and its sensitivity to economic activity (gammau)."
     },
     'People\'s Interest Rate Mandate': {
         "type": "Monetary",
