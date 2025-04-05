@@ -322,12 +322,13 @@ def create_growth_model():
     model.add('Bhd = Vfma(-1)*(lambda20 + lambda22*Rb(-1) - lambda21*Rm(-1) - lambda24*Rk(-1) - lambda23*Rbl(-1) - lambda25*YDr/V)')
     # 11.65 : Demand for bonds
     model.add('BLd = Vfma(-1)*(lambda30 - lambda32*Rb(-1) - lambda31*Rm(-1) - lambda34*Rk(-1) + lambda33*Rbl(-1) - lambda35*YDr/V)/Pbl')
+    # 11.70 : Stock market equilibrium (Moved before 11.66)
+    model.add('Ekd = Eks')
     # 11.66 : Demand for equities - normalized to get the price of equitities
     model.add('Pe = Vfma(-1)*(lambda40 - lambda42*Rb(-1) - lambda41*Rm(-1) + lambda44*Rk(-1) - lambda43*Rbl(-1) - lambda45*YDr/V)/Ekd')
     model.add('Md = Vfma - Bhd - Pe*Ekd - Pbl*BLd + Lhd')  # 11.67 : Money deposits - as a residual
     model.add('Vfma = V - Hhd - OFb')               # 11.68 : Investible wealth
     model.add('Hhd = lambdac*CONS')                 # 11.69 : Households' demand for cash
-    model.add('Ekd = Eks')                          # 11.70 : Stock market equilibrium
 
     # Box 11.9 : Government's equations
     # ---------------------------------
