@@ -1470,7 +1470,7 @@ elif st.session_state.game_phase == "YEAR_START":
             if remove_a: tooltip_a += f"Removes: {', '.join(remove_a)}"
             tooltip_a = tooltip_a.strip() # Remove trailing newline if only one effect type
 
-            if st.button(f"Choose: {option_a['name']}", key="dilemma_a", help=option_a_flavour, use_container_width=True):
+            if st.button(f"Choose: {option_a['name']}", key="dilemma_a", use_container_width=True): # Removed help parameter
                 # Caption moved outside this block
                 logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option A chosen.")
                 # Unpack the action descriptions
@@ -1485,7 +1485,12 @@ elif st.session_state.game_phase == "YEAR_START":
                     display_message += "\nChanges:\n* " + "\n* ".join(action_descriptions)
                 st.toast(display_message)
                 st.rerun() # Rerun to proceed to normal YEAR_START (without dilemma)
-            if tooltip_a: st.caption(tooltip_a) # Display tooltip content as caption
+            # Display flavor text below the button
+            if option_a_flavour:
+                st.caption(f"*{option_a_flavour}*")
+            # Display card add/remove effects (previously in tooltip)
+            if tooltip_a:
+                st.caption(tooltip_a)
         with col2:
             st.markdown(f"**Option B: {option_b['name']}**")
             # --- Option B UI Enhancement ---
@@ -1496,7 +1501,7 @@ elif st.session_state.game_phase == "YEAR_START":
             if remove_b: tooltip_b += f"Removes: {', '.join(remove_b)}"
             tooltip_b = tooltip_b.strip() # Remove trailing newline if only one effect type
 
-            if st.button(f"Choose: {option_b['name']}", key="dilemma_b", help=option_b_flavour, use_container_width=True):
+            if st.button(f"Choose: {option_b['name']}", key="dilemma_b", use_container_width=True): # Removed help parameter
                 # Caption moved outside this block
                 logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option B chosen.")
                 # Unpack the action descriptions
@@ -1511,7 +1516,12 @@ elif st.session_state.game_phase == "YEAR_START":
                     display_message += "\nChanges:\n* " + "\n* ".join(action_descriptions)
                 st.toast(display_message)
                 st.rerun() # Rerun to proceed to normal YEAR_START (without dilemma)
-            if tooltip_b: st.caption(tooltip_b) # Display tooltip content as caption
+            # Display flavor text below the button
+            if option_b_flavour:
+                st.caption(f"*{option_b_flavour}*")
+            # Display card add/remove effects (previously in tooltip)
+            if tooltip_b:
+                st.caption(tooltip_b)
 
         # Removed deferred plot display block. Plots are now displayed immediately after creation.
 
