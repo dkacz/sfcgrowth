@@ -1457,6 +1457,9 @@ elif st.session_state.game_phase == "YEAR_START":
         col1, col2 = st.columns(2)
         option_a = dilemma_info['option_a']
         option_b = dilemma_info['option_b']
+        # Get flavor text, handle None gracefully for help parameter
+        option_a_flavour = option_a.get('choice_flavour')
+        option_b_flavour = option_b.get('choice_flavour')
         with col1:
             st.markdown(f"**Option A: {option_a['name']}**")
             # --- Option A UI Enhancement ---
@@ -1467,7 +1470,7 @@ elif st.session_state.game_phase == "YEAR_START":
             if remove_a: tooltip_a += f"Removes: {', '.join(remove_a)}"
             tooltip_a = tooltip_a.strip() # Remove trailing newline if only one effect type
 
-            if st.button(f"Choose: {option_a['name']}", key="dilemma_a", use_container_width=True):
+            if st.button(f"Choose: {option_a['name']}", key="dilemma_a", help=option_a_flavour, use_container_width=True):
                 # Caption moved outside this block
                 logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option A chosen.")
                 # Unpack the action descriptions
@@ -1493,7 +1496,7 @@ elif st.session_state.game_phase == "YEAR_START":
             if remove_b: tooltip_b += f"Removes: {', '.join(remove_b)}"
             tooltip_b = tooltip_b.strip() # Remove trailing newline if only one effect type
 
-            if st.button(f"Choose: {option_b['name']}", key="dilemma_b", use_container_width=True):
+            if st.button(f"Choose: {option_b['name']}", key="dilemma_b", help=option_b_flavour, use_container_width=True):
                 # Caption moved outside this block
                 logging.info(f"Dilemma {st.session_state.current_dilemma['id']} - Option B chosen.")
                 # Unpack the action descriptions
