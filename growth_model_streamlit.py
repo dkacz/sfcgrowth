@@ -123,6 +123,7 @@ PARAM_DESCRIPTIONS = {
     'omega2': 'Coefficient on unemployment gap in wage Phillips curve',
     'alpha2': 'Propensity to consume out of wealth',
     # Add others if needed by cards/events
+    'eps': 'Sensitivity of exchange rate expectations to deviations',
 }
 
 
@@ -1541,21 +1542,41 @@ elif st.session_state.game_phase == "YEAR_START":
                 with event_cols[col_index]:
                     event_details = ECONOMIC_EVENTS.get(event_name, {})
                     event_desc = event_details.get('desc', 'No description available.')
-                    direct_param = event_details.get('param')
-                    indirect_commentary = event_details.get('indirect_effects')
+                    # --- START: Add effect retrieval and formatting ---
+                    param_name = event_details.get('param')
+                    effect_value = event_details.get('effect')
+                    effect_str = ""
+                    # Check for finite value and non-None param_name
+                    if param_name and effect_value is not None and np.isfinite(effect_value):
+                        param_desc = PARAM_DESCRIPTIONS.get(param_name, "Unknown Parameter")
+                        # Use format_effect for consistent display if available, otherwise default
+                        try:
+                            # Use the existing format_effect function for consistency
+                            formatted_val = format_effect(param_name, effect_value)
+                            effect_str = f"Effect: {formatted_val} on {param_name} ({param_desc})"
+                        except NameError: # Fallback if format_effect isn't defined here (should be)
+                             sign = "+" if effect_value >= 0 else ""
+                             effect_str = f"Effect: {sign}{effect_value:.3f} on {param_name} ({param_desc})"
+                        effect_str = f'<small style="color: #888;"><i>{effect_str}</i></small>' # Wrap in small, italic, grey tags
+                    # --- END: Add effect retrieval and formatting ---
+                    # direct_param = event_details.get('param') # This line is now redundant
+                    indirect_commentary = event_details.get('indirect_effects') # Keep this if needed elsewhere
 
                     # Use a container for each card within the column
                     with st.container():
                         # Use markdown with CSS classes for styling - REMOVED EXPANDER LOGIC
+                        # --- START: Modify markdown to include effect_str ---
                         st.markdown(f"""
                         <div class="event-card" style="min-height: 100px; display: flex; flex-direction: column; justify-content: flex-start;"> <!-- Adjusted height and flex -->
                             <div> <!-- Content div -->
                                 <div class="event-card-title">{event_name}</div>
                                 <div class="event-card-desc">{event_desc}</div>
+                                {effect_str} <!-- Add the formatted effect string here -->
                             </div>
                             <!-- Removed expander section -->
                         </div>
                         """, unsafe_allow_html=True)
+                        # --- END: Modify markdown to include effect_str ---
                         # Removed the st.expander block entirely
 
                 event_index += 1
