@@ -570,7 +570,7 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
     action_descriptions = [] # Initialize list to store descriptions
     cards_to_add_specific = chosen_option.get('add_cards', [])
     cards_to_remove = chosen_option.get('remove_cards', [])
-    added_directly = [] # Keep track of cards added without replacement
+    replacement_made = False # Flag to track if any replacement occurred
 
     logging.info(f"--- Applying Dilemma Choice ---")
     logging.info(f"Attempting to add: {cards_to_add_specific}")
@@ -592,7 +592,8 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
                 if replaced:
                      logging.info(f"Successfully replaced generic '{generic_equivalent}' with specific '{specific_card}'.")
                      action_descriptions.append(f"Added '{specific_card}', replacing '{generic_equivalent}'")
-
+                     replacement_made = True
+                     break # Stop after first successful replacement
             # 2. If generic not found or replacement failed, try replacing random of same type
             if not replaced:
                 logging.debug(f"Generic '{generic_equivalent}' not found or replacement failed. Trying random replacement of type '{policy_type}'.")
@@ -601,26 +602,13 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
                 if replaced_card_name:
                     logging.info(f"Successfully replaced random card '{replaced_card_name}' of type '{policy_type}' with specific '{specific_card}'.")
                     action_descriptions.append(f"Added '{specific_card}', replacing '{replaced_card_name}' (random {policy_type})")
-                    replaced = True # Mark as replaced for the next step's logic
-                else:
-                    replaced = False # Ensure replaced is False if random replacement failed
+                    replacement_made = True
+                    break # Stop after first successful replacement
+                # No 'else' needed, if replacement failed, loop continues or finishes
 
         # 3. If no replacement occurred (no generic, no same type, or invalid type), add directly
-        if not replaced:
-            if not policy_type:
-                 logging.warning(f"Cannot determine policy type for '{specific_card}'. Adding directly to deck.")
-            elif not generic_equivalent:
-                 logging.warning(f"Cannot determine generic equivalent for policy type '{policy_type}' of card '{specific_card}'. Adding directly to deck.")
-            else:
-                 logging.warning(f"Could not find any card of type '{policy_type}' (including generic '{generic_equivalent}') to replace with '{specific_card}'. Adding directly to deck.")
-            added_directly.append(specific_card)
-
-    # Add cards that couldn't be used for replacement to the discard pile
-    if added_directly:
-        discard_pile.extend(added_directly) # Changed from deck to discard_pile
-        logging.info(f"Added cards directly to discard pile (no replacement possible): {', '.join(added_directly)}") # Updated log message
-        for card_added in added_directly:
-            action_descriptions.append(f"Added '{card_added}' to discard pile")
+        # If loop completes without break, no replacement was made.
+        # Removed the logic to add cards directly if no replacement occurred.
 
     # --- Original Logic for Removing Cards ---
     # Process removals *after* additions/replacements to avoid conflicts if a removed card was also a replacement target

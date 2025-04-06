@@ -498,8 +498,9 @@ def display_character_selection():
                 st.session_state.action_trigger = ("select_character", char_id)
                 st.rerun() # Rerun to process the action
 
-def display_year_start_ui():
-    """Renders the UI for the YEAR_START phase (KPIs, Events, Cards)."""
+# --- New function for KPIs and Events ---
+def display_kpi_and_events_section():
+    """Renders the Year Header, KPI plots, and Active Events."""
     current_year = st.session_state.current_year
     st.header(f"Year {current_year}")
 
@@ -546,6 +547,11 @@ def display_year_start_ui():
                 """, unsafe_allow_html=True)
     else:
         st.caption("None")
+
+# --- Renamed function for Policy Selection ---
+def display_policy_selection_section():
+    """Renders the UI for the Policy Card selection part of the YEAR_START phase."""
+    current_year = st.session_state.current_year # Keep for button keys if needed
 
     st.markdown("---") # Divider
 

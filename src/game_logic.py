@@ -10,7 +10,8 @@ import numpy as np
 from src.config import INITIAL_HAND_SIZE, CARDS_TO_DRAW_PER_YEAR, GAME_END_YEAR
 from src.utils import format_percent, format_value # Import necessary utils
 from src.ui_main import ( # Import UI functions needed within logic phases
-    display_character_selection, display_year_start_ui, display_dilemma,
+    display_character_selection, display_kpi_and_events_section, # UPDATED
+    display_policy_selection_section, display_dilemma, # UPDATED
     display_game_over_screen
 )
 # Import simulation logic (will be created next)
@@ -151,37 +152,46 @@ def run_year_start_phase():
 
         st.session_state.year_start_processed = current_year
         st.session_state.cards_selected_this_year = [] # Reset selected cards
-        # Don't rerun here yet, display UI first
+        logging.debug(f"Finished YEAR_START actions for Year {current_year}")
 
-    # --- Step 2: Display the main year start UI (KPIs, events, card selection) ---
-    # This should always be displayed before the dilemma.
-    display_year_start_ui()
+    # --- Step 2: Check if a *new* dilemma needs to be selected ---
+    # We only select a new dilemma if one isn't already active and hasn't been processed this year.
+    needs_new_dilemma_check = (
+        not dilemma_already_processed_this_year and
+        not st.session_state.current_dilemma and
+        current_year > 0 and current_year < (GAME_END_YEAR - 1)
+    )
 
-    # --- Step 3: Check if a dilemma needs to be selected (only if not already processed) ---
-    if not dilemma_already_processed_this_year and not st.session_state.current_dilemma:
-        if current_year > 0 and current_year < (GAME_END_YEAR - 1):
-            advisor_id = st.session_state.get('selected_character_id')
-            if advisor_id:
-                dilemma_id, dilemma_data = select_dilemma(advisor_id, st.session_state.seen_dilemmas)
-                if dilemma_id and dilemma_data:
-                    st.session_state.current_dilemma = {"id": dilemma_id, "data": dilemma_data}
-                    st.session_state.seen_dilemmas.add(dilemma_id)
-                    logging.info(f"Selected new dilemma: {dilemma_id} for year {current_year}")
-                    st.rerun() # Rerun to display the dilemma *after* the main UI
-                else:
-                    logging.info(f"No unseen dilemmas available for advisor '{advisor_id}' in year {current_year}.")
+    if needs_new_dilemma_check:
+        logging.debug(f"Checking for new dilemma for Year {current_year}")
+        advisor_id = st.session_state.get('selected_character_id')
+        if advisor_id:
+            dilemma_id, dilemma_data = select_dilemma(advisor_id, st.session_state.seen_dilemmas)
+            if dilemma_id and dilemma_data:
+                st.session_state.current_dilemma = {"id": dilemma_id, "data": dilemma_data}
+                st.session_state.seen_dilemmas.add(dilemma_id)
+                logging.info(f"Selected new dilemma: {dilemma_id} for year {current_year}")
+                # DO NOT rerun here - let the next step display dilemma + KPIs
             else:
-                logging.warning("Cannot select dilemma: advisor_id not found.")
+                logging.info(f"No unseen dilemmas available for advisor '{advisor_id}' in year {current_year}.")
+        else:
+            logging.warning("Cannot select dilemma: advisor_id not found.")
 
-    # --- Step 4: If a dilemma is active, display it ---
-    # This now happens *after* display_year_start_ui() has been called.
+    # --- Step 3: Display Dilemma + KPIs/Events OR KPIs/Events + Policy Selection ---
     if st.session_state.current_dilemma:
+        # If a dilemma is active, display it first, then KPIs/Events.
+        logging.debug(f"Displaying active dilemma for Year {current_year}")
         display_dilemma()
-        # Action processing (dilemma choice) happens via st.rerun() triggered by button clicks
-    # else:
-        # The "Confirm Policies" button is part of display_year_start_ui,
-        # so its action processing is handled by the main run_game loop.
-        # No specific logic needed here when no dilemma is active.
+        logging.debug(f"Displaying KPIs and Events below dilemma for Year {current_year}")
+        display_kpi_and_events_section()
+        # Policy selection is implicitly hidden until dilemma is resolved (which clears current_dilemma and causes rerun)
+    else:
+        # If no dilemma is active, display KPIs/Events first, then Policy Selection.
+        logging.debug(f"No active dilemma, displaying KPIs/Events for Year {current_year}")
+        display_kpi_and_events_section()
+        logging.debug(f"Displaying policy selection UI for Year {current_year}")
+        display_policy_selection_section()
+        # Action processing (confirm policies) happens via st.rerun() triggered by button clicks in display_policy_selection_section
 
 def run_simulation_phase():
     """Runs the simulation logic for the current year."""
