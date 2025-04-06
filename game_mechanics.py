@@ -532,16 +532,18 @@ def apply_effects(base_params, latest_solution, cards_played=None, active_events
     return final_params # Return the dictionary of modified parameters
 
 
-def select_dilemma(advisor_id, seen_dilemmas):
+def select_dilemma(advisor_id, seen_dilemmas, removed_cards_this_playthrough):
     """
-    Selects a random, unseen dilemma for the given advisor.
+    Selects a random, unseen dilemma for the given advisor, avoiding dilemmas
+    that remove cards already targeted for removal this playthrough.
 
     Args:
         advisor_id (str): The ID of the current advisor.
         seen_dilemmas (set): A set of dilemma IDs already presented to the player.
+        removed_cards_this_playthrough (set): A set of card names targeted for removal by dilemmas this playthrough.
 
     Returns:
-        tuple: (dilemma_id, dilemma_data) if an unseen dilemma is found,
+        tuple: (dilemma_id, dilemma_data) if an unseen, valid dilemma is found,
                otherwise (None, None).
     """
     if advisor_id not in DILEMMAS:
@@ -557,9 +559,29 @@ def select_dilemma(advisor_id, seen_dilemmas):
         logging.info(f"No unseen dilemmas available for advisor '{advisor_id}'.")
         return None, None
 
-    selected_dilemma_id = random.choice(unseen_dilemma_ids)
+    # Filter out dilemmas that try to remove already-removed cards
+    valid_dilemma_ids = []
+    for d_id in unseen_dilemma_ids:
+        dilemma_data = advisor_dilemmas[d_id]
+        removes_invalid_card = False
+        # Check both options within the dilemma data structure
+        for option_key in ['option_1', 'option_2']:
+            if option_key in dilemma_data:
+                cards_to_remove = dilemma_data[option_key].get('remove_cards', [])
+                if any(card in removed_cards_this_playthrough for card in cards_to_remove):
+                    removes_invalid_card = True
+                    logging.debug(f"Filtering out dilemma '{d_id}' because option '{option_key}' removes already targeted card(s): {set(cards_to_remove) & removed_cards_this_playthrough}")
+                    break # No need to check the other option
+        if not removes_invalid_card:
+            valid_dilemma_ids.append(d_id)
+
+    if not valid_dilemma_ids: # Check if filtering left any dilemmas
+        logging.warning(f"No unseen dilemmas available for advisor '{advisor_id}' after filtering for removed cards.")
+        return None, None
+
+    selected_dilemma_id = random.choice(valid_dilemma_ids) # Choose from valid ones
     selected_dilemma_data = advisor_dilemmas[selected_dilemma_id]
-    logging.info(f"Selected dilemma '{selected_dilemma_id}' for advisor '{advisor_id}'.")
+    logging.info(f"Selected dilemma '{selected_dilemma_id}' for advisor '{advisor_id}' (passed removal filter).")
 
     return selected_dilemma_id, selected_dilemma_data
 
@@ -582,7 +604,7 @@ def apply_dilemma_choice(chosen_option, hand, deck, discard_pile):
     action_descriptions = [] # Initialize list to store descriptions
     cards_to_add_specific = chosen_option.get('add_cards', [])
     cards_to_remove = chosen_option.get('remove_cards', [])
-    replacement_made = False # Flag to track if any replacement occurred
+    card_action_completed = False # Flag to ensure only ONE card action (replace/add) occurs
 
     logging.info(f"--- Applying Dilemma Choice ---")
     logging.info(f"Attempting to add: {cards_to_add_specific}")
@@ -593,8 +615,11 @@ def apply_dilemma_choice(chosen_option, hand, deck, discard_pile):
     logging.debug(f"State before ADD: Deck ({len(deck)} cards): {deck}")
     logging.debug(f"State before ADD: Discard ({len(discard_pile)} cards): {discard_pile}")
     # --- Roo Debug Log End ---
-    # --- New Logic for Adding Cards ---
+    # --- New Logic for Adding/Replacing ONE Card ---
     for specific_card in cards_to_add_specific:
+        if card_action_completed: # If we already added/replaced a card, stop processing more.
+            break
+
         policy_type = get_card_policy_type(specific_card)
         generic_equivalent = get_generic_equivalent(policy_type) if policy_type else None
         replaced = False
@@ -614,8 +639,8 @@ def apply_dilemma_choice(chosen_option, hand, deck, discard_pile):
                 if replaced:
                      logging.info(f"Successfully replaced generic '{generic_equivalent}' with specific '{specific_card}'.")
                      action_descriptions.append(f"Added '{specific_card}', replacing '{generic_equivalent}'")
-                     replacement_made = True
-                     break # Stop after first successful replacement
+                     card_action_completed = True # Mark action as done
+                     break # Exit the ADD CARD loop immediately
                 # --- Roo Debug Log Start ---
                 else:
                     logging.warning(f"Replacement of generic '{generic_equivalent}' in '{generic_location}' FAILED.")
@@ -631,8 +656,8 @@ def apply_dilemma_choice(chosen_option, hand, deck, discard_pile):
                 if replaced_card_name:
                     logging.info(f"Successfully replaced random card '{replaced_card_name}' of type '{policy_type}' with specific '{specific_card}'.")
                     action_descriptions.append(f"Added '{specific_card}', replacing '{replaced_card_name}' (random {policy_type})")
-                    replacement_made = True
-                    break # Stop after first successful replacement
+                    card_action_completed = True # Mark action as done
+                    break # Exit the ADD CARD loop immediately
                 # --- Roo Debug Log Start ---
                 else:
                     logging.debug(f"Random replacement of type '{policy_type}' for '{specific_card}' also failed.")
@@ -645,9 +670,14 @@ def apply_dilemma_choice(chosen_option, hand, deck, discard_pile):
         # --- Roo Debug Log End ---
 
         # 3. If no replacement occurred (no generic, no same type, or invalid type), add directly
-        # If loop completes without break, no replacement was made.
-        # Removed the logic to add cards directly if no replacement occurred.
-
+        # 3. Fallback: If no replacement occurred *for this card* AND no action completed yet overall
+        if not replaced and not card_action_completed:
+            # If no replacement happened for this specific card (due to missing generic, failed random replace, or invalid type), add it directly.
+            logging.info(f"Card '{specific_card}' could not replace another card (or type unknown/generic missing). Adding directly to deck as the primary action.")
+            deck.append(specific_card)
+            action_descriptions.append(f"Added '{specific_card}' directly to deck")
+            card_action_completed = True # Mark action as done
+            break # Exit the ADD CARD loop immediately
     # --- Original Logic for Removing Cards ---
     # Process removals *after* additions/replacements to avoid conflicts if a removed card was also a replacement target
     # --- Roo Debug Log Start ---

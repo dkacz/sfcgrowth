@@ -94,6 +94,16 @@ def handle_dilemma_choice_action(choice):
         st.session_state.player_hand, st.session_state.deck, st.session_state.discard_pile, action_descriptions = apply_dilemma_choice(
             option, st.session_state.player_hand, st.session_state.deck, st.session_state.discard_pile
         )
+        # --- Roo: Update removed cards tracking set ---
+        cards_removed_by_option = option.get('remove_cards', [])
+        if cards_removed_by_option:
+            # Ensure the set exists before updating
+            if 'removed_cards_this_playthrough' not in st.session_state:
+                st.session_state.removed_cards_this_playthrough = set()
+                logging.warning("Initialized removed_cards_this_playthrough in action_handler (should ideally exist from game_phases).") # Log if initialized here unexpectedly
+            st.session_state.removed_cards_this_playthrough.update(cards_removed_by_option)
+            logging.info(f"Updated removed_cards_this_playthrough with: {cards_removed_by_option}. Current set: {st.session_state.removed_cards_this_playthrough}")
+        # --- End Roo modification ---
         logging.debug(f"ACTION_HANDLER: Finished applying dilemma choice. New hand size: {len(st.session_state.player_hand)}")
     except Exception as e:
         logging.error(f"Error applying dilemma choice {choice} for dilemma {dilemma_id}: {e}")

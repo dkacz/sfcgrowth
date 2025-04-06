@@ -91,8 +91,18 @@ def run_year_start_phase():
         logging.debug(f"Checking for new dilemma for Year {current_year}")
         advisor_id = st.session_state.get('selected_character_id')
         if advisor_id:
+            # Ensure the set for tracking removed cards exists in session state
+            if 'removed_cards_this_playthrough' not in st.session_state:
+                st.session_state.removed_cards_this_playthrough = set()
+                logging.info("Initialized removed_cards_this_playthrough set.")
+
             try:
-                dilemma_id, dilemma_data = select_dilemma(advisor_id, st.session_state.seen_dilemmas)
+                # Pass the set of removed cards to the selection function
+                dilemma_id, dilemma_data = select_dilemma(
+                    advisor_id,
+                    st.session_state.seen_dilemmas,
+                    st.session_state.removed_cards_this_playthrough # Pass the tracking set
+                )
                 if dilemma_id and dilemma_data:
                     st.session_state.current_dilemma = {"id": dilemma_id, "data": dilemma_data}
                     st.session_state.seen_dilemmas.add(dilemma_id)

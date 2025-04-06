@@ -31,10 +31,11 @@ def display_dilemma():
             st.session_state.action_trigger = ("choose_dilemma", "A")
             st.rerun()
         if option_a.get('choice_flavour'):
-            st.caption(f"*{option_a['choice_flavour']}*")
+            # Use markdown with unsafe_allow_html to ensure vertical expansion
+            st.markdown(f"<div style='height: auto; overflow-y: visible;'>*{option_a['choice_flavour']}*</div>", unsafe_allow_html=True)
         option_a_details = format_dilemma_option(option_a)
         if option_a_details:
-            st.caption(option_a_details)
+            st.markdown(option_a_details)
 
     with col2:
         st.markdown(f"**Option B: {option_b['name']}**")
@@ -44,7 +45,8 @@ def display_dilemma():
             st.session_state.action_trigger = ("choose_dilemma", "B")
             st.rerun()
         if option_b.get('choice_flavour'):
-            st.caption(f"*{option_b['choice_flavour']}*")
+            # Use markdown with unsafe_allow_html to ensure vertical expansion
+            st.markdown(f"<div style='height: auto; overflow-y: visible;'>*{option_b['choice_flavour']}*</div>", unsafe_allow_html=True)
         option_b_details = format_dilemma_option(option_b)
         if option_b_details:
-            st.caption(option_b_details)
+            st.markdown(option_b_details)

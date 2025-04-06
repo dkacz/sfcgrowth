@@ -35,7 +35,7 @@ def format_effect(param, effect):
         return "N/A"
     # Rates, Ratios, Proportions shown as percentage points (p.p.)
     if param in ['Rbbar', 'ADDbl', 'ro', 'NCAR', 'theta', 'NPLk', 'alpha1', 'delta', 'eta0', 'Rln', 'GRg', 'GRpr', 'gamma0']:
-        return f"{effect*100:+.3g} p.p." # Use general format for significant digits
+        return f"{effect*100:+,.4f} p.p." # Use standard decimal format
     # Speed of adjustment / Expectation parameters (unitless or specific scale)
     elif param in ['etan', 'beta', 'omega3']:
          return f"{effect:+.3g}" # Use general format for significant digits
