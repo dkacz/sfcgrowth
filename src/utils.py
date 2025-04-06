@@ -62,23 +62,32 @@ def format_effect(param, effect):
 
     # --- Start: Robust Formatting ---
     try:
+        # Determine the value to format (scale by 100 for p.p.), using the converted numeric value
+        value_to_format = numeric_effect * 100 if is_pp_param else numeric_effect
+
+        # Check if the value_to_format is effectively an integer (using a small tolerance)
+        tolerance = 1e-9
+        is_integer = abs(value_to_format - round(value_to_format)) < tolerance
+
         # Determine the format specifier and the value to use in the final format string
         if is_integer:
-            format_spec = ":+d"  # Correct integer format specifier
-            # Ensure we format the integer part after rounding
-            value_for_final_format = int(round(value_to_format))
+            # Format integer, manually adding sign
+            int_value = int(round(value_to_format))
+            sign = "+" if int_value >= 0 else ""
+            formatted_number = f"{sign}{int_value}"
         else:
-            format_spec = ":+.4f" # Standard float format specifier
-            value_for_final_format = value_to_format # Use the float value directly
+            # Format float, manually adding sign and using standard precision
+            float_value = value_to_format
+            sign = "+" if float_value >= 0 else ""
+            # Use abs() to avoid double negative sign, format to 1 decimal place for p.p., 4 otherwise
+            precision = 1 if is_pp_param else 4
+            formatted_number = f"{sign}{abs(float_value):.{precision}f}"
 
-        # Perform the actual formatting
-        formatted_number = f"{value_for_final_format:{format_spec}}"
-
-    except ValueError as e:
-        # Fallback if f-string formatting fails unexpectedly
-        logging.error(f"format_effect: Formatting failed for value '{value_for_final_format}' with spec '{format_spec}'. Error: {e}. Falling back to string representation of original scaled value.")
-        # Fallback to the original scaled value as a string
-        formatted_number = str(value_to_format)
+    except Exception as e: # Catch any potential formatting error
+        # Fallback if formatting fails unexpectedly
+        logging.error(f"format_effect: Formatting failed unexpectedly for value '{effect}'. Error: {e}. Falling back to string representation.")
+        # Fallback to the original unscaled value as a string
+        formatted_number = str(numeric_effect)
     # --- End: Robust Formatting ---
 
     # Add units if necessary

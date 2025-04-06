@@ -15,6 +15,73 @@ from matrix_display import ( # Assuming matrix_display.py is in the root
 )
 import pandas as pd # Needed for history table
 
+
+def render_policy_card_html(card_name, card_info, is_selected=False, is_disabled=False, display_only=False, boost_applied=False):
+    """Generates the HTML markdown for a single policy card.
+
+    Args:
+        card_name (str): The name of the card.
+        card_info (dict): The dictionary containing card details from POLICY_CARDS.
+        is_selected (bool): Whether the card is currently selected.
+        is_disabled (bool): Whether the card interaction should be disabled.
+        display_only (bool): If True, hides selection elements (used for display outside selection).
+        boost_applied (bool): Whether character boost is active for display.
+
+    Returns:
+        str: The HTML markdown string for the card.
+    """
+    card_type = card_info.get('type', 'Unknown').lower()
+    card_stance = card_info.get('stance', None)
+
+    # Prepare Effect String (Simplified for display, assumes boost is pre-calculated if needed)
+    effect_str_parts = []
+    card_effects_list = card_info.get('effects', [])
+    for effect_detail in card_effects_list:
+        param_name = effect_detail.get('param')
+        base_effect = effect_detail.get('effect')
+        if param_name and isinstance(base_effect, (int, float)) and np.isfinite(base_effect):
+            # In display_only mode, we might not have the multiplier easily available,
+            # so we just show the base effect unless boost_applied is explicitly True.
+            # For more accuracy, the calling function could pre-calculate the actual effect.
+            actual_effect = base_effect * (CHARACTERS.get(st.session_state.get('selected_character_id'), {}).get('bonus_multiplier', 1.0) if boost_applied else 1.0)
+            formatted_effect = format_effect(param_name, actual_effect)
+            param_desc = PARAM_DESCRIPTIONS.get(param_name, "Unknown")
+            if formatted_effect != "N/A":
+                effect_str_parts.append(f"{formatted_effect} on {param_name} ({param_desc})")
+
+    if effect_str_parts:
+        boost_indicator = " (Boosted!)" if boost_applied else ""
+        effects_combined = "; ".join(effect_str_parts)
+        effect_str = f'<small><i>Effect{boost_indicator}: {effects_combined}</i></small>'
+    else:
+        effect_str = '<small><i>Effect details missing.</i></small>'
+
+    # Card Rendering
+    card_container_class = "card-container selected" if is_selected and not display_only else "card-container"
+    if is_disabled or display_only:
+        card_container_class += " disabled" # Add disabled class for styling
+
+    icon_data_uri = get_icon_data_uri(card_type)
+    icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
+    top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
+
+    card_html = f'''
+    <div class="{card_container_class}">
+        <div class="card-top-bar {top_bar_color_class}">
+           {icon_html} <span class="card-title">{card_type.capitalize()}: {card_name}</span>
+        </div>
+        <div class="card-main-content">
+            <div class="card-desc">
+                {card_info.get('desc', 'No description.')}<br>
+                {effect_str}
+            </div>
+            {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
+        </div>
+    </div>
+    '''
+    return card_html
+
+
 def display_policy_selection_section():
     """Renders the UI for the Policy Card selection part of the YEAR_START phase."""
     current_year = st.session_state.current_year # Keep for button keys if needed
@@ -84,26 +151,16 @@ def display_policy_selection_section():
                     else:
                         effect_str = '<small><i>Effect details missing.</i></small>'
 
-                    # Card Rendering
-                    card_container_class = "card-container selected" if is_selected else "card-container"
-                    icon_data_uri = get_icon_data_uri(card_type)
-                    icon_html = f'<img src="{icon_data_uri}" class="card-icon">' if icon_data_uri else "❓"
-                    top_bar_color_class = f"{card_type}" if card_type in ["monetary", "fiscal"] else "default"
-
-                    st.markdown(f'''
-                    <div class="{card_container_class}">
-                        <div class="card-top-bar {top_bar_color_class}">
-                           {icon_html} <span class="card-title">{card_type.capitalize()}: {card_name}</span>
-                        </div>
-                        <div class="card-main-content">
-                            <div class="card-desc">
-                                {card_info.get('desc', 'No description.')}<br>
-                                {effect_str}
-                            </div>
-                            {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
-                        </div>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    # Card Rendering (using the new function)
+                    card_html = render_policy_card_html(
+                        card_name=card_name,
+                        card_info=card_info,
+                        is_selected=is_selected,
+                        is_disabled=False, # Cards are selectable here
+                        display_only=False, # We need the button below
+                        boost_applied=boost_applied_display # Pass boost status
+                    )
+                    st.markdown(card_html, unsafe_allow_html=True)
 
                     # Selection Button - Logic handled in game_logic.py
                     button_label = "Deselect" if is_selected else "Select"

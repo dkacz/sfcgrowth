@@ -14,6 +14,14 @@ import pandas as pd # Keep pandas import if needed for logging/analysis later
 from src.utils import NullIO # Import NullIO utility
 from src.config import GAME_END_YEAR
 
+# Import specific calculators if needed elsewhere, or keep for clarity
+from src.objective_evaluator import (
+    calculate_gdp_index, calculate_unemployment_rate,
+    calculate_inflation_rate, calculate_debt_gdp_ratio
+)
+# Import the main KPI calculation function and streamlit
+from src.objective_evaluator import calculate_kpis # Use src. not relative .
+import streamlit as st # Added for accessing session state
 # Import model components
 from chapter_11_model_growth import (
     create_growth_model, growth_parameters, growth_exogenous, growth_variables
@@ -164,13 +172,30 @@ def run_simulation():
             st.session_state.sfc_model_object = model_to_simulate
 
             # Record History
-            current_results = { 'year': next_year }
-            history_vars = ['Yk', 'PI', 'ER', 'GRk', 'Rb', 'Rl', 'Rm', 'BUR', 'Q', 'CAR', 'PSBR', 'GD', 'Y', 'V', 'Lhs', 'Lfs']
-            for key in history_vars:
-                 current_results[key] = latest_sim_solution.get(key, np.nan)
-            current_results['cards_played'] = list(cards_to_play) # Record cards played this turn
-            current_results['events'] = list(events_active) # Record events active this turn
-            st.session_state.history.append(current_results)
+            # Start with the complete solution dictionary from the model
+            history_entry = copy.deepcopy(latest_sim_solution)
+
+            # Add metadata
+            history_entry['year'] = next_year
+            # Use the correct variable 'cards_played' which holds the selected cards for the turn
+            history_entry['played_cards'] = list(cards_to_play) # Use the correct variable name
+            history_entry['events'] = list(events_active) # Record events active this turn
+            history_entry['persistent_effects'] = copy.deepcopy(st.session_state.persistent_effects)
+            history_entry['temporary_effects'] = copy.deepcopy(st.session_state.temporary_effects)
+
+            # --- Calculate and Add KPIs to the history entry ---
+            base_yk = st.session_state.get('base_yk') # Needed for GDP Index
+            # Use history_entry (which contains the necessary raw values like Yk, Y, GD) for KPI calculations
+            history_entry['Yk_Index'] = calculate_gdp_index(history_entry, base_yk)
+            history_entry['Unemployment'] = calculate_unemployment_rate(history_entry)
+            history_entry['Inflation'] = calculate_inflation_rate(history_entry) # Already a %
+            history_entry['GD_GDP'] = calculate_debt_gdp_ratio(history_entry)
+            # Note: Raw 'PI' is already in history_entry from the solution
+
+            # Log a sample of the keys being appended
+            log_keys_sample = list(history_entry.keys())[:10] + ['...'] if len(history_entry) > 10 else list(history_entry.keys())
+            logging.debug(f"Appending full solution to history for Year {next_year}. Keys sample: {log_keys_sample}")
+            st.session_state.history.append(history_entry)
 
             # Set base Yk after first simulation (Year 1)
             if current_year == 0 and st.session_state.base_yk is None:
@@ -212,27 +237,27 @@ def run_simulation():
                     logging.debug(f"Baseline Year {next_year}: Deep copied model state for baseline. Original ID: {original_model_id}, Copied ID: {copied_model_id}")
                     event_seq = st.session_state.full_event_sequence
 
-                    baseline_history_results = run_baseline_simulation(
-                        start_year=next_year, # Baseline starts from the year we just simulated *to*
-                        initial_model_state=baseline_start_model,
-                        initial_history=baseline_start_history,
-                        full_event_sequence=event_seq,
-                        initial_persistent_effects=baseline_start_persistent,
-                        initial_temporary_effects=baseline_start_temporary,
-                        character_id=char_id
-                    )
-
-                    if baseline_history_results is not None:
-                        # Store results keyed by the year the baseline *starts* from
-                        st.session_state.baseline_results[next_year] = baseline_history_results
-                        logging.info(f"Successfully ran and stored baseline simulation starting from Year {next_year}.")
-                        # Optional: Convert to DataFrame immediately if preferred
-                        # st.session_state.baseline_results[next_year] = pd.DataFrame(baseline_history_results)
-                        logging.debug(f"Baseline Year {next_year}: Storing results in st.session_state.baseline_results[{next_year}]")
-                    else:
-                        logging.error(f"Baseline simulation starting from Year {next_year} failed.")
-                        # Store None or empty list to indicate failure?
-                        st.session_state.baseline_results[next_year] = None
+#                    baseline_history_results = run_baseline_simulation(
+#                        start_year=next_year, # Baseline starts from the year we just simulated *to*
+#                        initial_model_state=baseline_start_model,
+#                        initial_history=baseline_start_history,
+#                        full_event_sequence=event_seq,
+#                        initial_persistent_effects=baseline_start_persistent,
+#                        initial_temporary_effects=baseline_start_temporary,
+#                        character_id=char_id
+#                    )
+#
+#                    if baseline_history_results is not None:
+#                        # Store results keyed by the year the baseline *starts* from
+#                        st.session_state.baseline_results[next_year] = baseline_history_results
+#                        logging.info(f"Successfully ran and stored baseline simulation starting from Year {next_year}.")
+#                        # Optional: Convert to DataFrame immediately if preferred
+#                        # st.session_state.baseline_results[next_year] = pd.DataFrame(baseline_history_results)
+#                        logging.debug(f"Baseline Year {next_year}: Storing results in st.session_state.baseline_results[{next_year}]")
+#                    else:
+#                        logging.error(f"Baseline simulation starting from Year {next_year} failed.")
+#                        # Store None or empty list to indicate failure?
+#                        st.session_state.baseline_results[next_year] = None
 
                 except Exception as baseline_err:
                     logging.exception(f"Unexpected error during baseline simulation setup or execution for start year {next_year}:")
@@ -266,14 +291,14 @@ def run_simulation():
         st.rerun() # Rerun to display the next phase or error state
 
 
-def run_baseline_simulation(start_year, initial_model_state: Model, initial_history: list, full_event_sequence: dict, initial_persistent_effects: dict, initial_temporary_effects: list, character_id: str):
+def run_baseline_simulation(start_year, initial_state_dict: dict, initial_history: list, full_event_sequence: dict, initial_persistent_effects: dict, initial_temporary_effects: list, character_id: str):
     """
     Runs a baseline simulation from a given start year to the end of the game,
     assuming no policy cards are played. Uses deep copies of initial states.
 
     Args:
         start_year (int): The year the baseline simulation starts (e.g., Year N+1).
-        initial_model_state (Model): A deep copy of the sfc_model_object at the start of start_year.
+        initial_state_dict (dict): A deep copy of the state dictionary at the start of start_year.
         initial_history (list): A deep copy of the game history *dictionaries* up to the start of start_year.
         full_event_sequence (dict): The pre-generated event sequence for the whole game.
         initial_persistent_effects (dict): A deep copy of persistent effects at the start of start_year.
@@ -286,34 +311,32 @@ def run_baseline_simulation(start_year, initial_model_state: Model, initial_hist
     logging.info(f"--- Starting Baseline Simulation from Year {start_year} to {GAME_END_YEAR} ---")
     baseline_run_history = [] # Store results for this specific baseline run
     # Use the deep copied states passed as arguments
-    current_model = initial_model_state
+    # We will manage the model object internally for the baseline run
     baseline_persistent_effects = initial_persistent_effects
     baseline_temporary_effects = initial_temporary_effects
+    # The 'current_model' will be created/updated inside the loop
+    current_model = None # Initialize
+    logging.debug(f"[Baseline Start Year {start_year}] Initial state dict keys (sample): {list(initial_state_dict.keys())[:10]}...")
+    logging.debug(f"[Baseline Start Year {start_year}] Initial persistent effects: {initial_persistent_effects}")
+    logging.debug(f"[Baseline Start Year {start_year}] Initial temporary effects: {initial_temporary_effects}")
 
-    # Ensure the model object's solution history matches the passed history list length
-    # Note: initial_model_state is assumed to be a deepcopy of the *solved* model from the *end* of year start_year-1
-    if len(current_model.solutions) != len(initial_history):
-         logging.warning(f"[Baseline Init] Mismatch between initial model solutions ({len(current_model.solutions)}) and initial history list ({len(initial_history)}). Using model's solutions.")
-         # Potentially rebuild history list from model solutions if needed, but proceed with caution.
 
     for baseline_year in range(start_year, GAME_END_YEAR + 1):
         logging.debug(f"[Baseline Year {baseline_year}] Starting simulation step.")
 
-        # --- Get Previous State and Inputs for Baseline ---
-        if not current_model.solutions:
-             if baseline_year == 1: # Special case for baseline starting at year 1
-                 # Use the game's initial state dict (should be available via st.session_state)
-                 prev_solution_values = st.session_state.get('initial_state_dict', {})
-                 if not prev_solution_values:
-                      logging.error("[Baseline Year 1] Initial game state dict missing!")
-                      return None
-                 logging.debug(f"[Baseline Year {baseline_year}] Using initial game state dict as previous state.")
-             else:
-                  logging.error(f"[Baseline Year {baseline_year}] Model solutions missing unexpectedly.")
-                  return None # Indicate error
+        # --- Get Previous State for Baseline ---
+        # For the first year of this baseline run, use the provided initial_state_dict
+        if baseline_year == start_year:
+            prev_solution_values = initial_state_dict
+            logging.debug(f"[Baseline Year {baseline_year}] Using provided initial_state_dict as previous state.")
+        # For subsequent years, use the results from the previous baseline year simulation
+        elif baseline_run_history:
+             prev_solution_values = baseline_run_history[-1] # Get the dict from the last simulated year
+             logging.debug(f"[Baseline Year {baseline_year}] Using previous baseline year's result dict as previous state.")
         else:
-            prev_solution_values = current_model.solutions[-1]
-            logging.debug(f"[Baseline Year {baseline_year}] Using previous baseline solution as previous state.")
+             # This should not happen if start_year > 1 and baseline_run_history is empty
+             logging.error(f"[Baseline Year {baseline_year}] Cannot find previous state. History is empty.")
+             return None # Indicate error
 
         cards_to_play = [] # Baseline assumes NO cards are played
         events_active = full_event_sequence.get(baseline_year, [])
@@ -339,6 +362,11 @@ def run_baseline_simulation(start_year, initial_model_state: Model, initial_hist
         final_numerical_params = {}
         try:
             # apply_effects will read and *modify* the mocked session state effects
+            # --- LOGGING: Before apply_effects --- 
+            logging.debug(f"[Baseline Year {baseline_year}] BEFORE apply_effects: Mocked persistent_effects = {baseline_persistent_effects}")
+            logging.debug(f"[Baseline Year {baseline_year}] BEFORE apply_effects: Mocked temporary_effects = {baseline_temporary_effects}")
+            logging.debug(f"[Baseline Year {baseline_year}] BEFORE apply_effects: cards_played = {cards_to_play}") # Should be empty
+
             final_numerical_params = apply_effects(
                 base_params=base_numerical_params,
                 latest_solution=prev_solution_values,
@@ -349,7 +377,14 @@ def run_baseline_simulation(start_year, initial_model_state: Model, initial_hist
             logging.debug(f"[Baseline Year {baseline_year}] Final numerical parameters calculated.")
             # IMPORTANT: Capture the modified effects from the mocked session state back into our baseline variables
             baseline_temporary_effects = st.session_state.temporary_effects
+            # --- LOGGING: After apply_effects --- 
+            logging.debug(f"[Baseline Year {baseline_year}] AFTER apply_effects: Updated baseline_persistent_effects = {baseline_persistent_effects}")
+            logging.debug(f"[Baseline Year {baseline_year}] AFTER apply_effects: Updated baseline_temporary_effects = {baseline_temporary_effects}")
+
             baseline_persistent_effects = st.session_state.persistent_effects
+
+            logging.debug(f"[Baseline Year {baseline_year}] AFTER apply_effects: Updated baseline_persistent_effects = {baseline_persistent_effects}")
+            logging.debug(f"[Baseline Year {baseline_year}] AFTER apply_effects: Updated baseline_temporary_effects = {baseline_temporary_effects}")
 
         except Exception as e:
             logging.error(f"[Baseline Year {baseline_year}] Error during apply_effects: {e}")
@@ -373,16 +408,37 @@ def run_baseline_simulation(start_year, initial_model_state: Model, initial_hist
             # 2. Set final parameters calculated for baseline
             model_to_simulate.set_values(final_numerical_params)
 
-            # 3. Copy History & Set Current Solution from *baseline's* history
-            # The 'current_model' object holds the baseline's evolving state
-            if current_model.solutions:
-                 model_to_simulate.solutions = copy.deepcopy(current_model.solutions)
-                 model_to_simulate.current_solution = model_to_simulate.solutions[-1]
-                 logging.debug(f"[Baseline Year {baseline_year}] Copied baseline solutions history ({len(model_to_simulate.solutions)} entries).")
+            # 3. Set Current Solution based on the previous year's baseline results
+            # The model needs the *previous* year's solution to calculate the current year
+            # For the very first year (baseline_year == start_year), solve() handles initialization
+            # Always set the previous year's solution state before solving the current year.
+            # For the first year (baseline_year == start_year), prev_solution_values comes from initial_state_dict.
+            # For subsequent years, it comes from the previous baseline iteration.
+            if prev_solution_values:
+                 # We need to set the variables from the dictionary onto the model
+                 # Note: This assumes prev_solution_values contains all necessary variables
+                 model_to_simulate.current_solution = prev_solution_values
+                 # Since we create a fresh model each loop, its solutions list is empty.
+                 # Initialize it with the previous step's solution for solve() to work correctly.
+                 model_to_simulate.solutions = [prev_solution_values]
+                 logging.debug(f"[Baseline Year {baseline_year}] Set previous year's solution into model (from {'initial_state_dict' if baseline_year == start_year else 'previous baseline step'}).")
             else:
-                 logging.debug(f"[Baseline Year {baseline_year}] No previous baseline solutions to copy.")
+                 # This case should ideally not happen if initial_state_dict is always provided for start_year
+                 # and subsequent steps populate baseline_run_history.
+                 logging.error(f"[Baseline Year {baseline_year}] Could not set previous solution state (prev_solution_values is missing).")
+                 # Handle error or continue cautiously? For now, log and continue.
+
+            # --- LOGGING: Before solve ---
+            # Ensure prev_solution_values exists before trying to access its keys for logging
+            if prev_solution_values:
+                logging.debug(f"[Baseline Year {baseline_year}] Preparing model state before solve. Previous solution keys (sample): {list(prev_solution_values.keys())[:10]}...")
+            else:
+                logging.warning(f"[Baseline Year {baseline_year}] Preparing model state before solve. No previous solution values available for logging.")
+
 
             # --- Run the simulation for one baseline year ---
+            logging.debug(f"[Baseline Year {baseline_year}] Preparing model state before solve. Previous solution keys (sample): {list(prev_solution_values.keys())[:10]}...")
+
             sys.stdout = NullIO()
             logging.debug(f"[Baseline Year {baseline_year}] Attempting model.solve()...")
             model_to_simulate.solve(iterations=1000, threshold=1e-6)
@@ -391,9 +447,25 @@ def run_baseline_simulation(start_year, initial_model_state: Model, initial_hist
 
             # --- Post-Solve State Update (Baseline Specific) ---
             latest_sim_solution = model_to_simulate.solutions[-1]
+            # --- Calculate KPIs for baseline history ---
+            game_base_yk = st.session_state.get('base_yk')
+            if game_base_yk is not None:
+                 calculate_kpis(latest_sim_solution, game_base_yk)
+                 logging.debug(f"[Baseline Year {baseline_year}] KPIs calculated using game_base_yk={game_base_yk}. Result: {{ {{k: latest_sim_solution.get(k) for k in ['Yk_Index', 'Unemployment', 'Inflation', 'GD_GDP']}} }}") # Doubled braces for dict comp
+            else:
+                 # Ensure keys exist even if calculation failed, prevent KeyErrors later
+                 latest_sim_solution.setdefault('Yk_Index', None)
+                 latest_sim_solution.setdefault('Unemployment', None)
+                 latest_sim_solution.setdefault('Inflation', None)
+                 latest_sim_solution.setdefault('GD_GDP', None)
+                 logging.warning(f"[Baseline Year {baseline_year}] Could not calculate KPIs due to missing st.session_state.base_yk.")
+            # --- End KPI Calculation ---
+
 
             # Update the baseline's model object for the next iteration's history copy
-            current_model = model_to_simulate
+            # Store the results dictionary for the next iteration
+            baseline_run_history.append(latest_sim_solution)
+            # No need to update current_model here as we create a fresh one each loop
 
             # Record Baseline History
             current_results = { 'year': baseline_year }
@@ -402,8 +474,8 @@ def run_baseline_simulation(start_year, initial_model_state: Model, initial_hist
                  current_results[key] = latest_sim_solution.get(key, np.nan)
             current_results['cards_played'] = [] # Explicitly empty
             current_results['events'] = list(events_active)
-            baseline_run_history.append(current_results)
-            logging.debug(f"[Baseline Year {baseline_year}] Result appended to baseline history.")
+            # The results dictionary 'current_results' was already appended above
+            logging.debug(f"[Baseline Year {baseline_year}] Result dictionary processed.")
 
         except SolutionNotFoundError as e:
             sys.stdout = old_stdout

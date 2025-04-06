@@ -24,17 +24,14 @@ except ImportError:
 
 # Import game mechanics needed for phases
 try:
-    from game_mechanics import draw_cards, check_for_events, select_dilemma
-    from dilemmas import DILEMMAS # Needed for select_dilemma potentially
-    from events import ECONOMIC_EVENTS # Needed for check_for_events potentially
+    # Import modules directly, assuming script runs from root where they exist
+    import game_mechanics
+    import dilemmas
+    import events
 except ImportError as e:
-    logging.error(f"Failed to import game components in game_phases.py: {e}")
-    # Define placeholders or raise error if critical
-    def draw_cards(deck, hand, discard, count): return deck, hand, discard
-    def check_for_events(results): return []
-    def select_dilemma(advisor_id, seen): return None, None
-    st.error(f"Failed to import game mechanics: {e}. Phase logic might be incomplete.")
-
+    logging.exception(f"CRITICAL: Failed to import game components (game_mechanics, dilemmas, events) in game_phases.py: {e}")
+    # Raising error is better than st.error here as it stops execution clearly before Streamlit fully starts
+    raise ImportError(f"CRITICAL: Failed to import game components (game_mechanics, dilemmas, events) in game_phases.py: {e}") from e
 
 # --- Phase Logic Functions ---
 
@@ -52,29 +49,18 @@ def run_year_start_phase():
     if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != current_year:
         logging.debug(f"Processing year start actions for Year {current_year}")
         # Card draw moved to after dilemma check
-        # Check for events based on the *previous* year's state
-        previous_year_results = None
-        if st.session_state.history:
-             previous_year_results = st.session_state.history[-1]
-        elif current_year == 1: # Special case for first event check
-             previous_year_results = st.session_state.get('initial_state_dict')
-             if not previous_year_results:
-                 logging.error("Initial state dict missing for Year 1 event check.")
-
-        if previous_year_results:
-            try:
-                st.session_state.active_events_this_year = check_for_events(previous_year_results)
-                if st.session_state.active_events_this_year:
-                     st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
-                     logging.info(f"Active events for Year {current_year}: {st.session_state.active_events_this_year}")
-            except Exception as e:
-                logging.error(f"Error checking for events: {e}")
-                st.error("Failed to check for economic events.")
-                st.session_state.active_events_this_year = [] # Ensure it's reset
-        else:
-             st.session_state.active_events_this_year = []
-             if current_year > 1:
-                 logging.error(f"History missing when checking events for Year {current_year}.")
+        # Check for events using the pre-generated sequence for the current year
+        try:
+            st.session_state.active_events_this_year = game_mechanics.check_for_events(current_year)
+            if st.session_state.active_events_this_year:
+                 st.warning(f"Events Occurring This Year: {', '.join(st.session_state.active_events_this_year)}")
+                 logging.info(f"Active events for Year {current_year} (from sequence): {st.session_state.active_events_this_year}")
+            else:
+                 logging.info(f"No pre-generated events for Year {current_year}.")
+        except Exception as e:
+            logging.error(f"Error retrieving pre-generated events for Year {current_year}: {e}")
+            st.error("Failed to retrieve economic events for the year.")
+            st.session_state.active_events_this_year = [] # Ensure it's reset
 
         st.session_state.year_start_processed = current_year
         st.session_state.cards_selected_this_year = [] # Reset selected cards
@@ -98,7 +84,7 @@ def run_year_start_phase():
 
             try:
                 # Pass the set of removed cards to the selection function
-                dilemma_id, dilemma_data = select_dilemma(
+                dilemma_id, dilemma_data = game_mechanics.select_dilemma(
                     advisor_id,
                     st.session_state.seen_dilemmas,
                     st.session_state.removed_cards_this_playthrough # Pass the tracking set
@@ -129,7 +115,7 @@ def run_year_start_phase():
         if st.session_state.get('cards_drawn_for_year', -1) != current_year:
             logging.debug(f"YEAR_START: Attempting to draw cards post-dilemma for Year {current_year}.")
             try:
-                st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+                st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = game_mechanics.draw_cards(
                     st.session_state.deck,
                     st.session_state.player_hand,
                     st.session_state.discard_pile,

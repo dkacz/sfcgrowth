@@ -11,7 +11,7 @@
     *   **Effect on Deck:** Add two **'Wage Suppression Mandate'** cards (Effect: Conceptually decreases `omega1` & `omega2`). Add one 'Interest Rate Hike' card.
 *   **Option B: Increase 'Flexibility' (Precariousness)**
     *   **Flavour:** Making hiring and firing easier might boost business confidence, but could lead to widespread job insecurity and lower morale.
-    *   **Effect on Deck:** Add two **'Labor Market Flexibility Reform'** cards (Effect: Conceptually increases `BANDt` & `BANDb`). Add one 'Make Tax System Less Progressive' card.
+    *   **Effect on Deck:** Add two **'Labor Market Flexibility Reform'** cards (Effect: Widens the employment stability band (`BANDt`/`BANDb`), making wages less sensitive to employment changes within the band). Add one 'Make Tax System Less Progressive' card.
 
 ---
 
