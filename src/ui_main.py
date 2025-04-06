@@ -181,28 +181,47 @@ def display_css():
             border-bottom: 1px solid #000000 !important; /* Underline headers */
             padding-bottom: 0.25rem;
         }
-        /* --- Character Selection --- */
-        .character-column {
-            border: 2px solid transparent; /* Default no border */
+        /* --- Character Selection (Table Layout) --- */
+        .character-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 0; /* Add horizontal spacing between cells */
+            /* table-layout: fixed; */ /* Removed to allow natural column sizing */
+        }
+        .character-table td {
+            border: 2px solid transparent;
             border-radius: 8px;
             padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.5);
+            vertical-align: top;
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.5); /* Slightly transparent white */
-            height: 100%; /* Allow column to take full height */
-            display: flex; /* Use flexbox */
-            flex-direction: column; /* Stack children vertically */
             transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+            height: 100%; /* Try to make cells fill height - might not work perfectly */
         }
-        .character-column.selected {
-            border-color: #DAA520 !important; /* Gold border when selected */
-            background-color: rgba(250, 250, 210, 0.8); /* Light yellow tint when selected */
+        .character-table td.selected-character {
+             border-color: #DAA520 !important; /* Gold border */
+             background-color: rgba(250, 250, 210, 0.8) !important; /* Light yellow tint */
         }
-        .character-column img {
-            max-width: 80%;
-            max-height: 280px; /* Adjusted max-height */
-            height: auto;
-            margin-bottom: 1rem;
-            border-radius: 4px;
+        .character-table h5 { /* Target name heading */
+             margin-bottom: 0.5rem !important; /* Adjusted gap below name */
+             font-size: 1.2em !important; /* Increased font size */
+             line-height: 1.2 !important; /* Adjust line height */
+        }
+        .character-table img {
+             max-width: 140px; /* Reset image size */
+             height: auto;
+             margin-bottom: 0.5rem;
+        }
+        .character-table ul {
+            list-style-type: none;
+            padding-left: 0;
+            text-align: left;
+            margin-top: 0.5rem;
+        }
+         .character-table li {
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
         }
         /* Sidebar headers */
         [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4, [data-testid="stSidebar"] h5, [data-testid="stSidebar"] h6 {
@@ -211,7 +230,7 @@ def display_css():
              border-bottom: none !important; /* No underline in sidebar */
         }
         /* Objective List Styling */
-        .character-column ul {
+        .character-column ul { /* Keep this class for now if needed elsewhere, or remove */
             list-style-type: none; /* Remove default bullets */
             padding-left: 5px; /* Adjust left padding */
             margin-top: 0.5rem; /* Add some space above the list */
@@ -430,73 +449,93 @@ def display_title_logo():
         st.markdown('<div style="text-align: center;"><div class="title-container"><h1>SFCGAME</h1></div></div>', unsafe_allow_html=True)
 
 def display_character_selection():
-    """Renders the character selection screen."""
+    """Renders the character selection screen using an HTML table."""
     st.header("Choose Your Economic Advisor")
     st.write("Select the advisor whose economic philosophy and objectives align with your strategy.")
 
-    cols = st.columns(len(CHARACTERS))
     selected_id = st.session_state.selected_character_id
+    character_ids = list(CHARACTERS.keys())
+    num_chars = len(character_ids)
 
-    for i, (char_id, char_data) in enumerate(CHARACTERS.items()):
-        with cols[i]:
-            container_class = "character-column"
-            if char_id == selected_id:
-                container_class += " selected"
+    # --- Generate Table HTML ---
+    table_html = '<table class="character-table"><tbody>'
 
-            img_path = char_data.get('image_path')
-            img_html = ""
-            if img_path:
-                try:
-                    # Use relative path assuming assets/ is accessible
-                    full_img_path = os.path.join("assets", "characters", os.path.basename(img_path))
-                    img_data_uri = get_base64_of_bin_file(full_img_path)
-                    if img_data_uri:
-                        img_html = f'<img src="data:image/png;base64,{img_data_uri}" alt="{char_data["name"]}">'
-                    else:
-                        img_html = f'<p style="color: red;">Image not found: {full_img_path}</p>'
-                except Exception as e:
-                    img_html = f'<p style="color: red;">Error loading image: {e}</p>'
-                    logging.error(f"Error loading character image {img_path}: {e}")
+    # Row 1: Names
+    table_html += '<tr>'
+    for char_id in character_ids:
+        char_data = CHARACTERS[char_id]
+        selected_class = "selected-character" if char_id == selected_id else ""
+        # Use h5 for name font size
+        table_html += f'<td class="{selected_class}"><h5>{char_data["name"]}</h5></td>'
+    table_html += '</tr>'
 
-            # Objective List Generation
-            objective_icon_map = {
-                "gdp_index": "Yk", "unemployment": "ER", "inflation": "PI", "debt_gdp": "GD_GDP"
-            }
-            objectives_list = list(char_data.get('objectives', {}).items())
-            objectives_html = ""
-            for j in range(3): # Always generate 3 list items
-                if j < len(objectives_list):
-                    obj_key, obj = objectives_list[j]
-                    icon_uri = get_icon_data_uri(objective_icon_map.get(obj_key, ''))
-                    icon_img = f'<img src="{icon_uri}" style="height: 1em; width: 1em; margin-right: 0.5em;">' if icon_uri else ''
-                    objectives_html += f"""<li>
-                            {icon_img}
-                            <small>{obj['label']}: {obj['condition']} {obj['target_value']}{'%' if obj['target_type'] == 'percent' else ''}</small>
-                        </li>"""
+    # Row 2: Images
+    table_html += '<tr>'
+    for char_id in character_ids:
+        char_data = CHARACTERS[char_id]
+        selected_class = "selected-character" if char_id == selected_id else ""
+        img_html = ""
+        img_path = char_data.get('image_path')
+        if img_path:
+            try:
+                full_img_path = os.path.join("assets", "characters", os.path.basename(img_path))
+                img_data_uri = get_base64_of_bin_file(full_img_path)
+                if img_data_uri:
+                    # Image size controlled by CSS rule .character-table img
+                    img_html = f'<img src="data:image/png;base64,{img_data_uri}" alt="{char_data["name"]}">'
                 else:
-                    objectives_html += '<li><small>&nbsp;</small></li>' # Placeholder for alignment
+                    img_html = f'<p style="color: red; font-size: small;">Image not found</p>'
+            except Exception as e:
+                img_html = f'<p style="color: red; font-size: small;">Error loading image</p>'
+                logging.error(f"Error loading character image {img_path}: {e}")
+        table_html += f'<td class="{selected_class}">{img_html}</td>'
+    table_html += '</tr>'
 
-            st.markdown(f"""
-            <div class="{container_class}">
-                <div style="flex-grow: 1;"> <!-- Wrapper for content above objectives -->
-                    {img_html}
-                    <h4>{char_data['name']}</h4>
-                    <p><small>{char_data['description']}</small></p>
-                </div>
-                <div> <!-- Wrapper for objectives -->
-                    <p><strong>Objectives:</strong></p>
-                    <ul>{objectives_html}</ul>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    # Row 3: Descriptions
+    table_html += '<tr>'
+    for char_id in character_ids:
+        char_data = CHARACTERS[char_id]
+        selected_class = "selected-character" if char_id == selected_id else ""
+        # Removed <small> tag for larger description font
+        table_html += f'<td class="{selected_class}">{char_data["description"]}</td>'
+    table_html += '</tr>'
 
-            # Selection Button - Logic handled in game_logic.py
+    # Row 4: Objectives
+    table_html += '<tr>'
+    objective_icon_map = {
+        "gdp_index": "Yk", "unemployment": "ER", "inflation": "PI", "debt_gdp": "GD_GDP"
+    }
+    for char_id in character_ids:
+        char_data = CHARACTERS[char_id]
+        selected_class = "selected-character" if char_id == selected_id else ""
+        objectives_list = list(char_data.get('objectives', {}).items())
+        objectives_html = "<strong>Objectives:</strong><ul>"
+        if objectives_list:
+            for obj_key, obj in objectives_list:
+                icon_uri = get_icon_data_uri(objective_icon_map.get(obj_key, ''))
+                icon_img = f'<img src="{icon_uri}" style="height: 1em; width: 1em; margin-right: 0.5em; vertical-align: middle;">' if icon_uri else ''
+                objectives_html += f"""<li>
+                        {icon_img}
+                        <small>{obj['label']}: {obj['condition']} {obj['target_value']}{'%' if obj['target_type'] == 'percent' else ''}</small>
+                    </li>"""
+        else:
+            objectives_html += "<li><small>No specific objectives.</small></li>"
+        objectives_html += "</ul>"
+        table_html += f'<td class="{selected_class}">{objectives_html}</td>'
+    table_html += '</tr>'
+
+    table_html += '</tbody></table>'
+    st.markdown(table_html, unsafe_allow_html=True)
+
+    # --- Render Buttons Separately Below Table ---
+    button_cols = st.columns(num_chars)
+    for i, char_id in enumerate(character_ids):
+        with button_cols[i]:
             button_label = "Selected" if char_id == selected_id else "Select"
             button_type = "primary" if char_id == selected_id else "secondary"
             if st.button(button_label, key=f"select_{char_id}", type=button_type, use_container_width=True):
-                # Trigger state update handled by the calling function in game_logic
                 st.session_state.action_trigger = ("select_character", char_id)
-                st.rerun() # Rerun to process the action
+                st.rerun()
 
 # --- New function for KPIs and Events ---
 def display_kpi_and_events_section():
