@@ -1,3 +1,5 @@
+from chapter_11_model_growth import Model
+
 # src/simulation_logic.py
 """Handles the core simulation step for one year."""
 
@@ -192,6 +194,53 @@ def run_simulation():
             if 'debug_last_params' in st.session_state:
                 del st.session_state.debug_last_params # Clean up debug state
 
+
+            # --- Run Baseline Simulation ---
+            # Triggered after main simulation for 'next_year' is complete
+            # Baseline starts from the state *at the beginning* of 'next_year'
+            if next_year <= GAME_END_YEAR: # Only run if not already past the end year
+                logging.info(f"Preparing to run baseline simulation starting from Year {next_year}.")
+                try:
+                    # Deep copy necessary states to isolate baseline run
+                    original_model_id = id(st.session_state.sfc_model_object) # Capture original ID before copy
+                    baseline_start_model = copy.deepcopy(st.session_state.sfc_model_object)
+                    baseline_start_history = copy.deepcopy(st.session_state.history)
+                    baseline_start_persistent = copy.deepcopy(st.session_state.persistent_effects)
+                    baseline_start_temporary = copy.deepcopy(st.session_state.temporary_effects)
+                    char_id = st.session_state.selected_character_id
+                    copied_model_id = id(baseline_start_model) # Capture copied ID
+                    logging.debug(f"Baseline Year {next_year}: Deep copied model state for baseline. Original ID: {original_model_id}, Copied ID: {copied_model_id}")
+                    event_seq = st.session_state.full_event_sequence
+
+                    baseline_history_results = run_baseline_simulation(
+                        start_year=next_year, # Baseline starts from the year we just simulated *to*
+                        initial_model_state=baseline_start_model,
+                        initial_history=baseline_start_history,
+                        full_event_sequence=event_seq,
+                        initial_persistent_effects=baseline_start_persistent,
+                        initial_temporary_effects=baseline_start_temporary,
+                        character_id=char_id
+                    )
+
+                    if baseline_history_results is not None:
+                        # Store results keyed by the year the baseline *starts* from
+                        st.session_state.baseline_results[next_year] = baseline_history_results
+                        logging.info(f"Successfully ran and stored baseline simulation starting from Year {next_year}.")
+                        # Optional: Convert to DataFrame immediately if preferred
+                        # st.session_state.baseline_results[next_year] = pd.DataFrame(baseline_history_results)
+                        logging.debug(f"Baseline Year {next_year}: Storing results in st.session_state.baseline_results[{next_year}]")
+                    else:
+                        logging.error(f"Baseline simulation starting from Year {next_year} failed.")
+                        # Store None or empty list to indicate failure?
+                        st.session_state.baseline_results[next_year] = None
+
+                except Exception as baseline_err:
+                    logging.exception(f"Unexpected error during baseline simulation setup or execution for start year {next_year}:")
+                    st.warning(f"Baseline simulation run failed for Year {next_year}. See logs.")
+                    st.session_state.baseline_results[next_year] = None # Mark as failed
+            # --- End Baseline Simulation ---
+
+
             # --- Advance Game State ---
             if next_year >= GAME_END_YEAR: # Game ends AFTER simulating final year
                 st.session_state.current_year = next_year # Advance year for final display
@@ -215,3 +264,158 @@ def run_simulation():
     finally:
         sys.stdout = old_stdout # Ensure stdout is always restored
         st.rerun() # Rerun to display the next phase or error state
+
+
+def run_baseline_simulation(start_year, initial_model_state: Model, initial_history: list, full_event_sequence: dict, initial_persistent_effects: dict, initial_temporary_effects: list, character_id: str):
+    """
+    Runs a baseline simulation from a given start year to the end of the game,
+    assuming no policy cards are played. Uses deep copies of initial states.
+
+    Args:
+        start_year (int): The year the baseline simulation starts (e.g., Year N+1).
+        initial_model_state (Model): A deep copy of the sfc_model_object at the start of start_year.
+        initial_history (list): A deep copy of the game history *dictionaries* up to the start of start_year.
+        full_event_sequence (dict): The pre-generated event sequence for the whole game.
+        initial_persistent_effects (dict): A deep copy of persistent effects at the start of start_year.
+        initial_temporary_effects (list): A deep copy of temporary effects at the start of start_year.
+        character_id (str): The ID of the selected character.
+
+    Returns:
+        list: A list of result dictionaries for the baseline simulation years. Returns None on error.
+    """
+    logging.info(f"--- Starting Baseline Simulation from Year {start_year} to {GAME_END_YEAR} ---")
+    baseline_run_history = [] # Store results for this specific baseline run
+    # Use the deep copied states passed as arguments
+    current_model = initial_model_state
+    baseline_persistent_effects = initial_persistent_effects
+    baseline_temporary_effects = initial_temporary_effects
+
+    # Ensure the model object's solution history matches the passed history list length
+    # Note: initial_model_state is assumed to be a deepcopy of the *solved* model from the *end* of year start_year-1
+    if len(current_model.solutions) != len(initial_history):
+         logging.warning(f"[Baseline Init] Mismatch between initial model solutions ({len(current_model.solutions)}) and initial history list ({len(initial_history)}). Using model's solutions.")
+         # Potentially rebuild history list from model solutions if needed, but proceed with caution.
+
+    for baseline_year in range(start_year, GAME_END_YEAR + 1):
+        logging.debug(f"[Baseline Year {baseline_year}] Starting simulation step.")
+
+        # --- Get Previous State and Inputs for Baseline ---
+        if not current_model.solutions:
+             if baseline_year == 1: # Special case for baseline starting at year 1
+                 # Use the game's initial state dict (should be available via st.session_state)
+                 prev_solution_values = st.session_state.get('initial_state_dict', {})
+                 if not prev_solution_values:
+                      logging.error("[Baseline Year 1] Initial game state dict missing!")
+                      return None
+                 logging.debug(f"[Baseline Year {baseline_year}] Using initial game state dict as previous state.")
+             else:
+                  logging.error(f"[Baseline Year {baseline_year}] Model solutions missing unexpectedly.")
+                  return None # Indicate error
+        else:
+            prev_solution_values = current_model.solutions[-1]
+            logging.debug(f"[Baseline Year {baseline_year}] Using previous baseline solution as previous state.")
+
+        cards_to_play = [] # Baseline assumes NO cards are played
+        events_active = full_event_sequence.get(baseline_year, [])
+        logging.debug(f"[Baseline Year {baseline_year}] Events active: {events_active}")
+
+        # --- Calculate and Apply Parameters (Baseline Specific) ---
+        # Use default parameters as the absolute base each year
+        base_numerical_params = copy.deepcopy(growth_parameters)
+        temp_model_for_param_check = create_growth_model()
+        defined_param_names = set(temp_model_for_param_check.parameters.keys())
+        for key, value in growth_exogenous:
+            if key in defined_param_names:
+                 try: base_numerical_params[key] = float(value)
+                 except: logging.warning(f"[Baseline Year {baseline_year}] Could not convert exogenous parameter {key}={value} to float.")
+
+        # Mock session state for apply_effects
+        original_temp_effects = st.session_state.get('temporary_effects')
+        original_pers_effects = st.session_state.get('persistent_effects')
+        # Set the session state effects to *our baseline's current effects* before calling apply_effects
+        st.session_state.temporary_effects = baseline_temporary_effects
+        st.session_state.persistent_effects = baseline_persistent_effects
+
+        final_numerical_params = {}
+        try:
+            # apply_effects will read and *modify* the mocked session state effects
+            final_numerical_params = apply_effects(
+                base_params=base_numerical_params,
+                latest_solution=prev_solution_values,
+                cards_played=cards_to_play, # Crucially empty
+                active_events=events_active,
+                character_id=character_id
+            )
+            logging.debug(f"[Baseline Year {baseline_year}] Final numerical parameters calculated.")
+            # IMPORTANT: Capture the modified effects from the mocked session state back into our baseline variables
+            baseline_temporary_effects = st.session_state.temporary_effects
+            baseline_persistent_effects = st.session_state.persistent_effects
+
+        except Exception as e:
+            logging.error(f"[Baseline Year {baseline_year}] Error during apply_effects: {e}")
+            st.session_state.temporary_effects = original_temp_effects # Restore before returning
+            st.session_state.persistent_effects = original_pers_effects
+            return None
+        finally:
+             # Restore original session state effects ALWAYS
+             st.session_state.temporary_effects = original_temp_effects
+             st.session_state.persistent_effects = original_pers_effects
+
+        # --- Initialize Fresh Model, Set State, and Run Simulation (Baseline Specific) ---
+        model_to_simulate = create_growth_model()
+        old_stdout = sys.stdout
+        try:
+            # 1. Set defaults
+            model_to_simulate.set_values(growth_parameters)
+            model_to_simulate.set_values(growth_exogenous)
+            model_to_simulate.set_values(growth_variables)
+
+            # 2. Set final parameters calculated for baseline
+            model_to_simulate.set_values(final_numerical_params)
+
+            # 3. Copy History & Set Current Solution from *baseline's* history
+            # The 'current_model' object holds the baseline's evolving state
+            if current_model.solutions:
+                 model_to_simulate.solutions = copy.deepcopy(current_model.solutions)
+                 model_to_simulate.current_solution = model_to_simulate.solutions[-1]
+                 logging.debug(f"[Baseline Year {baseline_year}] Copied baseline solutions history ({len(model_to_simulate.solutions)} entries).")
+            else:
+                 logging.debug(f"[Baseline Year {baseline_year}] No previous baseline solutions to copy.")
+
+            # --- Run the simulation for one baseline year ---
+            sys.stdout = NullIO()
+            logging.debug(f"[Baseline Year {baseline_year}] Attempting model.solve()...")
+            model_to_simulate.solve(iterations=1000, threshold=1e-6)
+            sys.stdout = old_stdout
+            logging.debug(f"[Baseline Year {baseline_year}] model.solve() completed.")
+
+            # --- Post-Solve State Update (Baseline Specific) ---
+            latest_sim_solution = model_to_simulate.solutions[-1]
+
+            # Update the baseline's model object for the next iteration's history copy
+            current_model = model_to_simulate
+
+            # Record Baseline History
+            current_results = { 'year': baseline_year }
+            history_vars = ['Yk', 'PI', 'ER', 'GRk', 'Rb', 'Rl', 'Rm', 'BUR', 'Q', 'CAR', 'PSBR', 'GD', 'Y', 'V', 'Lhs', 'Lfs']
+            for key in history_vars:
+                 current_results[key] = latest_sim_solution.get(key, np.nan)
+            current_results['cards_played'] = [] # Explicitly empty
+            current_results['events'] = list(events_active)
+            baseline_run_history.append(current_results)
+            logging.debug(f"[Baseline Year {baseline_year}] Result appended to baseline history.")
+
+        except SolutionNotFoundError as e:
+            sys.stdout = old_stdout
+            logging.error(f"[Baseline Year {baseline_year}] Model failed to converge. Error: {str(e)}")
+            return None
+        except Exception as e:
+            sys.stdout = old_stdout
+            logging.error(f"[Baseline Year {baseline_year}] An unexpected error occurred during simulation: {str(e)}")
+            logging.exception(f"Unexpected error in baseline simulation (Year {baseline_year}):")
+            return None
+        finally:
+            sys.stdout = old_stdout
+
+    logging.info(f"--- Finished Baseline Simulation from Year {start_year}. Recorded {len(baseline_run_history)} years. ---")
+    return baseline_run_history
