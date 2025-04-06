@@ -20,7 +20,9 @@ if src_path not in sys.path:
 try:
     from src.state_manager import initialize_game_state
     from src.ui_sidebar import display_sidebar
-    from src.ui_main import display_css, display_title_logo, display_credits
+    from src.ui_main import display_title_logo # Only title logo remains here
+    from src.ui_css import display_css # Import from new location
+    from src.ui_credits import display_credits # Import from new location
     from src.game_logic import run_game
     # Config and Utils might be used implicitly by other modules, but import if needed directly.
     # from src.config import GAME_END_YEAR # Example if needed
