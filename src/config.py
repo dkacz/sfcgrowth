@@ -78,4 +78,6 @@ PARAM_DESCRIPTIONS = {
     'bot': 'Bottom value for bank net liquidity ratio',
     # Add others if needed by cards/events
     'eps': 'Sensitivity of exchange rate expectations to deviations',
+    'gammar': 'Sensitivity of investment (capital growth) to the real interest rate',
+
 }
