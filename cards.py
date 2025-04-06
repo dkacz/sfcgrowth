@@ -84,7 +84,7 @@ POLICY_CARDS = {
     'Labor Market Flexibility Reform': {
         "type": "Fiscal", # Structural reform
         "stance": "contractionary",
-        "effects": [{'param': 'BANDt', 'effect': 0.005, 'desc': "Widens the employment stability band (upper threshold)."}, {'param': 'BANDb', 'effect': 0.005, 'desc': "Widens the employment stability band (lower threshold)."}],
+        "effects": [{'param': 'BANDt', 'effect': 0.010, 'desc': "Widens the employment stability band (upper threshold)."}, {'param': 'BANDb', 'effect': 0.010, 'desc': "Widens the employment stability band (lower threshold)."}],
         "desc": "Increases labor market 'flexibility' by widening the range where employment changes don't strongly affect wage demands."
     },
     'Bank Capital Fortification': {
