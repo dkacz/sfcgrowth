@@ -72,7 +72,8 @@ initialize_game_state()
 # --- Render UI Components ---
 display_css()
 display_title_logo()
-display_sidebar() # Render the sidebar content
+if st.session_state.get('game_phase') != "CHARACTER_SELECTION":
+    display_sidebar() # Render the sidebar content
 
 # --- Run Main Game Logic ---
 # The run_game function now handles the logic based on st.session_state.game_phase
