@@ -1,1114 +1,1406 @@
-2025-04-06 00:47:56,847 - INFO - --- Initializing Game State (Starting Year 0) ---
-2025-04-06 00:47:56,847 - INFO - Constructing initial t=0 state dictionary...
-2025-04-06 00:47:56,847 - INFO - Initial t=0 state dictionary constructed with 166 entries.
-2025-04-06 00:47:56,847 - INFO - Creating initial model object and setting values...
-2025-04-06 00:47:57,110 - INFO - Stored initial model object (unsolved) and initial state dict in session state.
-2025-04-06 00:47:57,110 - INFO - Initialized empty deck, hand, and discard pile.
-2025-04-06 00:47:57,110 - INFO - Game Initialized at Year 0.
-2025-04-06 00:48:01,017 - INFO - Character 'The Demand Side Devotee' selected. Objectives set: {'gdp_index': {'label': 'GDP Index', 'condition': '>=', 'target_value': 130, 'target_type': 'index'}, 'unemployment': {'label': 'Unemployment', 'condition': '<=', 'target_value': 4, 'target_type': 'percent'}, 'inflation': {'label': 'Inflation', 'condition': '<=', 'target_value': 5, 'target_type': 'percent'}}
-2025-04-06 00:48:01,017 - INFO - Attempting to create deck for character_id: demand_side_devotee
-2025-04-06 00:48:01,017 - INFO - Creating starting deck for character 'demand_side_devotee' with 8 cards from 'starting_deck'.
-2025-04-06 00:48:01,017 - DEBUG - Deck composition BEFORE shuffle: ['Increase Government Spending', 'Increase Government Spending', 'Decrease Government Spending', 'Decrease Government Spending', 'Cut Income Tax Rate', 'Raise Income Tax Rate', 'Interest Rate Cut', 'Interest Rate Hike']
-2025-04-06 00:48:01,017 - INFO - Final starting deck created with 8 cards.
-2025-04-06 00:48:01,017 - DEBUG - Final shuffled deck sample (first 10): ['Raise Income Tax Rate', 'Interest Rate Cut', 'Decrease Government Spending', 'Increase Government Spending', 'Increase Government Spending', 'Cut Income Tax Rate', 'Decrease Government Spending', 'Interest Rate Hike']
-2025-04-06 00:48:01,017 - INFO - Deck created based on character 'demand_side_devotee'. Deck size: 8
-2025-04-06 00:48:01,017 - DEBUG - --- Entering draw_cards ---
-2025-04-06 00:48:01,017 - DEBUG - Initial state - Deck size: 8, Hand: [], Discard size: 0, Target size: 5
-2025-04-06 00:48:01,017 - DEBUG - Unique policy cards currently in hand: set()
-2025-04-06 00:48:01,017 - DEBUG - Need to draw 5 new unique policy cards.
-2025-04-06 00:48:01,027 - DEBUG - Popped card: 'Interest Rate Hike'. Deck size now: 7
-2025-04-06 00:48:01,027 - DEBUG - Card 'Interest Rate Hike' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:01,027 - DEBUG - Popped card: 'Decrease Government Spending'. Deck size now: 6
-2025-04-06 00:48:01,027 - DEBUG - Card 'Decrease Government Spending' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:01,027 - DEBUG - Popped card: 'Cut Income Tax Rate'. Deck size now: 5
-2025-04-06 00:48:01,027 - DEBUG - Card 'Cut Income Tax Rate' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:01,028 - DEBUG - Popped card: 'Increase Government Spending'. Deck size now: 4
-2025-04-06 00:48:01,028 - DEBUG - Card 'Increase Government Spending' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:01,028 - DEBUG - Popped card: 'Increase Government Spending'. Deck size now: 3
-2025-04-06 00:48:01,028 - DEBUG - Card 'Increase Government Spending' is policy card but not unique this draw cycle or already in hand.
-2025-04-06 00:48:01,028 - DEBUG - Card 'Increase Government Spending' not added to hand. Adding to discard pile.
-2025-04-06 00:48:01,030 - DEBUG - Popped card: 'Decrease Government Spending'. Deck size now: 2
-2025-04-06 00:48:01,030 - DEBUG - Card 'Decrease Government Spending' is policy card but not unique this draw cycle or already in hand.
-2025-04-06 00:48:01,030 - DEBUG - Card 'Decrease Government Spending' not added to hand. Adding to discard pile.
-2025-04-06 00:48:01,030 - DEBUG - Popped card: 'Interest Rate Cut'. Deck size now: 1
-2025-04-06 00:48:01,030 - DEBUG - Card 'Interest Rate Cut' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:01,030 - INFO - Drew 5 unique policy cards: Interest Rate Hike, Decrease Government Spending, Cut Income Tax Rate, Increase Government Spending, Interest Rate Cut
-2025-04-06 00:48:01,030 - DEBUG - --- Exiting draw_cards ---
-2025-04-06 00:48:01,030 - DEBUG - Final state - Deck size: 1, Hand: ['Interest Rate Hike', 'Decrease Government Spending', 'Cut Income Tax Rate', 'Increase Government Spending', 'Interest Rate Cut'], Discard size: 2
-2025-04-06 00:48:01,031 - INFO - Drew initial hand of 5 cards. Hand size: 5
-2025-04-06 00:48:01,032 - INFO - Proceeding to first simulation (Year 0 -> Year 1).
-2025-04-06 00:48:01,135 - INFO - Entering SIMULATION phase for year 1
-2025-04-06 00:48:01,135 - WARNING - Using initial state dict as previous state for Year 1 apply_effects.
-2025-04-06 00:48:01,135 - DEBUG - Base numerical parameters for Year 1 constructed from initial_state_dict.
-2025-04-06 00:48:01,135 - DEBUG - apply_effects started with base_params keys: ['alpha1', 'alpha2', 'beta', 'betab', 'gamma', 'gamma0', 'gammar', 'gammau', 'delta', 'deltarep', 'eps', 'eps2', 'epsb', 'epsrb', 'eta', 'eta0', 'etan', 'etar', 'theta', 'lambda20', 'lambda21', 'lambda22', 'lambda23', 'lambda24', 'lambda25', 'lambda30', 'lambda31', 'lambda32', 'lambda33', 'lambda34', 'lambda35', 'lambda40', 'lambda41', 'lambda42', 'lambda43', 'lambda44', 'lambda45', 'lambdab', 'lambdac', 'xim1', 'xim2', 'ro', 'sigman', 'sigmase', 'sigmat', 'phi', 'phit', 'psid', 'psiu', 'omega0', 'omega1', 'omega2', 'omega3', 'ADDbl', 'BANDt', 'BANDb', 'bot', 'GRg', 'GRpr', 'Nfe', 'NCAR', 'NPLk', 'Rbbar', 'Rln', 'RA', 'top', 'ADDl', 'BLR', 'BUR', 'Ck', 'CAR', 'CONS', 'ER', 'Fb', 'Fbt', 'Ff', 'Fft', 'FDb', 'FDf', 'FUb', 'FUf', 'FUft', 'G', 'Gk', 'GL', 'GRk', 'INV', 'Ik', 'N', 'Nt', 'NHUC', 'NL', 'NLk', 'NPL', 'NPLke', 'NUC', 'omegat', 'P', 'Pbl', 'Pe', 'PE', 'PI', 'PR', 'PSBR', 'Q', 'Rb', 'Rbl', 'Rk', 'Rl', 'Rm', 'REP', 'RRb', 'RRl', 'S', 'Sk', 'T', 'U', 'UC', 'W', 'WB', 'Y', 'Yk', 'YDr', 'YDkr', 'YDkre', 'YP', 'z1a', 'z1b', 'z2a', 'z2b', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bs', 'BLd', 'GD', 'Ekd', 'Hbd', 'Hhd', 'IN', 'INk', 'INke', 'K', 'Kk', 'Lfd', 'Lhd', 'Md', 'OFb', 'OFbe', 'OFbt', 'V', 'Vfma', 'Vk']
-2025-04-06 00:48:01,136 - DEBUG - apply_effects finished. Returning final_params keys: ['alpha1', 'alpha2', 'beta', 'betab', 'gamma', 'gamma0', 'gammar', 'gammau', 'delta', 'deltarep', 'eps', 'eps2', 'epsb', 'epsrb', 'eta', 'eta0', 'etan', 'etar', 'theta', 'lambda20', 'lambda21', 'lambda22', 'lambda23', 'lambda24', 'lambda25', 'lambda30', 'lambda31', 'lambda32', 'lambda33', 'lambda34', 'lambda35', 'lambda40', 'lambda41', 'lambda42', 'lambda43', 'lambda44', 'lambda45', 'lambdab', 'lambdac', 'xim1', 'xim2', 'ro', 'sigman', 'sigmase', 'sigmat', 'phi', 'phit', 'psid', 'psiu', 'omega0', 'omega1', 'omega2', 'omega3', 'ADDbl', 'BANDt', 'BANDb', 'bot', 'GRg', 'GRpr', 'Nfe', 'NCAR', 'NPLk', 'Rbbar', 'Rln', 'RA', 'top', 'ADDl', 'BLR', 'BUR', 'Ck', 'CAR', 'CONS', 'ER', 'Fb', 'Fbt', 'Ff', 'Fft', 'FDb', 'FDf', 'FUb', 'FUf', 'FUft', 'G', 'Gk', 'GL', 'GRk', 'INV', 'Ik', 'N', 'Nt', 'NHUC', 'NL', 'NLk', 'NPL', 'NPLke', 'NUC', 'omegat', 'P', 'Pbl', 'Pe', 'PE', 'PI', 'PR', 'PSBR', 'Q', 'Rb', 'Rbl', 'Rk', 'Rl', 'Rm', 'REP', 'RRb', 'RRl', 'S', 'Sk', 'T', 'U', 'UC', 'W', 'WB', 'Y', 'Yk', 'YDr', 'YDkr', 'YDkre', 'YP', 'z1a', 'z1b', 'z2a', 'z2b', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bs', 'BLd', 'GD', 'Ekd', 'Hbd', 'Hhd', 'IN', 'INk', 'INke', 'K', 'Kk', 'Lfd', 'Lhd', 'Md', 'OFb', 'OFbe', 'OFbt', 'V', 'Vfma', 'Vk']
-2025-04-06 00:48:01,136 - DEBUG - Final numerical parameters calculated.
-2025-04-06 00:48:01,561 - DEBUG - Set default params/vars on fresh model instance.
-2025-04-06 00:48:01,561 - DEBUG - Set final numerical parameters on fresh model instance.
-2025-04-06 00:48:01,561 - WARNING - Year 1 simulation: Skipping history copy, letting solve() initialize.
-2025-04-06 00:48:01,563 - DEBUG - Attempting model.solve() for year 1...
-2025-04-06 00:48:02,857 - INFO - Year 1 SOLVED - Variables: | ADDbl=0.0200 | ADDl=0.0448 | BANDb=0.0500 | BANDt=0.0700 | BLR=0.1021 | BLd=877148.8397 | BLs=877148.8397 | BUR=0.0632 | Bbd=4244514.5461 | Bbs=4245909.7762 | Bcbd=4786864.5153 | Bcbs=4786864.5153 | Bhd=34650517.0310 | Bhs=34650517.0310 | Bs=43725711.3225 | CAR=0.0934 | CG=1965408.1273 | CONS=54177892.1909 | Ck=7538746.3722 | ER=0.9200 | Ekd=5186.5679 | Eks=5186.5679 | FDb=1325097.8100 | FDf=2758271.8050 | FUb=476117.0832 | FUbt=432726.0000 | FUf=15281479.3340 | FUft=15558672.0000 | Fb=1801214.8932 | Fbt=1757823.8100 | Fcb=162949.1500 | Ff=18304429.6822 | Fft=18602444.3550 | G=17292699.4378 | GD=59631451.9073 | GL=2858208.7904 | GRg=0.0300 | GRk=0.0301 | GRpr=0.0300 | Gk=2406244.8000 | HCe=70348184.0445 | Hbd=2077969.7778 | Hbs=2077969.9058 | Hhd=2708894.6095 | Hhs=2708894.6095 | Hs=4786864.5153 | IN=11678610.9808 | INV=17460455.8761 | INk=2077115.8187 | INke=2126612.4271 | INkt=2476372.7758 | Ik=2429587.7754 | K=131536761.1833 | Kk=18303079.2124 | Lfd=16562901.5255 | Lfs=16562901.5255 | Lhd=22304148.7904 | Lhs=22304148.7904 | Md=41559395.5565 | Ms=41559395.5565 | N=87.1495 | NCAR=0.1000 | NHUC=5.6848 | NL=697548.7904 | NLk=97062.5295 | NPL=319258.0000 | NPLk=0.0200 | NPLke=0.0200 | NUC=5.6212 | Nfe=94.7600 | Nt=87.1285 | OFb=3630139.0832 | OFbe=3586748.0000 | OFbt=3756950.0000 | P=7.1866 | PE=5.1088 | PI=0.0020 | PR=142818.7700 | PSBR=1902853.7379 | Pbl=18.1818 | Pe=18290.7734 | Q=0.7781 | RA=0.0000 | REP=2160660.0000 | RRb=0.0323 | RRl=0.0619 | Rb=0.0350 | Rbbar=0.0350 | Rbl=0.0550 | Rk=0.0301 | Rl=0.0641 | Rln=0.0700 | Rm=0.0193 | S=88931047.5048 | Sk=12374578.7282 | Ske=12381863.8789 | T=17553121.8499 | U=0.7003 | UC=5.6225 | V=171059301.9931 | Vfma=164720268.2897 | Vk=23802562.3121 | W=802806.9479 | WB=69964229.0154 | Y=88999787.3309 | YDhs=59842194.5718 | YDkr=8008543.0043 | YDkre=8028105.5151 | YDr=57876786.2685 | YP=76839090.5704 | Yk=12443586.6580 | _BLR__1=0.1091 | _BLd__1=840742.0000 | _BLs__1=840742.0000 | _Bbd__1=4388930.0000 | _Bbs__1=4389790.0000 | _Bcbd__1=4655690.0000 | _Bcbs__1=4655690.0000 | _Bhd__1=33396900.0000 | _Bhs__1=33396900.0000 | _Bs__1=42484800.0000 | _Ekd__1=5112.6001 | _Eks__1=5112.6001 | _Ff__1=18081100.0000 | _Gk__1=2336160.0000 | _INV__1=16911600.0000 | _IN__1=11585400.0000 | _INk__1=2064890.0000 | _Kk__1=17768900.0000 | _Lfd__1=15962900.0000 | _Lfs__1=15962900.0000 | _Lhd__1=21606600.0000 | _Lhs__1=21606600.0000 | _Md__1=40510800.0000 | _Ms__1=40510800.0000 | _NPLk__1=0.0200 | _NPLke__1=0.0200 | _NUC__1=5.6106 | _N__1=87.1810 | _Nfe__1=94.7600 | _OFb__1=3473280.0000 | _PR__1=138659.0000 | _P__1=7.1723 | _Pbl__1=18.1820 | _Pe__1=17937.0000 | _Rb__1=0.0350 | _Rbl__1=0.0550 | _Rk__1=0.0301 | _Rl__1=0.0652 | _Rln__1=0.0700 | _Rm__1=0.0193 | _Sk__1=12028300.0000 | _UC__1=5.6106 | _U__1=0.7007 | _V__1=165395000.0000 | _Vfma__1=159291000.0000 | _Vk__1=22576100.0000 | _W__1=777968.0000 | _YDkr__1=7813270.0000 | _YDr__1=56446400.0000 | _Y__1=86607700.0000 | _phi__1=0.2642 | _phit__1=0.2642 | alpha1=0.7500 | alpha2=0.0640 | beta=0.5000 | betab=0.4000 | bot=0.0500 | delta=0.1067 | deltarep=0.1000 | eps=0.5000 | eps2=0.8000 | epsb=0.2500 | epsrb=0.9000 | eta=0.0494 | eta0=0.0742 | etan=0.6000 | etar=0.4000 | gamma=0.1500 | gamma0=0.0012 | gammar=0.1000 | gammau=0.0500 | lambda20=0.2500 | lambda21=2.2000 | lambda22=6.6000 | lambda23=2.2000 | lambda24=2.2000 | lambda25=0.1000 | lambda30=-0.0434 | lambda31=2.2000 | lambda32=2.2000 | lambda33=6.6000 | lambda34=2.2000 | lambda35=0.1000 | lambda40=0.6713 | lambda41=2.2000 | lambda42=2.2000 | lambda43=2.2000 | lambda44=6.6000 | lambda45=0.1000 | lambdab=0.0153 | lambdac=0.0500 | omega0=-0.2059 | omega1=1.0050 | omega2=2.0000 | omega3=0.4562 | omegat=116059.6047 | phi=0.2642 | phit=0.2644 | psid=0.1525 | psiu=0.9200 | ro=0.0500 | sigman=0.1666 | sigmase=0.1668 | sigmat=0.2000 | theta=0.2284 | top=0.1200 | xim1=0.0008 | xim2=0.0007 | z1a=0.0000 | z1b=0.0000 | z2a=0.0000 | z2b=0.0000 | z3=0.0000 | z4=0.0000 | z5=1.0000
-2025-04-06 00:48:02,859 - INFO - Year 1 SOLVED - Parameters Used: | ADDbl=0.0200 | ADDl=0.0459 | BANDb=0.0500 | BANDt=0.0700 | BLR=0.1091 | BLd=840742.0000 | BUR=0.0632 | Bbd=4388930.0000 | Bbs=4389790.0000 | Bcbd=4655690.0000 | Bcbs=4655690.0000 | Bhd=33396900.0000 | Bs=42484800.0000 | CAR=0.0925 | CONS=52603100.0000 | Ck=7334240.0000 | ER=0.9200 | Ekd=5112.6001 | FDb=1325090.0000 | FDf=2670970.0000 | FUb=419039.0000 | FUf=15153800.0000 | FUft=15066200.0000 | Fb=1744130.0000 | Fbt=1744140.0000 | Ff=18081100.0000 | Fft=18013600.0000 | G=16755600.0000 | GD=57728700.0000 | GL=2775900.0000 | GRg=0.0300 | GRk=0.0300 | GRpr=0.0300 | Gk=2336160.0000 | Hbd=2025540.0000 | Hhd=2630150.0000 | IN=11585400.0000 | INV=16911600.0000 | INk=2064890.0000 | INke=2405660.0000 | Ik=2357910.0000 | K=127444000.0000 | Kk=17768900.0000 | Lfd=15962900.0000 | Lhd=21606600.0000 | Md=40510800.0000 | N=87.1810 | NCAR=0.1000 | NHUC=5.6735 | NL=683593.0000 | NLk=95311.0000 | NPL=309158.0000 | NPLk=0.0200 | NPLke=0.0200 | NUC=5.6106 | Nfe=94.7600 | Nt=87.1810 | OFb=3473280.0000 | OFbe=3782430.0000 | OFbt=3638100.0000 | P=7.1723 | PE=5.0719 | PI=0.0026 | PR=138659.0000 | PSBR=1894780.0000 | Pbl=18.1820 | Pe=17937.0000 | Q=0.7744 | RA=0.0000 | REP=2092310.0000 | RRb=0.0323 | RRl=0.0625 | Rb=0.0350 | Rbbar=0.0350 | Rbl=0.0550 | Rk=0.0301 | Rl=0.0652 | Rln=0.0700 | Rm=0.0193 | S=86270300.0000 | Sk=12028300.0000 | T=17024100.0000 | U=0.7007 | UC=5.6106 | V=165395000.0000 | Vfma=159291000.0000 | Vk=22576100.0000 | W=777968.0000 | WB=67824000.0000 | Y=86607700.0000 | YDkr=7813270.0000 | YDkre=7813290.0000 | YDr=56446400.0000 | YP=73158700.0000 | Yk=12088400.0000 | alpha1=0.7500 | alpha2=0.0640 | beta=0.5000 | betab=0.4000 | bot=0.0500 | delta=0.1067 | deltarep=0.1000 | eps=0.5000 | eps2=0.8000 | epsb=0.2500 | epsrb=0.9000 | eta=0.0492 | eta0=0.0742 | etan=0.6000 | etar=0.4000 | gamma=0.1500 | gamma0=0.0012 | gammar=0.1000 | gammau=0.0500 | lambda20=0.2500 | lambda21=2.2000 | lambda22=6.6000 | lambda23=2.2000 | lambda24=2.2000 | lambda25=0.1000 | lambda30=-0.0434 | lambda31=2.2000 | lambda32=2.2000 | lambda33=6.6000 | lambda34=2.2000 | lambda35=0.1000 | lambda40=0.6713 | lambda41=2.2000 | lambda42=2.2000 | lambda43=2.2000 | lambda44=6.6000 | lambda45=0.1000 | lambdab=0.0153 | lambdac=0.0500 | omega0=-0.2059 | omega1=1.0050 | omega2=2.0000 | omega3=0.4562 | omegat=112852.0000 | phi=0.2642 | phit=0.2642 | psid=0.1525 | psiu=0.9200 | ro=0.0500 | sigman=0.1666 | sigmase=0.1667 | sigmat=0.2000 | theta=0.2284 | top=0.1200 | xim1=0.0008 | xim2=0.0007 | z1a=0.0000 | z1b=0.0000 | z2a=0.0000 | z2b=0.0000
-2025-04-06 00:48:02,861 - DEBUG - model.solve() completed for year 1.
-2025-04-06 00:48:02,861 - INFO - --- Year 1 Simulation Results ---
-2025-04-06 00:48:02,861 - INFO -   Real GDP (Yk): 12443586.66
-2025-04-06 00:48:02,861 - INFO -   Inflation (PI): 0.20%
-2025-04-06 00:48:02,861 - INFO -   Unemployment Rate: 8.00%
-2025-04-06 00:48:02,861 - INFO -   Gov Deficit (PSBR): 1902853.74
-2025-04-06 00:48:02,861 - INFO -   Gov Debt (GD): 59631451.91
-2025-04-06 00:48:02,861 - INFO -   Nominal GDP (Y): 88999787.33
-2025-04-06 00:48:02,861 - INFO -   Cards Played: []
-2025-04-06 00:48:02,861 - INFO -   Active Events: []
-2025-04-06 00:48:02,862 - INFO - Set base Yk for indexing after Year 1 simulation: 12443586.658014745
-2025-04-06 00:48:02,863 - INFO - Discarding end-of-turn hand: Interest Rate Hike, Decrease Government Spending, Cut Income Tax Rate, Increase Government Spending, Interest Rate Cut
-2025-04-06 00:48:02,864 - DEBUG - --- End of SIMULATION for Year 0 ---
-2025-04-06 00:48:02,864 - DEBUG - Value of 'dilemma_processed_for_year' BEFORE year increment: -1
-2025-04-06 00:48:02,864 - INFO - Simulation complete. Advancing to Year 1 YEAR_START.
-2025-04-06 00:48:02,989 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:32:44,960 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:44,962 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:45,256 - DEBUG - __init__.py:342 - matplotlib data path: C:\Users\omare\growth\.venv\Lib\site-packages\matplotlib\mpl-data
+2025-04-06 21:32:45,269 - DEBUG - __init__.py:342 - CONFIGDIR=C:\Users\omare\.matplotlib
+2025-04-06 21:32:45,277 - DEBUG - __init__.py:1557 - interactive is False
+2025-04-06 21:32:45,277 - DEBUG - __init__.py:1558 - platform is win32
+2025-04-06 21:32:45,346 - DEBUG - __init__.py:342 - CACHEDIR=C:\Users\omare\.matplotlib
+2025-04-06 21:32:45,346 - DEBUG - font_manager.py:1635 - Using fontManager instance from C:\Users\omare\.matplotlib\fontlist-v390.json
+2025-04-06 21:32:46,537 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:47,702 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:47,702 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:47,705 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:47,707 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:47,707 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:47,708 - INFO - state_manager.py:17 - --- Initializing Game State (Starting Year 0) ---
+2025-04-06 21:32:47,709 - INFO - state_manager.py:27 - Constructing initial t=0 state dictionary...
+2025-04-06 21:32:47,709 - INFO - state_manager.py:45 - Initial t=0 state dictionary constructed with 166 entries.
+2025-04-06 21:32:47,709 - INFO - state_manager.py:48 - Creating initial model object and setting values...
+2025-04-06 21:32:48,165 - INFO - state_manager.py:57 - Stored initial model object (unsolved) and initial state dict in session state.
+2025-04-06 21:32:48,165 - INFO - state_manager.py:70 - Initialized empty deck, hand, and discard pile.
+2025-04-06 21:32:48,165 - INFO - state_manager.py:83 - Game Initialized at Year 0.
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:48,757 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:48,777 - DEBUG - game_logic.py:54 - Executing game phase: CHARACTER_SELECTION
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,797 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,825 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,831 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,831 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,831 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,831 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,859 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,860 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,860 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,860 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,860 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,860 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,861 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,862 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,887 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,888 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,888 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,888 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,888 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,888 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:48,889 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:48,890 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:48,890 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:48,915 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---
+2025-04-06 21:32:53,255 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:53,255 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:53,255 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:53,255 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:53,255 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:53,256 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:53,256 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:53,256 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:53,273 - DEBUG - game_logic.py:54 - Executing game phase: CHARACTER_SELECTION
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:53,282 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:53,283 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:53,312 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:53,312 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:53,312 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:53,312 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:53,313 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:53,313 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:53,313 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:53,313 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:53,314 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:53,314 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:53,314 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:53,314 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:53,314 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:53,315 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:53,315 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:53,315 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:53,343 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:53,343 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:53,343 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:53,344 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:53,344 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:53,344 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:53,344 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:53,344 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:53,344 - DEBUG - PngImagePlugin.py:198 - STREAM b'IHDR' 16 13
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:198 - STREAM b'sRGB' 41 1
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:198 - STREAM b'gAMA' 54 4
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:198 - STREAM b'pHYs' 70 9
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:198 - STREAM b'caBX' 91 83604
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:778 - b'caBX' 91 83604 (unknown)
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:198 - STREAM b'iTXt' 83707 391
+2025-04-06 21:32:53,345 - DEBUG - PngImagePlugin.py:198 - STREAM b'IDAT' 84110 46962
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:53,449 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:53,464 - DEBUG - game_logic.py:41 - Processing action: select_character with payload: class_conscious_crusader
+2025-04-06 21:32:53,465 - INFO - action_handlers.py:29 - Character 'Class-Conscious Crusader' selected.
+2025-04-06 21:32:53,465 - INFO - events.py:223 - Generating full event sequence for character 'class_conscious_crusader' up to Year 10.
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 1: ['Banking Sector Stress', 'Consumer Confidence Boom']
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 2: ['Global Boom']
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 3: []
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 4: ['Banking Sector Stress', 'Natural Disaster']
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 5: ['Global Recession', 'Credit Crunch']
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 6: ['Worker Militancy Surge']
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 7: ['Global Recession']
+2025-04-06 21:32:53,465 - DEBUG - events.py:267 - Generated events for Year 8: ['Global Recession', 'Trade Dispute']
+2025-04-06 21:32:53,467 - DEBUG - events.py:267 - Generated events for Year 9: ['Productivity Bust']
+2025-04-06 21:32:53,467 - DEBUG - events.py:267 - Generated events for Year 10: ['Trade Dispute', 'Productivity Boom']
+2025-04-06 21:32:53,467 - INFO - events.py:269 - Finished generating full event sequence.
+2025-04-06 21:32:53,467 - INFO - action_handlers.py:34 - Generated full event sequence for character class_conscious_crusader.
+2025-04-06 21:32:53,467 - INFO - action_handlers.py:47 - Objectives set: {'gdp_index': {'label': 'GDP Index', 'condition': '>=', 'target_value': 140, 'target_type': 'index'}, 'unemployment': {'label': 'Unemployment', 'condition': '<=', 'target_value': 3, 'target_type': 'percent'}}
+2025-04-06 21:32:53,467 - INFO - game_mechanics.py:133 - Attempting to create deck for character_id: class_conscious_crusader
+2025-04-06 21:32:53,467 - INFO - game_mechanics.py:143 - Creating starting deck for character 'class_conscious_crusader' with 8 cards from 'starting_deck'.
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:160 - Deck composition BEFORE shuffle: ['Increase Government Spending', 'Increase Government Spending', 'Decrease Government Spending', 'Decrease Government Spending', 'Cut Income Tax Rate', 'Raise Income Tax Rate', 'Interest Rate Cut', 'Interest Rate Hike']
+2025-04-06 21:32:53,467 - INFO - game_mechanics.py:162 - Final starting deck created with 8 cards.
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:163 - Final shuffled deck sample (first 10): ['Interest Rate Cut', 'Interest Rate Hike', 'Decrease Government Spending', 'Increase Government Spending', 'Increase Government Spending', 'Cut Income Tax Rate', 'Raise Income Tax Rate', 'Decrease Government Spending']
+2025-04-06 21:32:53,467 - INFO - action_handlers.py:52 - Deck created. Size: 8
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:175 - --- Entering draw_cards ---
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:176 - Initial state - Deck size: 8, Hand: [], Discard size: 0, Target size: 5
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:183 - Unique policy cards currently in hand: set()
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:184 - Need to draw 5 new unique policy cards.
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:218 - Popped card: 'Decrease Government Spending'. Deck size now: 7
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:237 - Card 'Decrease Government Spending' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:218 - Popped card: 'Raise Income Tax Rate'. Deck size now: 6
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:237 - Card 'Raise Income Tax Rate' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:218 - Popped card: 'Cut Income Tax Rate'. Deck size now: 5
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:237 - Card 'Cut Income Tax Rate' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:218 - Popped card: 'Increase Government Spending'. Deck size now: 4
+2025-04-06 21:32:53,467 - DEBUG - game_mechanics.py:237 - Card 'Increase Government Spending' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:218 - Popped card: 'Increase Government Spending'. Deck size now: 3
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:241 - Card 'Increase Government Spending' is policy card but not unique this draw cycle or already in hand.
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:247 - Card 'Increase Government Spending' not added to hand. Adding to discard pile.
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:218 - Popped card: 'Decrease Government Spending'. Deck size now: 2
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:241 - Card 'Decrease Government Spending' is policy card but not unique this draw cycle or already in hand.
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:247 - Card 'Decrease Government Spending' not added to hand. Adding to discard pile.
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:218 - Popped card: 'Interest Rate Hike'. Deck size now: 1
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:237 - Card 'Interest Rate Hike' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:53,470 - INFO - game_mechanics.py:252 - Drew 5 unique policy cards: Decrease Government Spending, Raise Income Tax Rate, Cut Income Tax Rate, Increase Government Spending, Interest Rate Hike
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:254 - --- Exiting draw_cards ---
+2025-04-06 21:32:53,470 - DEBUG - game_mechanics.py:255 - Final state - Deck size: 1, Hand: ['Decrease Government Spending', 'Raise Income Tax Rate', 'Cut Income Tax Rate', 'Increase Government Spending', 'Interest Rate Hike'], Discard size: 2
+2025-04-06 21:32:53,471 - INFO - action_handlers.py:67 - Drew initial hand. Size: 5
+2025-04-06 21:32:53,471 - INFO - action_handlers.py:77 - Proceeding to first simulation (Year 0 -> Year 1).
+2025-04-06 21:32:53,471 - DEBUG - game_logic.py:54 - Executing game phase: SIMULATION
+2025-04-06 21:32:53,471 - INFO - game_phases.py:140 - Starting simulation for Year 1
+2025-04-06 21:32:53,471 - INFO - simulation_logic.py:43 - Entering SIMULATION phase for year 1
+2025-04-06 21:32:53,471 - DEBUG - simulation_logic.py:53 - Using initial state dict as previous state for Year 1 apply_effects.
+2025-04-06 21:32:53,471 - DEBUG - simulation_logic.py:67 - Base numerical parameters for Year 1 constructed from initial_state_dict.
+2025-04-06 21:32:53,472 - DEBUG - game_mechanics.py:307 - apply_effects started with base_params keys: ['alpha1', 'alpha2', 'beta', 'betab', 'gamma', 'gamma0', 'gammar', 'gammau', 'delta', 'deltarep', 'eps', 'eps2', 'epsb', 'epsrb', 'eta', 'eta0', 'etan', 'etar', 'theta', 'lambda20', 'lambda21', 'lambda22', 'lambda23', 'lambda24', 'lambda25', 'lambda30', 'lambda31', 'lambda32', 'lambda33', 'lambda34', 'lambda35', 'lambda40', 'lambda41', 'lambda42', 'lambda43', 'lambda44', 'lambda45', 'lambdab', 'lambdac', 'xim1', 'xim2', 'ro', 'sigman', 'sigmase', 'sigmat', 'phi', 'phit', 'psid', 'psiu', 'omega0', 'omega1', 'omega2', 'omega3', 'ADDbl', 'BANDt', 'BANDb', 'bot', 'GRg', 'GRpr', 'Nfe', 'NCAR', 'NPLk', 'Rbbar', 'Rln', 'RA', 'top', 'ADDl', 'BLR', 'BUR', 'Ck', 'CAR', 'CONS', 'ER', 'Fb', 'Fbt', 'Ff', 'Fft', 'FDb', 'FDf', 'FUb', 'FUf', 'FUft', 'G', 'Gk', 'GL', 'GRk', 'INV', 'Ik', 'N', 'Nt', 'NHUC', 'NL', 'NLk', 'NPL', 'NPLke', 'NUC', 'omegat', 'P', 'Pbl', 'Pe', 'PE', 'PI', 'PR', 'PSBR', 'Q', 'Rb', 'Rbl', 'Rk', 'Rl', 'Rm', 'REP', 'RRb', 'RRl', 'S', 'Sk', 'T', 'U', 'UC', 'W', 'WB', 'Y', 'Yk', 'YDr', 'YDkr', 'YDkre', 'YP', 'z1a', 'z1b', 'z2a', 'z2b', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bs', 'BLd', 'GD', 'Ekd', 'Hbd', 'Hhd', 'IN', 'INk', 'INke', 'K', 'Kk', 'Lfd', 'Lhd', 'Md', 'OFb', 'OFbe', 'OFbt', 'V', 'Vfma', 'Vk']
+2025-04-06 21:32:53,472 - DEBUG - game_mechanics.py:490 - apply_effects finished. Returning final_params keys: ['alpha1', 'alpha2', 'beta', 'betab', 'gamma', 'gamma0', 'gammar', 'gammau', 'delta', 'deltarep', 'eps', 'eps2', 'epsb', 'epsrb', 'eta', 'eta0', 'etan', 'etar', 'theta', 'lambda20', 'lambda21', 'lambda22', 'lambda23', 'lambda24', 'lambda25', 'lambda30', 'lambda31', 'lambda32', 'lambda33', 'lambda34', 'lambda35', 'lambda40', 'lambda41', 'lambda42', 'lambda43', 'lambda44', 'lambda45', 'lambdab', 'lambdac', 'xim1', 'xim2', 'ro', 'sigman', 'sigmase', 'sigmat', 'phi', 'phit', 'psid', 'psiu', 'omega0', 'omega1', 'omega2', 'omega3', 'ADDbl', 'BANDt', 'BANDb', 'bot', 'GRg', 'GRpr', 'Nfe', 'NCAR', 'NPLk', 'Rbbar', 'Rln', 'RA', 'top', 'ADDl', 'BLR', 'BUR', 'Ck', 'CAR', 'CONS', 'ER', 'Fb', 'Fbt', 'Ff', 'Fft', 'FDb', 'FDf', 'FUb', 'FUf', 'FUft', 'G', 'Gk', 'GL', 'GRk', 'INV', 'Ik', 'N', 'Nt', 'NHUC', 'NL', 'NLk', 'NPL', 'NPLke', 'NUC', 'omegat', 'P', 'Pbl', 'Pe', 'PE', 'PI', 'PR', 'PSBR', 'Q', 'Rb', 'Rbl', 'Rk', 'Rl', 'Rm', 'REP', 'RRb', 'RRl', 'S', 'Sk', 'T', 'U', 'UC', 'W', 'WB', 'Y', 'Yk', 'YDr', 'YDkr', 'YDkre', 'YP', 'z1a', 'z1b', 'z2a', 'z2b', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bs', 'BLd', 'GD', 'Ekd', 'Hbd', 'Hhd', 'IN', 'INk', 'INke', 'K', 'Kk', 'Lfd', 'Lhd', 'Md', 'OFb', 'OFbe', 'OFbt', 'V', 'Vfma', 'Vk']
+2025-04-06 21:32:53,472 - DEBUG - simulation_logic.py:87 - Final numerical parameters calculated.
+2025-04-06 21:32:53,857 - DEBUG - simulation_logic.py:104 - Set default params/vars on fresh model instance.
+2025-04-06 21:32:53,857 - DEBUG - simulation_logic.py:108 - Set final numerical parameters on fresh model instance.
+2025-04-06 21:32:53,857 - DEBUG - simulation_logic.py:121 - Year 1 simulation: Skipping history copy, letting solve() initialize.
+2025-04-06 21:32:53,860 - DEBUG - simulation_logic.py:126 - Attempting model.solve() for year 1...
+2025-04-06 21:32:55,111 - INFO - simulation_logic.py:147 - Year 1 SOLVED - Variables: | ADDbl=0.0200 | ADDl=0.0448 | BANDb=0.0500 | BANDt=0.0700 | BLR=0.1021 | BLd=877148.8397 | BLs=877148.8397 | BUR=0.0632 | Bbd=4244514.5461 | Bbs=4245909.7762 | Bcbd=4786864.5153 | Bcbs=4786864.5153 | Bhd=34650517.0310 | Bhs=34650517.0310 | Bs=43725711.3225 | CAR=0.0934 | CG=1965408.1273 | CONS=54177892.1909 | Ck=7538746.3722 | ER=0.9200 | Ekd=5186.5679 | Eks=5186.5679 | FDb=1325097.8100 | FDf=2758271.8050 | FUb=476117.0832 | FUbt=432726.0000 | FUf=15281479.3340 | FUft=15558672.0000 | Fb=1801214.8932 | Fbt=1757823.8100 | Fcb=162949.1500 | Ff=18304429.6822 | Fft=18602444.3550 | G=17292699.4378 | GD=59631451.9073 | GL=2858208.7904 | GRg=0.0300 | GRk=0.0301 | GRpr=0.0300 | Gk=2406244.8000 | HCe=70348184.0445 | Hbd=2077969.7778 | Hbs=2077969.9058 | Hhd=2708894.6095 | Hhs=2708894.6095 | Hs=4786864.5153 | IN=11678610.9808 | INV=17460455.8761 | INk=2077115.8187 | INke=2126612.4271 | INkt=2476372.7758 | Ik=2429587.7754 | K=131536761.1833 | Kk=18303079.2124 | Lfd=16562901.5255 | Lfs=16562901.5255 | Lhd=22304148.7904 | Lhs=22304148.7904 | Md=41559395.5565 | Ms=41559395.5565 | N=87.1495 | NCAR=0.1000 | NHUC=5.6848 | NL=697548.7904 | NLk=97062.5295 | NPL=319258.0000 | NPLk=0.0200 | NPLke=0.0200 | NUC=5.6212 | Nfe=94.7600 | Nt=87.1285 | OFb=3630139.0832 | OFbe=3586748.0000 | OFbt=3756950.0000 | P=7.1866 | PE=5.1088 | PI=0.0020 | PR=142818.7700 | PSBR=1902853.7379 | Pbl=18.1818 | Pe=18290.7734 | Q=0.7781 | RA=0.0000 | REP=2160660.0000 | RRb=0.0323 | RRl=0.0619 | Rb=0.0350 | Rbbar=0.0350 | Rbl=0.0550 | Rk=0.0301 | Rl=0.0641 | Rln=0.0700 | Rm=0.0193 | S=88931047.5048 | Sk=12374578.7282 | Ske=12381863.8789 | T=17553121.8499 | U=0.7003 | UC=5.6225 | V=171059301.9931 | Vfma=164720268.2897 | Vk=23802562.3121 | W=802806.9479 | WB=69964229.0154 | Y=88999787.3309 | YDhs=59842194.5718 | YDkr=8008543.0043 | YDkre=8028105.5151 | YDr=57876786.2685 | YP=76839090.5704 | Yk=12443586.6580 | _BLR__1=0.1091 | _BLd__1=840742.0000 | _BLs__1=840742.0000 | _Bbd__1=4388930.0000 | _Bbs__1=4389790.0000 | _Bcbd__1=4655690.0000 | _Bcbs__1=4655690.0000 | _Bhd__1=33396900.0000 | _Bhs__1=33396900.0000 | _Bs__1=42484800.0000 | _Ekd__1=5112.6001 | _Eks__1=5112.6001 | _Ff__1=18081100.0000 | _Gk__1=2336160.0000 | _INV__1=16911600.0000 | _IN__1=11585400.0000 | _INk__1=2064890.0000 | _Kk__1=17768900.0000 | _Lfd__1=15962900.0000 | _Lfs__1=15962900.0000 | _Lhd__1=21606600.0000 | _Lhs__1=21606600.0000 | _Md__1=40510800.0000 | _Ms__1=40510800.0000 | _NPLk__1=0.0200 | _NPLke__1=0.0200 | _NUC__1=5.6106 | _N__1=87.1810 | _Nfe__1=94.7600 | _OFb__1=3473280.0000 | _PR__1=138659.0000 | _P__1=7.1723 | _Pbl__1=18.1820 | _Pe__1=17937.0000 | _Rb__1=0.0350 | _Rbl__1=0.0550 | _Rk__1=0.0301 | _Rl__1=0.0652 | _Rln__1=0.0700 | _Rm__1=0.0193 | _Sk__1=12028300.0000 | _UC__1=5.6106 | _U__1=0.7007 | _V__1=165395000.0000 | _Vfma__1=159291000.0000 | _Vk__1=22576100.0000 | _W__1=777968.0000 | _YDkr__1=7813270.0000 | _YDr__1=56446400.0000 | _Y__1=86607700.0000 | _phi__1=0.2642 | _phit__1=0.2642 | alpha1=0.7500 | alpha2=0.0640 | beta=0.5000 | betab=0.4000 | bot=0.0500 | delta=0.1067 | deltarep=0.1000 | eps=0.5000 | eps2=0.8000 | epsb=0.2500 | epsrb=0.9000 | eta=0.0494 | eta0=0.0742 | etan=0.6000 | etar=0.4000 | gamma=0.1500 | gamma0=0.0012 | gammar=0.1000 | gammau=0.0500 | lambda20=0.2500 | lambda21=2.2000 | lambda22=6.6000 | lambda23=2.2000 | lambda24=2.2000 | lambda25=0.1000 | lambda30=-0.0434 | lambda31=2.2000 | lambda32=2.2000 | lambda33=6.6000 | lambda34=2.2000 | lambda35=0.1000 | lambda40=0.6713 | lambda41=2.2000 | lambda42=2.2000 | lambda43=2.2000 | lambda44=6.6000 | lambda45=0.1000 | lambdab=0.0153 | lambdac=0.0500 | omega0=-0.2059 | omega1=1.0050 | omega2=2.0000 | omega3=0.4562 | omegat=116059.6047 | phi=0.2642 | phit=0.2644 | psid=0.1525 | psiu=0.9200 | ro=0.0500 | sigman=0.1666 | sigmase=0.1668 | sigmat=0.2000 | theta=0.2284 | top=0.1200 | xim1=0.0008 | xim2=0.0007 | z1a=0.0000 | z1b=0.0000 | z2a=0.0000 | z2b=0.0000 | z3=0.0000 | z4=0.0000 | z5=1.0000
+2025-04-06 21:32:55,111 - INFO - simulation_logic.py:161 - Year 1 SOLVED - Parameters Used: | ADDbl=0.0200 | ADDl=0.0459 | BANDb=0.0500 | BANDt=0.0700 | BLR=0.1091 | BLd=840742.0000 | BUR=0.0632 | Bbd=4388930.0000 | Bbs=4389790.0000 | Bcbd=4655690.0000 | Bcbs=4655690.0000 | Bhd=33396900.0000 | Bs=42484800.0000 | CAR=0.0925 | CONS=52603100.0000 | Ck=7334240.0000 | ER=0.9200 | Ekd=5112.6001 | FDb=1325090.0000 | FDf=2670970.0000 | FUb=419039.0000 | FUf=15153800.0000 | FUft=15066200.0000 | Fb=1744130.0000 | Fbt=1744140.0000 | Ff=18081100.0000 | Fft=18013600.0000 | G=16755600.0000 | GD=57728700.0000 | GL=2775900.0000 | GRg=0.0300 | GRk=0.0300 | GRpr=0.0300 | Gk=2336160.0000 | Hbd=2025540.0000 | Hhd=2630150.0000 | IN=11585400.0000 | INV=16911600.0000 | INk=2064890.0000 | INke=2405660.0000 | Ik=2357910.0000 | K=127444000.0000 | Kk=17768900.0000 | Lfd=15962900.0000 | Lhd=21606600.0000 | Md=40510800.0000 | N=87.1810 | NCAR=0.1000 | NHUC=5.6735 | NL=683593.0000 | NLk=95311.0000 | NPL=309158.0000 | NPLk=0.0200 | NPLke=0.0200 | NUC=5.6106 | Nfe=94.7600 | Nt=87.1810 | OFb=3473280.0000 | OFbe=3782430.0000 | OFbt=3638100.0000 | P=7.1723 | PE=5.0719 | PI=0.0026 | PR=138659.0000 | PSBR=1894780.0000 | Pbl=18.1820 | Pe=17937.0000 | Q=0.7744 | RA=0.0000 | REP=2092310.0000 | RRb=0.0323 | RRl=0.0625 | Rb=0.0350 | Rbbar=0.0350 | Rbl=0.0550 | Rk=0.0301 | Rl=0.0652 | Rln=0.0700 | Rm=0.0193 | S=86270300.0000 | Sk=12028300.0000 | T=17024100.0000 | U=0.7007 | UC=5.6106 | V=165395000.0000 | Vfma=159291000.0000 | Vk=22576100.0000 | W=777968.0000 | WB=67824000.0000 | Y=86607700.0000 | YDkr=7813270.0000 | YDkre=7813290.0000 | YDr=56446400.0000 | YP=73158700.0000 | Yk=12088400.0000 | alpha1=0.7500 | alpha2=0.0640 | beta=0.5000 | betab=0.4000 | bot=0.0500 | delta=0.1067 | deltarep=0.1000 | eps=0.5000 | eps2=0.8000 | epsb=0.2500 | epsrb=0.9000 | eta=0.0492 | eta0=0.0742 | etan=0.6000 | etar=0.4000 | gamma=0.1500 | gamma0=0.0012 | gammar=0.1000 | gammau=0.0500 | lambda20=0.2500 | lambda21=2.2000 | lambda22=6.6000 | lambda23=2.2000 | lambda24=2.2000 | lambda25=0.1000 | lambda30=-0.0434 | lambda31=2.2000 | lambda32=2.2000 | lambda33=6.6000 | lambda34=2.2000 | lambda35=0.1000 | lambda40=0.6713 | lambda41=2.2000 | lambda42=2.2000 | lambda43=2.2000 | lambda44=6.6000 | lambda45=0.1000 | lambdab=0.0153 | lambdac=0.0500 | omega0=-0.2059 | omega1=1.0050 | omega2=2.0000 | omega3=0.4562 | omegat=112852.0000 | phi=0.2642 | phit=0.2642 | psid=0.1525 | psiu=0.9200 | ro=0.0500 | sigman=0.1666 | sigmase=0.1667 | sigmat=0.2000 | theta=0.2284 | top=0.1200 | xim1=0.0008 | xim2=0.0007 | z1a=0.0000 | z1b=0.0000 | z2a=0.0000 | z2b=0.0000
+2025-04-06 21:32:55,111 - DEBUG - simulation_logic.py:166 - model.solve() completed for year 1.
+2025-04-06 21:32:55,111 - DEBUG - simulation_logic.py:197 - Appending full solution to history for Year 1. Keys sample: ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs', '...']
+2025-04-06 21:32:55,111 - INFO - simulation_logic.py:205 - Set base Yk for indexing after Year 1 simulation: 12443586.658014745
+2025-04-06 21:32:55,111 - INFO - simulation_logic.py:212 - Discarding end-of-turn hand: Decrease Government Spending, Raise Income Tax Rate, Cut Income Tax Rate, Increase Government Spending, Interest Rate Hike
+2025-04-06 21:32:55,111 - INFO - simulation_logic.py:227 - Preparing to run baseline simulation starting from Year 1.
+2025-04-06 21:32:55,127 - DEBUG - simulation_logic.py:237 - Baseline Year 1: Deep copied model state for baseline. Original ID: 2914410323392, Copied ID: 2915055310832
+2025-04-06 21:32:55,127 - INFO - simulation_logic.py:277 - Simulation complete. Advancing to Year 1 YEAR_START.
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:55,222 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:55,262 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:02,989 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:32:55,266 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:03,006 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:32:55,270 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:03,051 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:32:55,285 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:03,051 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:32:55,285 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:03,070 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:32:55,308 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:03,074 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:32:55,310 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:03,088 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:32:55,325 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:03,089 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:32:55,327 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:03,097 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:03,104 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:32:55,340 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:03,111 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:32:55,340 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:03,128 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:32:55,356 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:03,133 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:32:55,356 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:03,146 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:32:55,372 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:03,150 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:32:55,372 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:03,166 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:32:55,388 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:03,175 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:32:55,388 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:03,189 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:32:55,401 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:03,189 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:32:55,408 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:03,206 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:32:55,421 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:03,206 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:32:55,421 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:03,221 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:32:55,436 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:03,229 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:32:55,436 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:03,250 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:03,250 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:03,250 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:03,250 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:32:55,458 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:32:55,458 - DEBUG - game_phases.py:50 - Processing year start actions for Year 1
+2025-04-06 21:32:55,458 - DEBUG - game_mechanics.py:271 - Retrieved pre-generated events for Year 1: ['Banking Sector Stress', 'Consumer Confidence Boom']
+2025-04-06 21:32:55,458 - INFO - game_phases.py:57 - Active events for Year 1 (from sequence): ['Banking Sector Stress', 'Consumer Confidence Boom']
+2025-04-06 21:32:55,458 - DEBUG - game_phases.py:67 - Finished YEAR_START actions for Year 1
+2025-04-06 21:32:55,458 - DEBUG - game_phases.py:77 - Checking for new dilemma for Year 1
+2025-04-06 21:32:55,458 - INFO - game_phases.py:83 - Initialized removed_cards_this_playthrough set.
+2025-04-06 21:32:55,458 - INFO - game_mechanics.py:543 - Selected dilemma 'CCC_D13' for advisor 'class_conscious_crusader' (passed removal filter).
+2025-04-06 21:32:55,458 - INFO - game_phases.py:95 - Selected new dilemma: CCC_D13 for year 1
+2025-04-06 21:32:55,458 - DEBUG - game_phases.py:107 - Displaying active dilemma for Year 1
+2025-04-06 21:32:55,458 - DEBUG - game_phases.py:109 - Displaying KPIs and Events below dilemma for Year 1
+2025-04-06 21:32:55,467 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:32:55,467 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:03,270 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:32:55,467 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:03,343 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:03,354 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:32:55,511 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:32:55,514 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:03,375 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:03,381 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:32:55,535 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:32:55,541 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:03,396 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:03,403 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:32:55,554 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:32:55,562 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:03,409 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:03,409 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: -1
-2025-04-06 00:48:03,409 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = False
-2025-04-06 00:48:03,409 - INFO - Selected dilemma 'DSS_D8' for advisor 'demand_side_devotee'.
-2025-04-06 00:48:03,409 - INFO - Selected new dilemma: DSS_D8 for year 1
-2025-04-06 00:48:09,090 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:32:55,579 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---
+2025-04-06 21:32:59,017 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:59,017 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:59,017 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:59,017 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:59,017 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:59,018 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:59,018 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:59,018 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:59,050 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,095 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:32:59,056 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,099 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:32:59,060 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,111 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:32:59,074 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:09,114 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:32:59,079 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:09,125 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:32:59,094 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:09,129 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:32:59,099 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:09,141 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:32:59,115 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:09,144 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:32:59,121 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:09,148 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:09,155 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:32:59,136 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:09,159 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:32:59,140 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:09,173 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:32:59,155 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:09,177 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:32:59,159 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:09,189 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:32:59,176 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:09,193 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:32:59,181 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:09,205 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:32:59,197 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:09,209 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:32:59,200 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:09,219 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:32:59,217 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:09,223 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:32:59,223 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:09,233 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:32:59,240 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:09,238 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:32:59,244 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:09,247 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:32:59,259 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:09,250 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:32:59,264 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:09,266 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:09,266 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:09,268 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:09,273 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:32:59,284 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:32:59,284 - DEBUG - game_phases.py:107 - Displaying active dilemma for Year 1
+2025-04-06 21:32:59,392 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:32:59,393 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:32:59,430 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,276 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:32:59,434 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:32:59,437 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:32:59,451 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
+   Year        PI
+0     1  0.199266
+2025-04-06 21:32:59,456 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
+   Year        PI
+0     1  0.199266
+2025-04-06 21:32:59,468 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
+   Year  Unemployment
+0     1        7.9981
+2025-04-06 21:32:59,473 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
+   Year  Unemployment
+0     1        7.9981
+2025-04-06 21:32:59,491 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
+   Year     GD_GDP
+0     1  67.001791
+2025-04-06 21:32:59,497 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
+   Year     GD_GDP
+0     1  67.001791
+2025-04-06 21:32:59,513 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
+   Year   Rb
+0     1  3.5
+2025-04-06 21:32:59,518 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
+   Year   Rb
+0     1  3.5
+2025-04-06 21:32:59,534 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
+   Year        Rl
+0     1  6.405515
+2025-04-06 21:32:59,539 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
+   Year        Rl
+0     1  6.405515
+2025-04-06 21:32:59,553 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
+   Year    Rm
+0     1  1.93
+2025-04-06 21:32:59,559 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
+   Year    Rm
+0     1  1.93
+2025-04-06 21:32:59,573 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
+   Year         Q
+0     1  0.778054
+2025-04-06 21:32:59,578 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
+   Year         Q
+0     1  0.778054
+2025-04-06 21:32:59,592 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
+   Year       BUR
+0     1  6.324305
+2025-04-06 21:32:59,596 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
+   Year       BUR
+0     1  6.324305
+2025-04-06 21:32:59,614 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
+   Year       CAR
+0     1  9.339888
+2025-04-06 21:32:59,620 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
+   Year       CAR
+0     1  9.339888
+2025-04-06 21:32:59,639 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
+   Year  GovBalance_GDP
+0     1       -2.138043
+2025-04-06 21:32:59,643 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
+   Year  GovBalance_GDP
+0     1       -2.138043
+2025-04-06 21:32:59,662 - DEBUG - game_logic.py:41 - Processing action: choose_dilemma with payload: B
+2025-04-06 21:32:59,662 - INFO - action_handlers.py:105 - Dilemma CCC_D13 - Option B ('Distribute Gains as Higher Wages') chosen.
+2025-04-06 21:32:59,662 - DEBUG - action_handlers.py:108 - ACTION_HANDLER: Applying dilemma choice 'Distribute Gains as Higher Wages'. Current hand size: 0
+2025-04-06 21:32:59,662 - INFO - game_mechanics.py:568 - --- Applying Dilemma Choice ---
+2025-04-06 21:32:59,662 - INFO - game_mechanics.py:569 - Attempting to add: ['Productivity Dividend for Workers', 'Productivity Dividend for Workers']
+2025-04-06 21:32:59,663 - INFO - game_mechanics.py:570 - Attempting to remove: ['Increase Government Spending']
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:571 - Initial deck size: 1, discard size: 7
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:573 - State before ADD: Hand (0 cards): []
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:574 - State before ADD: Deck (1 cards): ['Interest Rate Cut']
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:575 - State before ADD: Discard (7 cards): ['Increase Government Spending', 'Decrease Government Spending', 'Decrease Government Spending', 'Raise Income Tax Rate', 'Cut Income Tax Rate', 'Increase Government Spending', 'Interest Rate Hike']
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:587 - Processing ADD 'Productivity Dividend for Workers' (Type: Expansionary Fiscal, Generic: Increase Government Spending)
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:590 - Attempting to find generic 'Increase Government Spending' in hand/deck/discard for replacement.
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:595 - Found generic 'Increase Government Spending' in 'discard'. Attempting replacement.
+2025-04-06 21:32:59,663 - INFO - game_mechanics.py:79 - Replaced 'Increase Government Spending' (from discard) with 'Productivity Dividend for Workers' (added to deck).
+2025-04-06 21:32:59,663 - INFO - game_mechanics.py:599 - Successfully replaced generic 'Increase Government Spending' with specific 'Productivity Dividend for Workers'.
+2025-04-06 21:32:59,663 - DEBUG - game_mechanics.py:643 - State before REMOVE: Hand (0 cards): []
+2025-04-06 21:32:59,664 - DEBUG - game_mechanics.py:644 - State before REMOVE: Deck (2 cards): ['Interest Rate Cut', 'Productivity Dividend for Workers']
+2025-04-06 21:32:59,664 - DEBUG - game_mechanics.py:645 - State before REMOVE: Discard (6 cards): ['Decrease Government Spending', 'Decrease Government Spending', 'Raise Income Tax Rate', 'Cut Income Tax Rate', 'Increase Government Spending', 'Interest Rate Hike']
+2025-04-06 21:32:59,664 - DEBUG - game_mechanics.py:651 - Attempting to remove 'Increase Government Spending' from hand/deck/discard.
+2025-04-06 21:32:59,664 - DEBUG - game_mechanics.py:662 - 'Increase Government Spending' not found in hand.
+2025-04-06 21:32:59,664 - DEBUG - game_mechanics.py:674 - 'Increase Government Spending' not found in deck.
+2025-04-06 21:32:59,664 - INFO - game_mechanics.py:681 - Removed card 'Increase Government Spending' from discard pile.
+2025-04-06 21:32:59,664 - INFO - game_mechanics.py:694 - Deck shuffled after applying dilemma choice.
+2025-04-06 21:32:59,664 - DEBUG - game_mechanics.py:695 - Final deck size: 2, discard size: 5
+2025-04-06 21:32:59,664 - INFO - game_mechanics.py:696 - --- Finished Applying Dilemma Choice ---
+2025-04-06 21:32:59,665 - INFO - action_handlers.py:120 - Updated removed_cards_this_playthrough with: ['Increase Government Spending']. Current set: {'Increase Government Spending'}
+2025-04-06 21:32:59,665 - DEBUG - action_handlers.py:122 - ACTION_HANDLER: Finished applying dilemma choice. New hand size: 0
+2025-04-06 21:32:59,667 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:32:59,667 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:32:59,669 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:32:59,670 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:32:59,682 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:09,289 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:09,294 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:32:59,704 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:32:59,710 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:09,308 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:09,313 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:32:59,727 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:32:59,734 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:09,327 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:09,331 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:32:59,756 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:32:59,764 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:09,346 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:09,346 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: -1
-2025-04-06 00:48:09,346 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = False
-2025-04-06 00:48:09,349 - INFO - Dilemma DSS_D8 - Option A chosen.
-2025-04-06 00:48:09,349 - INFO - --- Applying Dilemma Choice ---
-2025-04-06 00:48:09,349 - INFO - Attempting to add: ['Unfunded Mandate Bonanza']
-2025-04-06 00:48:09,349 - INFO - Attempting to remove: ['Interest Rate Cut']
-2025-04-06 00:48:09,349 - DEBUG - Initial deck size: 1, discard size: 7
-2025-04-06 00:48:09,349 - DEBUG - Processing 'Unfunded Mandate Bonanza' (Type: Expansionary Fiscal, Generic: Increase Government Spending)
-2025-04-06 00:48:09,349 - INFO - Replaced 'Increase Government Spending' (from discard) with 'Unfunded Mandate Bonanza' (added to deck).
-2025-04-06 00:48:09,349 - INFO - Successfully replaced generic 'Increase Government Spending' with specific 'Unfunded Mandate Bonanza'.
-2025-04-06 00:48:09,349 - INFO - Removed card 'Interest Rate Cut' from discard pile.
-2025-04-06 00:48:09,349 - INFO - Deck shuffled after applying dilemma choice.
-2025-04-06 00:48:09,349 - DEBUG - Final deck size: 2, discard size: 5
-2025-04-06 00:48:09,349 - INFO - --- Finished Applying Dilemma Choice ---
-2025-04-06 00:48:09,440 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:32:59,786 - DEBUG - game_phases.py:116 - YEAR_START: Attempting to draw cards post-dilemma for Year 1.
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:175 - --- Entering draw_cards ---
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:176 - Initial state - Deck size: 2, Hand: [], Discard size: 5, Target size: 4
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:183 - Unique policy cards currently in hand: set()
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:184 - Need to draw 4 new unique policy cards.
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:218 - Popped card: 'Interest Rate Cut'. Deck size now: 1
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:237 - Card 'Interest Rate Cut' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:59,787 - DEBUG - game_mechanics.py:218 - Popped card: 'Productivity Dividend for Workers'. Deck size now: 0
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:237 - Card 'Productivity Dividend for Workers' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:59,789 - INFO - game_mechanics.py:202 - Deck empty. Reshuffling 5 cards from discard pile: ['Decrease Government Spending', 'Decrease Government Spending', 'Raise Income Tax Rate', 'Cut Income Tax Rate', 'Interest Rate Hike']
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:206 - Deck reshuffled. New size: 5. Sample (first 10): ['Raise Income Tax Rate', 'Interest Rate Hike', 'Decrease Government Spending', 'Cut Income Tax Rate', 'Decrease Government Spending']
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:218 - Popped card: 'Decrease Government Spending'. Deck size now: 4
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:237 - Card 'Decrease Government Spending' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:218 - Popped card: 'Cut Income Tax Rate'. Deck size now: 3
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:237 - Card 'Cut Income Tax Rate' is unique policy card. Adding to drawn_unique_policy_cards.
+2025-04-06 21:32:59,789 - INFO - game_mechanics.py:252 - Drew 4 unique policy cards: Interest Rate Cut, Productivity Dividend for Workers, Decrease Government Spending, Cut Income Tax Rate
+2025-04-06 21:32:59,789 - DEBUG - game_mechanics.py:254 - --- Exiting draw_cards ---
+2025-04-06 21:32:59,790 - DEBUG - game_mechanics.py:255 - Final state - Deck size: 3, Hand: ['Interest Rate Cut', 'Productivity Dividend for Workers', 'Decrease Government Spending', 'Cut Income Tax Rate'], Discard size: 0
+2025-04-06 21:32:59,791 - DEBUG - game_phases.py:125 - Hand after draw: ['Interest Rate Cut', 'Productivity Dividend for Workers', 'Decrease Government Spending', 'Cut Income Tax Rate']
+2025-04-06 21:32:59,791 - DEBUG - game_phases.py:126 - YEAR_START: Finished drawing cards for Year 1. Hand size: 4
+2025-04-06 21:32:59,792 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:32:59,843 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---
+2025-04-06 21:33:05,073 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:05,074 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:05,102 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,444 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:33:05,105 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,447 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:33:05,109 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,458 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:05,124 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:09,462 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:05,128 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:09,474 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:05,141 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:09,478 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:33:05,146 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:09,489 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:33:05,161 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:09,493 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:05,165 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:09,498 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:09,505 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:05,180 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:09,509 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:05,187 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:09,520 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:05,203 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:09,524 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:05,207 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:09,539 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:05,222 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:09,543 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:05,226 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:09,555 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:05,239 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:09,559 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:05,244 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:09,569 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:05,258 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:09,573 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:05,261 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:09,585 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:05,278 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:09,589 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:05,282 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:09,601 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:05,296 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:09,607 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:05,299 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:09,621 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:09,621 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:09,623 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:09,629 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:05,320 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:05,321 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:05,322 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:05,327 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,634 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,333 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:09,649 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:09,654 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,353 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:05,359 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:09,670 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:09,672 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,377 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:05,382 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:09,691 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:09,698 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,398 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:05,404 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:09,716 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:09,716 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: 1
-2025-04-06 00:48:09,716 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = True
-2025-04-06 00:48:09,718 - DEBUG - Hand BEFORE draw_cards (Year 1): []
-2025-04-06 00:48:09,718 - DEBUG - --- Entering draw_cards ---
-2025-04-06 00:48:09,718 - DEBUG - Initial state - Deck size: 2, Hand: [], Discard size: 5, Target size: 4
-2025-04-06 00:48:09,718 - DEBUG - Unique policy cards currently in hand: set()
-2025-04-06 00:48:09,719 - DEBUG - Need to draw 4 new unique policy cards.
-2025-04-06 00:48:09,719 - DEBUG - Popped card: 'Raise Income Tax Rate'. Deck size now: 1
-2025-04-06 00:48:09,719 - DEBUG - Card 'Raise Income Tax Rate' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:09,719 - DEBUG - Popped card: 'Unfunded Mandate Bonanza'. Deck size now: 0
-2025-04-06 00:48:09,719 - DEBUG - Card 'Unfunded Mandate Bonanza' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:09,719 - INFO - Deck empty. Reshuffling 5 cards from discard pile: ['Decrease Government Spending', 'Interest Rate Hike', 'Decrease Government Spending', 'Cut Income Tax Rate', 'Increase Government Spending']
-2025-04-06 00:48:09,719 - DEBUG - Deck reshuffled. New size: 5. Sample (first 10): ['Decrease Government Spending', 'Decrease Government Spending', 'Cut Income Tax Rate', 'Interest Rate Hike', 'Increase Government Spending']
-2025-04-06 00:48:09,719 - DEBUG - Popped card: 'Increase Government Spending'. Deck size now: 4
-2025-04-06 00:48:09,720 - DEBUG - Card 'Increase Government Spending' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:09,720 - DEBUG - Popped card: 'Interest Rate Hike'. Deck size now: 3
-2025-04-06 00:48:09,720 - DEBUG - Card 'Interest Rate Hike' is unique policy card. Adding to drawn_unique_policy_cards.
-2025-04-06 00:48:09,720 - INFO - Drew 4 unique policy cards: Raise Income Tax Rate, Unfunded Mandate Bonanza, Increase Government Spending, Interest Rate Hike
-2025-04-06 00:48:09,720 - DEBUG - --- Exiting draw_cards ---
-2025-04-06 00:48:09,720 - DEBUG - Final state - Deck size: 3, Hand: ['Raise Income Tax Rate', 'Unfunded Mandate Bonanza', 'Increase Government Spending', 'Interest Rate Hike'], Discard size: 0
-2025-04-06 00:48:09,721 - DEBUG - Hand AFTER draw_cards (Year 1): ['Raise Income Tax Rate', 'Unfunded Mandate Bonanza', 'Increase Government Spending', 'Interest Rate Hike']
-2025-04-06 00:48:09,721 - INFO - Event Triggered (Prob: 0.15): Global Boom
-2025-04-06 00:48:09,721 - INFO - Event Triggered (Prob: 0.10): Trade Dispute
-2025-04-06 00:48:09,722 - INFO - Event Triggered (Prob: 0.10): Banking Sector Stress
-2025-04-06 00:48:09,722 - WARNING - selected_character not found in session_state. Skipping character event checks.
-2025-04-06 00:48:09,722 - INFO - Limiting triggered events from 3 to 2.
-2025-04-06 00:48:09,844 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:05,428 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:05,531 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:05,531 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:05,532 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:05,532 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:05,532 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:05,532 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:05,533 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:05,533 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:05,566 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,850 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:33:05,569 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,854 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:33:05,573 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:09,868 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:05,590 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:09,873 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:05,595 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:09,884 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:05,610 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:09,889 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:33:05,613 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:09,903 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:33:05,628 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:09,909 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:05,633 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:09,916 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:09,926 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:05,652 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:09,931 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:05,656 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:09,944 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:05,670 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:09,948 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:05,675 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:09,961 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:05,689 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:09,966 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:05,694 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:09,979 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:05,711 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:09,983 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:05,715 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:09,994 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:05,730 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:09,998 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:05,734 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:10,010 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:05,751 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:10,015 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:05,756 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:10,029 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:05,771 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:10,032 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:05,778 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:10,052 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:10,057 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:10,058 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:10,065 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:05,793 - DEBUG - game_logic.py:41 - Processing action: toggle_card_selection with payload: Cut Income Tax Rate
+2025-04-06 21:33:05,793 - DEBUG - action_handlers.py:161 - Card 'Cut Income Tax Rate' selected.
+2025-04-06 21:33:05,793 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:05,793 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:05,795 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:05,799 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:10,071 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,804 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:10,085 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:10,095 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,822 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:05,827 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:10,113 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:10,118 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,845 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:05,851 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:10,138 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:10,144 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:33:05,869 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:05,875 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:10,166 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:10,167 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: 1
-2025-04-06 00:48:10,167 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = True
-2025-04-06 00:48:10,173 - DEBUG - Card 'Increase Government Spending': Processing effect detail - Param: 'GRg', Base Effect: '0.01'
-2025-04-06 00:48:10,174 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:10,175 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:10,176 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:10,176 - DEBUG - Card 'Increase Government Spending': Final effect string: <small><i>Effect: +1.0 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:10,182 - DEBUG - Card 'Interest Rate Hike': Processing effect detail - Param: 'Rbbar', Base Effect: '0.01'
-2025-04-06 00:48:10,182 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:10,182 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:10,182 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Description: 'Interest rate on bills, set exogenously'
-2025-04-06 00:48:10,183 - DEBUG - Card 'Interest Rate Hike': Final effect string: <small><i>Effect: +1.0 p.p. on Rbbar (Interest rate on bills, set exogenously)</i></small>
-2025-04-06 00:48:10,191 - DEBUG - Card 'Raise Income Tax Rate': Processing effect detail - Param: 'theta', Base Effect: '0.01'
-2025-04-06 00:48:10,192 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:10,192 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:10,192 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Description: 'Income tax rate'
-2025-04-06 00:48:10,192 - DEBUG - Card 'Raise Income Tax Rate': Final effect string: <small><i>Effect: +1.0 p.p. on theta (Income tax rate)</i></small>
-2025-04-06 00:48:10,197 - DEBUG - Card 'Unfunded Mandate Bonanza': Processing effect detail - Param: 'GRg', Base Effect: '0.015'
-2025-04-06 00:48:10,197 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Actual Effect (after bonus): 0.015
-2025-04-06 00:48:10,197 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Formatted Effect: '+1.5 p.p.'
-2025-04-06 00:48:10,197 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:10,198 - DEBUG - Card 'Unfunded Mandate Bonanza': Final effect string: <small><i>Effect: +1.5 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:15,435 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:05,895 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:05,942 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---
+2025-04-06 21:33:09,537 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:09,537 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:09,537 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:09,537 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:09,537 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:09,538 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:09,538 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:09,538 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:09,572 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,439 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:33:09,576 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,442 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:33:09,580 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,454 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:09,597 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:15,458 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:09,602 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:15,469 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:09,619 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:15,473 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:33:09,625 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:15,484 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:33:09,641 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:15,487 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:09,647 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:15,491 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:15,497 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:09,663 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:15,502 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:09,668 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:15,511 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:09,682 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:15,515 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:09,686 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:15,530 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:09,699 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:15,534 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:09,703 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:15,546 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:09,716 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:15,550 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:09,721 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:15,561 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:09,736 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:15,563 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:09,740 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:15,575 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:09,754 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:15,579 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:09,761 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:15,591 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:09,775 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:15,595 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:09,779 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:15,612 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:15,613 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:15,613 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:15,619 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:09,794 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:09,794 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:09,798 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:09,805 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,623 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:33:09,811 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:15,638 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:15,643 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:09,829 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:09,833 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:15,661 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:15,667 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:09,850 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:09,855 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:15,682 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:15,688 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:33:09,872 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:09,877 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:15,705 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:15,705 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: 1
-2025-04-06 00:48:15,705 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = True
-2025-04-06 00:48:15,711 - DEBUG - Card 'Increase Government Spending': Processing effect detail - Param: 'GRg', Base Effect: '0.01'
-2025-04-06 00:48:15,712 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:15,712 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:15,712 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:15,712 - DEBUG - Card 'Increase Government Spending': Final effect string: <small><i>Effect: +1.0 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:15,717 - DEBUG - Card 'Interest Rate Hike': Processing effect detail - Param: 'Rbbar', Base Effect: '0.01'
-2025-04-06 00:48:15,717 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:15,718 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:15,718 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Description: 'Interest rate on bills, set exogenously'
-2025-04-06 00:48:15,718 - DEBUG - Card 'Interest Rate Hike': Final effect string: <small><i>Effect: +1.0 p.p. on Rbbar (Interest rate on bills, set exogenously)</i></small>
-2025-04-06 00:48:15,859 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:09,896 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:10,012 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:10,012 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:10,013 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:10,013 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:10,014 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:10,014 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:10,014 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:10,014 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:10,046 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,865 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:33:10,049 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,870 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:33:10,053 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:15,887 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:10,068 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:15,891 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:10,072 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:15,907 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:10,089 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:15,910 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:33:10,093 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:15,922 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:33:10,107 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:15,926 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:10,111 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:15,931 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:15,941 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:10,126 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:15,946 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:10,131 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:15,958 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:10,145 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:15,962 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:10,151 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:15,975 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:10,164 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:15,979 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:10,164 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:15,990 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:10,184 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:15,994 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:10,184 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:16,005 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:10,203 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:16,009 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:10,207 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:16,020 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:10,221 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:16,024 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:10,227 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:16,037 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:10,244 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:16,040 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:10,249 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:16,056 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:16,057 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:16,058 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:16,064 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:10,269 - DEBUG - game_logic.py:41 - Processing action: toggle_card_selection with payload: Interest Rate Cut
+2025-04-06 21:33:10,269 - DEBUG - action_handlers.py:161 - Card 'Interest Rate Cut' selected.
+2025-04-06 21:33:10,269 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:10,269 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:10,269 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:10,278 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:16,067 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:33:10,284 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:16,085 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:16,090 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:10,300 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:10,307 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:16,108 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:16,113 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:10,326 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:10,332 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:16,127 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:16,134 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:33:10,349 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:10,355 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:16,149 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:16,149 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: 1
-2025-04-06 00:48:16,149 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = True
-2025-04-06 00:48:16,149 - DEBUG - Card 'Increase Government Spending': Processing effect detail - Param: 'GRg', Base Effect: '0.01'
-2025-04-06 00:48:16,149 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:16,149 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:16,149 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:16,149 - DEBUG - Card 'Increase Government Spending': Final effect string: <small><i>Effect: +1.0 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:16,160 - DEBUG - Card 'Interest Rate Hike': Processing effect detail - Param: 'Rbbar', Base Effect: '0.01'
-2025-04-06 00:48:16,160 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:16,160 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:16,160 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Description: 'Interest rate on bills, set exogenously'
-2025-04-06 00:48:16,160 - DEBUG - Card 'Interest Rate Hike': Final effect string: <small><i>Effect: +1.0 p.p. on Rbbar (Interest rate on bills, set exogenously)</i></small>
-2025-04-06 00:48:16,164 - DEBUG - Card 'Raise Income Tax Rate': Processing effect detail - Param: 'theta', Base Effect: '0.01'
-2025-04-06 00:48:16,164 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:16,165 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:16,165 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Description: 'Income tax rate'
-2025-04-06 00:48:16,165 - DEBUG - Card 'Raise Income Tax Rate': Final effect string: <small><i>Effect: +1.0 p.p. on theta (Income tax rate)</i></small>
-2025-04-06 00:48:16,169 - DEBUG - Card 'Unfunded Mandate Bonanza': Processing effect detail - Param: 'GRg', Base Effect: '0.015'
-2025-04-06 00:48:16,169 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Actual Effect (after bonus): 0.015
-2025-04-06 00:48:16,169 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Formatted Effect: '+1.5 p.p.'
-2025-04-06 00:48:16,169 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:16,169 - DEBUG - Card 'Unfunded Mandate Bonanza': Final effect string: <small><i>Effect: +1.5 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:20,172 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:10,376 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:10,431 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---
+2025-04-06 21:33:15,445 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:15,445 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:15,446 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:15,446 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:15,446 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:15,446 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:15,446 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:15,447 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:15,480 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,172 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:33:15,484 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,188 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:33:15,489 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,188 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:15,505 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:20,203 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:15,509 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:20,203 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:15,525 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:20,203 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:33:15,529 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:20,224 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:33:15,549 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:20,228 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:15,557 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:20,232 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:20,239 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:15,579 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:20,243 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:15,584 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:20,254 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:15,602 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:20,259 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:15,609 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:20,273 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:15,624 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:20,277 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:15,628 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:20,288 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:15,642 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:20,292 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:15,646 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:20,304 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:15,660 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:20,310 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:15,665 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:20,320 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:15,679 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:20,324 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:15,683 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:20,335 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:15,699 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:20,336 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:15,706 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:20,353 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:20,353 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:20,355 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:20,362 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:15,725 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:15,725 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:15,727 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:15,733 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,366 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:33:15,738 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:20,380 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:20,384 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:15,758 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:15,765 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:20,398 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:20,404 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:15,787 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:15,794 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:20,417 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:20,423 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:33:15,821 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:15,833 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:20,439 - DEBUG - --- Entering YEAR_START for Year 1 ---
-2025-04-06 00:48:20,439 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: 1
-2025-04-06 00:48:20,439 - DEBUG - Year 1: Start YEAR_START phase. Dilemma processed flag = True
-2025-04-06 00:48:20,445 - DEBUG - Card 'Increase Government Spending': Processing effect detail - Param: 'GRg', Base Effect: '0.01'
-2025-04-06 00:48:20,446 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:20,446 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:20,446 - DEBUG - Card 'Increase Government Spending': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:20,446 - DEBUG - Card 'Increase Government Spending': Final effect string: <small><i>Effect: +1.0 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:20,450 - DEBUG - Card 'Interest Rate Hike': Processing effect detail - Param: 'Rbbar', Base Effect: '0.01'
-2025-04-06 00:48:20,450 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:20,450 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:20,450 - DEBUG - Card 'Interest Rate Hike': Param 'Rbbar', Description: 'Interest rate on bills, set exogenously'
-2025-04-06 00:48:20,450 - DEBUG - Card 'Interest Rate Hike': Final effect string: <small><i>Effect: +1.0 p.p. on Rbbar (Interest rate on bills, set exogenously)</i></small>
-2025-04-06 00:48:20,454 - DEBUG - Card 'Raise Income Tax Rate': Processing effect detail - Param: 'theta', Base Effect: '0.01'
-2025-04-06 00:48:20,454 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Actual Effect (after bonus): 0.01
-2025-04-06 00:48:20,455 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Formatted Effect: '+1.0 p.p.'
-2025-04-06 00:48:20,455 - DEBUG - Card 'Raise Income Tax Rate': Param 'theta', Description: 'Income tax rate'
-2025-04-06 00:48:20,455 - DEBUG - Card 'Raise Income Tax Rate': Final effect string: <small><i>Effect: +1.0 p.p. on theta (Income tax rate)</i></small>
-2025-04-06 00:48:20,458 - DEBUG - Card 'Unfunded Mandate Bonanza': Processing effect detail - Param: 'GRg', Base Effect: '0.015'
-2025-04-06 00:48:20,458 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Actual Effect (after bonus): 0.015
-2025-04-06 00:48:20,459 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Formatted Effect: '+1.5 p.p.'
-2025-04-06 00:48:20,459 - DEBUG - Card 'Unfunded Mandate Bonanza': Param 'GRg', Description: 'Growth rate of real government expenditures'
-2025-04-06 00:48:20,459 - DEBUG - Card 'Unfunded Mandate Bonanza': Final effect string: <small><i>Effect: +1.5 p.p. on GRg (Growth rate of real government expenditures)</i></small>
-2025-04-06 00:48:20,577 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:15,868 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:16,026 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:16,027 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:16,028 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:16,028 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:16,029 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:16,029 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:16,029 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:16,029 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:16,064 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,581 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
+2025-04-06 21:33:16,068 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,585 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
+2025-04-06 21:33:16,074 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,598 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:16,089 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:20,604 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:16,092 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-2025-04-06 00:48:20,618 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:16,108 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:20,624 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+2025-04-06 21:33:16,112 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
 0     1        7.9981
-2025-04-06 00:48:20,638 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+2025-04-06 21:33:16,126 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:20,642 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:16,129 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-2025-04-06 00:48:20,648 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6700179145998132, type: <class 'float'>
-2025-04-06 00:48:20,656 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:16,142 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:20,662 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:16,150 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-2025-04-06 00:48:20,674 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:16,166 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:20,678 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:16,171 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-2025-04-06 00:48:20,691 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:16,192 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:20,694 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:16,199 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-2025-04-06 00:48:20,706 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:16,216 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:20,711 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:16,222 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-2025-04-06 00:48:20,722 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:16,239 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:20,726 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:16,244 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-2025-04-06 00:48:20,737 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:16,262 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:20,743 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:16,266 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-2025-04-06 00:48:20,756 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:16,281 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:20,760 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:16,285 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-2025-04-06 00:48:20,776 - DEBUG - Year 1 YEAR_START: Before KPI plots. Solutions exist: True, Length: 2
-2025-04-06 00:48:20,776 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:20,778 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:20,783 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
+2025-04-06 21:33:16,302 - DEBUG - game_logic.py:41 - Processing action: toggle_card_selection with payload: Interest Rate Cut
+2025-04-06 21:33:16,302 - DEBUG - action_handlers.py:153 - Card 'Interest Rate Cut' deselected.
+2025-04-06 21:33:16,302 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:16,303 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:16,305 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:16,310 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
    Year  Yk_Index
 0     1     100.0
-2025-04-06 00:48:20,790 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+2025-04-06 21:33:16,315 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
       Yk_Index
 Year          
 1        100.0
-2025-04-06 00:48:20,810 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:20,817 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:16,332 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:16,337 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2025-04-06 00:48:20,837 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:20,841 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:16,357 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:16,363 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
 1           7.9981
-2025-04-06 00:48:20,859 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:20,865 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+2025-04-06 21:33:16,381 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:16,386 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2025-04-06 00:48:20,885 - INFO - Entering SIMULATION phase for year 2
-2025-04-06 00:48:21,174 - DEBUG - Base numerical parameters for Year 2 constructed from defaults.
-2025-04-06 00:48:21,174 - DEBUG - apply_effects started with base_params keys: ['alpha1', 'alpha2', 'beta', 'betab', 'gamma', 'gamma0', 'gammar', 'gammau', 'delta', 'deltarep', 'eps', 'eps2', 'epsb', 'epsrb', 'eta', 'eta0', 'etan', 'etar', 'theta', 'lambda20', 'lambda21', 'lambda22', 'lambda23', 'lambda24', 'lambda25', 'lambda30', 'lambda31', 'lambda32', 'lambda33', 'lambda34', 'lambda35', 'lambda40', 'lambda41', 'lambda42', 'lambda43', 'lambda44', 'lambda45', 'lambdab', 'lambdac', 'xim1', 'xim2', 'ro', 'sigman', 'sigmase', 'sigmat', 'phi', 'phit', 'psid', 'psiu', 'omega0', 'omega1', 'omega2', 'omega3', 'ADDbl', 'BANDt', 'BANDb', 'bot', 'GRg', 'GRpr', 'Nfe', 'NCAR', 'NPLk', 'Rbbar', 'Rln', 'RA', 'top', 'RRb']
-2025-04-06 00:48:21,174 - INFO - [Persistent Update] Card 'Interest Rate Hike' updated cumulative effect for 'Rbbar' from 0.0000 to 0.0100 (added 0.0100)
-2025-04-06 00:48:21,174 - INFO - [Effect] Card 'Interest Rate Hike' (Persistent) set 'Rbbar' to 0.0450 (Base: 0.0350, Total Persist: 0.0100)
-2025-04-06 00:48:21,174 - INFO - [Effect] Event 'Global Boom' changing 'RA' from 0.0000 to 0.0250
-2025-04-06 00:48:21,174 - INFO - [Effect] Event 'Banking Sector Stress' changing 'NPLk' from 0.0200 to 0.0350
-2025-04-06 00:48:21,174 - INFO - [Temp Track] Tracking temporary effect from event 'Banking Sector Stress' on 'NPLk' for 1 turns.
-2025-04-06 00:48:21,174 - DEBUG - apply_effects finished. Returning final_params keys: ['alpha1', 'alpha2', 'beta', 'betab', 'gamma', 'gamma0', 'gammar', 'gammau', 'delta', 'deltarep', 'eps', 'eps2', 'epsb', 'epsrb', 'eta', 'eta0', 'etan', 'etar', 'theta', 'lambda20', 'lambda21', 'lambda22', 'lambda23', 'lambda24', 'lambda25', 'lambda30', 'lambda31', 'lambda32', 'lambda33', 'lambda34', 'lambda35', 'lambda40', 'lambda41', 'lambda42', 'lambda43', 'lambda44', 'lambda45', 'lambdab', 'lambdac', 'xim1', 'xim2', 'ro', 'sigman', 'sigmase', 'sigmat', 'phi', 'phit', 'psid', 'psiu', 'omega0', 'omega1', 'omega2', 'omega3', 'ADDbl', 'BANDt', 'BANDb', 'bot', 'GRg', 'GRpr', 'Nfe', 'NCAR', 'NPLk', 'Rbbar', 'Rln', 'RA', 'top', 'RRb']
-2025-04-06 00:48:21,174 - DEBUG - Final numerical parameters calculated.
-2025-04-06 00:48:21,589 - DEBUG - Set default params/vars on fresh model instance.
-2025-04-06 00:48:21,589 - DEBUG - Set final numerical parameters on fresh model instance.
-2025-04-06 00:48:21,590 - DEBUG - Copied solutions history from previous model.
-2025-04-06 00:48:21,590 - DEBUG - Set current_solution for the fresh model instance.
-2025-04-06 00:48:21,592 - DEBUG - Attempting model.solve() for year 2...
-2025-04-06 00:48:22,794 - INFO - Year 2 SOLVED - Variables: | ADDbl=0.0200 | ADDl=0.0443 | BANDb=0.0500 | BANDt=0.0700 | BLR=0.0511 | BLd=1064231.7641 | BLs=1064231.7641 | BUR=0.0632 | Bbd=2083905.9189 | Bbs=2085341.3227 | Bcbd=4852067.4868 | Bcbs=4852067.4868 | Bhd=35712603.0704 | Bhs=35712603.0704 | Bs=42692431.8799 | CAR=0.0868 | CG=-881607.9188 | CONS=56247213.7295 | Ck=7812016.6698 | ER=0.9197 | Ekd=5261.5806 | Eks=5261.5806 | FDb=1361696.7462 | FDf=2792340.7480 | FUb=437266.6541 | FUbt=433884.4098 | FUf=16035354.4809 | FUft=16063619.4060 | Fb=1798963.4002 | Fbt=1795581.1560 | Fcb=167540.2580 | Ff=19103426.3064 | Fft=19168824.0993 | G=17844931.6028 | GD=59022808.3736 | GL=2980676.1737 | GRg=0.0300 | GRk=0.0301 | GRpr=0.0300 | Gk=2478432.1440 | HCe=73163280.5384 | Hbd=2039706.7660 | Hbs=2039706.8003 | Hhd=2812360.6865 | Hhs=2812360.6865 | Hs=4852067.4868 | IN=12210116.2533 | INV=18021302.4409 | INk=2180647.7423 | INke=2153276.7971 | INkt=2584855.7040 | Ik=2502927.7915 | K=135747721.1379 | Kk=18853617.5443 | Lfd=17103816.7335 | Lfs=17103816.7335 | Lhd=23054410.0851 | Lhs=23054410.0851 | Md=40794135.3195 | Ms=40794135.3195 | N=87.8855 | NCAR=0.1000 | NHUC=5.6946 | NL=750261.2946 | NLk=104201.6720 | NPL=579701.5534 | NPLk=0.0350 | NPLke=0.0200 | NUC=5.6306 | Nfe=94.7600 | Nt=88.3762 | OFb=3487704.1839 | OFbe=3732765.4626 | OFbt=3886705.0316 | P=7.2001 | PE=5.0557 | PI=0.0019 | PR=147103.3331 | PSBR=1844919.4596 | Pbl=15.3846 | Pe=18621.3177 | Q=0.7778 | RA=0.0250 | REP=2230414.8790 | RRb=0.0323 | RRl=0.0616 | Rb=0.0450 | Rbbar=0.0450 | Rbl=0.0650 | Rk=0.0294 | Rl=0.0636 | Rln=0.0700 | Rm=0.0193 | S=92113447.7731 | Sk=12793376.5697 | Ske=12924278.5202 | T=18238535.9211 | U=0.7103 | UC=5.5993 | V=174102751.9101 | Vfma=167802687.0712 | Vk=24180639.4274 | W=828275.5806 | WB=72793451.6046 | Y=92693154.8021 | YDhs=59290662.9503 | YDkr=8312537.6955 | YDkre=8280668.4977 | YDr=60172270.9344 | YP=79839502.3687 | Yk=13000439.3516 | _BLR__1=0.1021 | _BLd__1=877148.8397 | _BLs__1=877148.8397 | _Bbd__1=4244514.5461 | _Bbs__1=4245909.7762 | _Bcbd__1=4786864.5153 | _Bcbs__1=4786864.5153 | _Bhd__1=34650517.0310 | _Bhs__1=34650517.0310 | _Bs__1=43725711.3225 | _Ekd__1=5186.5679 | _Eks__1=5186.5679 | _Ff__1=18304429.6822 | _Gk__1=2406244.8000 | _INV__1=17460455.8761 | _IN__1=11678610.9808 | _INk__1=2077115.8187 | _Kk__1=18303079.2124 | _Lfd__1=16562901.5255 | _Lfs__1=16562901.5255 | _Lhd__1=22304148.7904 | _Lhs__1=22304148.7904 | _Md__1=41559395.5565 | _Ms__1=41559395.5565 | _NPLk__1=0.0200 | _NPLke__1=0.0200 | _NUC__1=5.6212 | _N__1=87.1495 | _Nfe__1=94.7600 | _OFb__1=3630139.0832 | _PR__1=142818.7700 | _P__1=7.1866 | _Pbl__1=18.1818 | _Pe__1=18290.7734 | _Rb__1=0.0350 | _Rbl__1=0.0550 | _Rk__1=0.0301 | _Rl__1=0.0641 | _Rln__1=0.0700 | _Rm__1=0.0193 | _Sk__1=12374578.7282 | _UC__1=5.6225 | _U__1=0.7003 | _V__1=171059301.9931 | _Vfma__1=164720268.2897 | _Vk__1=23802562.3121 | _W__1=802806.9479 | _YDkr__1=8008543.0043 | _YDr__1=57876786.2685 | _Y__1=88999787.3309 | _phi__1=0.2642 | _phit__1=0.2644 | alpha1=0.7500 | alpha2=0.0640 | beta=0.5000 | betab=0.4000 | bot=0.0500 | delta=0.1067 | deltarep=0.1000 | eps=0.5000 | eps2=0.8000 | epsb=0.2500 | epsrb=0.9000 | eta=0.0495 | eta0=0.0742 | etan=0.6000 | etar=0.4000 | gamma=0.1500 | gamma0=0.0012 | gammar=0.1000 | gammau=0.0500 | lambda20=0.2500 | lambda21=2.2000 | lambda22=6.6000 | lambda23=2.2000 | lambda24=2.2000 | lambda25=0.1000 | lambda30=-0.0434 | lambda31=2.2000 | lambda32=2.2000 | lambda33=6.6000 | lambda34=2.2000 | lambda35=0.1000 | lambda40=0.6713 | lambda41=2.2000 | lambda42=2.2000 | lambda43=2.2000 | lambda44=6.6000 | lambda45=0.1000 | lambdab=0.0153 | lambdac=0.0500 | omega0=-0.2059 | omega1=1.0050 | omega2=2.0000 | omega3=0.4562 | omegat=119477.1475 | phi=0.2644 | phit=0.2620 | psid=0.1525 | psiu=0.9200 | ro=0.0500 | sigman=0.1666 | sigmase=0.1607 | sigmat=0.2000 | theta=0.2284 | top=0.1200 | xim1=0.0008 | xim2=0.0007 | z1a=0.0000 | z1b=0.0000 | z2a=0.0000 | z2b=0.0000 | z3=0.0000 | z4=0.0000 | z5=1.0000
-2025-04-06 00:48:22,795 - INFO - Year 2 SOLVED - Parameters Used: | ADDbl=0.0200 | BANDb=0.0500 | BANDt=0.0700 | GRg=0.0300 | GRpr=0.0300 | NCAR=0.1000 | NPLk=0.0350 | Nfe=94.7600 | RA=0.0250 | RRb=0.0323 | Rbbar=0.0450 | Rln=0.0700 | alpha1=0.7500 | alpha2=0.0640 | beta=0.5000 | betab=0.4000 | bot=0.0500 | delta=0.1067 | deltarep=0.1000 | eps=0.5000 | eps2=0.8000 | epsb=0.2500 | epsrb=0.9000 | eta=0.0492 | eta0=0.0742 | etan=0.6000 | etar=0.4000 | gamma=0.1500 | gamma0=0.0012 | gammar=0.1000 | gammau=0.0500 | lambda20=0.2500 | lambda21=2.2000 | lambda22=6.6000 | lambda23=2.2000 | lambda24=2.2000 | lambda25=0.1000 | lambda30=-0.0434 | lambda31=2.2000 | lambda32=2.2000 | lambda33=6.6000 | lambda34=2.2000 | lambda35=0.1000 | lambda40=0.6713 | lambda41=2.2000 | lambda42=2.2000 | lambda43=2.2000 | lambda44=6.6000 | lambda45=0.1000 | lambdab=0.0153 | lambdac=0.0500 | omega0=-0.2059 | omega1=1.0050 | omega2=2.0000 | omega3=0.4562 | phi=0.2642 | phit=0.2642 | psid=0.1525 | psiu=0.9200 | ro=0.0500 | sigman=0.1666 | sigmase=0.1667 | sigmat=0.2000 | theta=0.2284 | top=0.1200 | xim1=0.0008 | xim2=0.0007
-2025-04-06 00:48:22,795 - DEBUG - model.solve() completed for year 2.
-2025-04-06 00:48:22,795 - INFO - --- Year 2 Simulation Results ---
-2025-04-06 00:48:22,795 - INFO -   Real GDP (Yk): 13000439.35
-2025-04-06 00:48:22,795 - INFO -   Inflation (PI): 0.19%
-2025-04-06 00:48:22,795 - INFO -   Unemployment Rate: 8.03%
-2025-04-06 00:48:22,795 - INFO -   Gov Deficit (PSBR): 1844919.46
-2025-04-06 00:48:22,795 - INFO -   Gov Debt (GD): 59022808.37
-2025-04-06 00:48:22,795 - INFO -   Nominal GDP (Y): 92693154.80
-2025-04-06 00:48:22,795 - INFO -   Cards Played: ['Interest Rate Hike']
-2025-04-06 00:48:22,795 - INFO -   Active Events: ['Global Boom', 'Banking Sector Stress']
-2025-04-06 00:48:22,796 - INFO - Discarding end-of-turn hand: Raise Income Tax Rate, Unfunded Mandate Bonanza, Increase Government Spending, Interest Rate Hike
-2025-04-06 00:48:22,797 - DEBUG - --- End of SIMULATION for Year 1 ---
-2025-04-06 00:48:22,797 - DEBUG - Value of 'dilemma_processed_for_year' BEFORE year increment: 1
-2025-04-06 00:48:22,797 - INFO - Simulation complete. Advancing to Year 2 YEAR_START.
-2025-04-06 00:48:22,932 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
-   Year    Yk_Index
-0     1  100.000000
-1     2  104.475018
-2025-04-06 00:48:22,937 - DEBUG - SPARKLINE(Yk_Index) DF before zero filter:
-   Year    Yk_Index
-0     1  100.000000
-1     2  104.475018
-2025-04-06 00:48:22,941 - DEBUG - SPARKLINE(Yk_Index) DF after zero filter:
-   Year    Yk_Index
-0     1  100.000000
-1     2  104.475018
-2025-04-06 00:48:22,955 - DEBUG - SPARKLINE(PI) DF before zero filter:
+2025-04-06 21:33:16,409 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:16,462 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---
+2025-04-06 21:33:18,420 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:18,420 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:18,420 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:18,421 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:18,421 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:18,421 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:18,421 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:18,422 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:18,453 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,457 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,462 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,476 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
    Year        PI
 0     1  0.199266
-1     2  0.187807
-2025-04-06 00:48:22,960 - DEBUG - SPARKLINE(PI) DF after zero filter:
+2025-04-06 21:33:18,481 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
    Year        PI
 0     1  0.199266
-1     2  0.187807
-2025-04-06 00:48:22,972 - DEBUG - SPARKLINE(Unemployment) DF before zero filter:
+2025-04-06 21:33:18,496 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
    Year  Unemployment
-0     1      7.998100
-1     2      8.031336
-2025-04-06 00:48:22,976 - DEBUG - SPARKLINE(Unemployment) DF after zero filter:
+0     1        7.9981
+2025-04-06 21:33:18,500 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
    Year  Unemployment
-0     1      7.998100
-1     2      8.031336
-2025-04-06 00:48:22,986 - DEBUG - SPARKLINE(GD_GDP) DF before zero filter:
+0     1        7.9981
+2025-04-06 21:33:18,514 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
    Year     GD_GDP
 0     1  67.001791
-1     2  63.675477
-2025-04-06 00:48:22,990 - DEBUG - SPARKLINE(GD_GDP) DF after zero filter:
+2025-04-06 21:33:18,518 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
    Year     GD_GDP
 0     1  67.001791
-1     2  63.675477
-2025-04-06 00:48:22,994 - DEBUG - CHECK GD_GDP DISPLAY - current_val: 0.6367547689971413, type: <class 'float'>
-2025-04-06 00:48:23,001 - DEBUG - SPARKLINE(Rb) DF before zero filter:
+2025-04-06 21:33:18,533 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
    Year   Rb
 0     1  3.5
-1     2  4.5
-2025-04-06 00:48:23,005 - DEBUG - SPARKLINE(Rb) DF after zero filter:
+2025-04-06 21:33:18,537 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
    Year   Rb
 0     1  3.5
-1     2  4.5
-2025-04-06 00:48:23,016 - DEBUG - SPARKLINE(Rl) DF before zero filter:
+2025-04-06 21:33:18,553 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
    Year        Rl
 0     1  6.405515
-1     2  6.355441
-2025-04-06 00:48:23,020 - DEBUG - SPARKLINE(Rl) DF after zero filter:
+2025-04-06 21:33:18,558 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
    Year        Rl
 0     1  6.405515
-1     2  6.355441
-2025-04-06 00:48:23,031 - DEBUG - SPARKLINE(Rm) DF before zero filter:
+2025-04-06 21:33:18,573 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
    Year    Rm
 0     1  1.93
-1     2  1.93
-2025-04-06 00:48:23,036 - DEBUG - SPARKLINE(Rm) DF after zero filter:
+2025-04-06 21:33:18,577 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
    Year    Rm
 0     1  1.93
-1     2  1.93
-2025-04-06 00:48:23,045 - DEBUG - SPARKLINE(Q) DF before zero filter:
+2025-04-06 21:33:18,598 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
    Year         Q
 0     1  0.778054
-1     2  0.777798
-2025-04-06 00:48:23,049 - DEBUG - SPARKLINE(Q) DF after zero filter:
+2025-04-06 21:33:18,602 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
    Year         Q
 0     1  0.778054
-1     2  0.777798
-2025-04-06 00:48:23,060 - DEBUG - SPARKLINE(BUR) DF before zero filter:
+2025-04-06 21:33:18,620 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
    Year       BUR
 0     1  6.324305
-1     2  6.322242
-2025-04-06 00:48:23,064 - DEBUG - SPARKLINE(BUR) DF after zero filter:
+2025-04-06 21:33:18,624 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
    Year       BUR
 0     1  6.324305
-1     2  6.322242
-2025-04-06 00:48:23,073 - DEBUG - SPARKLINE(CAR) DF before zero filter:
+2025-04-06 21:33:18,638 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
    Year       CAR
 0     1  9.339888
-1     2  8.684906
-2025-04-06 00:48:23,075 - DEBUG - SPARKLINE(CAR) DF after zero filter:
+2025-04-06 21:33:18,643 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
    Year       CAR
 0     1  9.339888
-1     2  8.684906
-2025-04-06 00:48:23,085 - DEBUG - SPARKLINE(GovBalance_GDP) DF before zero filter:
+2025-04-06 21:33:18,657 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-1     2       -1.990351
-2025-04-06 00:48:23,088 - DEBUG - SPARKLINE(GovBalance_GDP) DF after zero filter:
+2025-04-06 21:33:18,662 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
    Year  GovBalance_GDP
 0     1       -2.138043
-1     2       -1.990351
-2025-04-06 00:48:23,101 - DEBUG - Year 2 YEAR_START: Before KPI plots. Solutions exist: True, Length: 3
-2025-04-06 00:48:23,102 - DEBUG - Solutions keys (first entry): ['ADDl', 'Bbd', 'Bbs', 'Bcbd', 'Bcbs', 'Bhd', 'Bhs', 'Bs', 'BLd', 'BLs']...
-2025-04-06 00:48:23,103 - DEBUG - Entering create_kpi_plot for metric: Yk_Index
-2025-04-06 00:48:23,108 - DEBUG - SPARKLINE Yk_Index - Calculated Index DF:
-   Year    Yk_Index
-0     1  100.000000
-1     2  104.475018
-2025-04-06 00:48:23,112 - DEBUG - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
-        Yk_Index
-Year            
-1     100.000000
-2     104.475018
-2025-04-06 00:48:23,159 - DEBUG - Entering create_kpi_plot for metric: PI
-2025-04-06 00:48:23,165 - DEBUG - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+2025-04-06 21:33:18,680 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:18,680 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:18,683 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:18,689 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,695 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+      Yk_Index
+Year          
+1        100.0
+2025-04-06 21:33:18,712 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:18,718 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
             PI
 Year          
 1     0.199266
-2     0.187807
-2025-04-06 00:48:23,206 - DEBUG - Entering create_kpi_plot for metric: Unemployment
-2025-04-06 00:48:23,212 - DEBUG - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+2025-04-06 21:33:18,734 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:18,740 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
       Unemployment
 Year              
-1         7.998100
-2         8.031336
-2025-04-06 00:48:23,264 - DEBUG - Entering create_kpi_plot for metric: GD_GDP
-2025-04-06 00:48:23,269 - DEBUG - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+1           7.9981
+2025-04-06 21:33:18,758 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:18,764 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
          GD_GDP
 Year           
 1     67.001791
-2     63.675477
-2025-04-06 00:48:23,318 - DEBUG - --- Entering YEAR_START for Year 2 ---
-2025-04-06 00:48:23,319 - DEBUG - Value of 'dilemma_processed_for_year' at phase start: 1
-2025-04-06 00:48:23,319 - DEBUG - Year 2: Start YEAR_START phase. Dilemma processed flag = False
-2025-04-06 00:48:23,319 - INFO - Selected dilemma 'DSS_D13' for advisor 'demand_side_devotee'.
-2025-04-06 00:48:23,319 - INFO - Selected new dilemma: DSS_D13 for year 2
+2025-04-06 21:33:18,787 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:18,925 - INFO - growth_model_streamlit.py:36 - --- Streamlit App Start / Rerun ---
+2025-04-06 21:33:18,925 - INFO - growth_model_streamlit.py:37 - Logging configured. Proceeding to imports.
+2025-04-06 21:33:18,926 - INFO - growth_model_streamlit.py:43 - After importing state_manager
+2025-04-06 21:33:18,926 - INFO - growth_model_streamlit.py:46 - After importing ui_sidebar
+2025-04-06 21:33:18,926 - INFO - growth_model_streamlit.py:49 - After importing ui_main
+2025-04-06 21:33:18,926 - INFO - growth_model_streamlit.py:52 - After importing ui_css
+2025-04-06 21:33:18,926 - INFO - growth_model_streamlit.py:55 - After importing ui_credits
+2025-04-06 21:33:18,926 - INFO - growth_model_streamlit.py:72 - Attempting st.set_page_config
+2025-04-06 21:33:18,959 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,964 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Yk_Index) DF before zero filter:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,968 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Yk_Index) DF after zero filter:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:18,981 - DEBUG - ui_sidebar.py:111 - SPARKLINE(PI) DF before zero filter:
+   Year        PI
+0     1  0.199266
+2025-04-06 21:33:18,987 - DEBUG - ui_sidebar.py:114 - SPARKLINE(PI) DF after zero filter:
+   Year        PI
+0     1  0.199266
+2025-04-06 21:33:19,000 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Unemployment) DF before zero filter:
+   Year  Unemployment
+0     1        7.9981
+2025-04-06 21:33:19,005 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Unemployment) DF after zero filter:
+   Year  Unemployment
+0     1        7.9981
+2025-04-06 21:33:19,018 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GD_GDP) DF before zero filter:
+   Year     GD_GDP
+0     1  67.001791
+2025-04-06 21:33:19,023 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GD_GDP) DF after zero filter:
+   Year     GD_GDP
+0     1  67.001791
+2025-04-06 21:33:19,039 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rb) DF before zero filter:
+   Year   Rb
+0     1  3.5
+2025-04-06 21:33:19,043 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rb) DF after zero filter:
+   Year   Rb
+0     1  3.5
+2025-04-06 21:33:19,057 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rl) DF before zero filter:
+   Year        Rl
+0     1  6.405515
+2025-04-06 21:33:19,062 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rl) DF after zero filter:
+   Year        Rl
+0     1  6.405515
+2025-04-06 21:33:19,079 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Rm) DF before zero filter:
+   Year    Rm
+0     1  1.93
+2025-04-06 21:33:19,083 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Rm) DF after zero filter:
+   Year    Rm
+0     1  1.93
+2025-04-06 21:33:19,100 - DEBUG - ui_sidebar.py:111 - SPARKLINE(Q) DF before zero filter:
+   Year         Q
+0     1  0.778054
+2025-04-06 21:33:19,104 - DEBUG - ui_sidebar.py:114 - SPARKLINE(Q) DF after zero filter:
+   Year         Q
+0     1  0.778054
+2025-04-06 21:33:19,117 - DEBUG - ui_sidebar.py:111 - SPARKLINE(BUR) DF before zero filter:
+   Year       BUR
+0     1  6.324305
+2025-04-06 21:33:19,122 - DEBUG - ui_sidebar.py:114 - SPARKLINE(BUR) DF after zero filter:
+   Year       BUR
+0     1  6.324305
+2025-04-06 21:33:19,145 - DEBUG - ui_sidebar.py:111 - SPARKLINE(CAR) DF before zero filter:
+   Year       CAR
+0     1  9.339888
+2025-04-06 21:33:19,155 - DEBUG - ui_sidebar.py:114 - SPARKLINE(CAR) DF after zero filter:
+   Year       CAR
+0     1  9.339888
+2025-04-06 21:33:19,172 - DEBUG - ui_sidebar.py:111 - SPARKLINE(GovBalance_GDP) DF before zero filter:
+   Year  GovBalance_GDP
+0     1       -2.138043
+2025-04-06 21:33:19,177 - DEBUG - ui_sidebar.py:114 - SPARKLINE(GovBalance_GDP) DF after zero filter:
+   Year  GovBalance_GDP
+0     1       -2.138043
+2025-04-06 21:33:19,197 - DEBUG - game_logic.py:41 - Processing action: toggle_card_selection with payload: Interest Rate Cut
+2025-04-06 21:33:19,198 - DEBUG - action_handlers.py:161 - Card 'Interest Rate Cut' selected.
+2025-04-06 21:33:19,198 - DEBUG - game_logic.py:54 - Executing game phase: YEAR_START
+2025-04-06 21:33:19,198 - DEBUG - game_phases.py:112 - No active dilemma, displaying KPIs/Events for Year 1
+2025-04-06 21:33:19,200 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Yk_Index
+2025-04-06 21:33:19,205 - DEBUG - ui_sidebar.py:107 - SPARKLINE Yk_Index - Calculated Index DF:
+   Year  Yk_Index
+0     1     100.0
+2025-04-06 21:33:19,210 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Yk_Index) - plot_df from get_sparkline_data:
+      Yk_Index
+Year          
+1        100.0
+2025-04-06 21:33:19,225 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: PI
+2025-04-06 21:33:19,229 - DEBUG - ui_plotting.py:21 - create_kpi_plot(PI) - plot_df from get_sparkline_data:
+            PI
+Year          
+1     0.199266
+2025-04-06 21:33:19,246 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: Unemployment
+2025-04-06 21:33:19,251 - DEBUG - ui_plotting.py:21 - create_kpi_plot(Unemployment) - plot_df from get_sparkline_data:
+      Unemployment
+Year              
+1           7.9981
+2025-04-06 21:33:19,268 - DEBUG - ui_plotting.py:16 - Entering create_kpi_plot for metric: GD_GDP
+2025-04-06 21:33:19,274 - DEBUG - ui_plotting.py:21 - create_kpi_plot(GD_GDP) - plot_df from get_sparkline_data:
+         GD_GDP
+Year           
+1     67.001791
+2025-04-06 21:33:19,293 - DEBUG - game_phases.py:134 - Displaying policy selection UI for Year 1
+2025-04-06 21:33:19,338 - INFO - growth_model_streamlit.py:106 - --- Streamlit App End / Rerun ---

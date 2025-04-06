@@ -255,61 +255,20 @@ def draw_cards(deck, hand, discard_pile, target_hand_size):
     logging.debug(f"Final state - Deck size: {len(deck)}, Hand: {hand}, Discard size: {len(discard_pile)}")
     return deck, hand, discard_pile
 
-def check_for_events(model_state):
-    """Checks conditions and randomly triggers events based on defined probabilities."""
-    # TODO: Implement state-dependent trigger conditions later if needed.
-    triggered_events = []
-    for event_name, event_data in ECONOMIC_EVENTS.items():
-        # Use the defined probability for each event
-        probability = event_data.get('probability', 0.0) # Default to 0 if not specified
-        if random.random() < probability:
-             triggered_events.append(event_name)
-             logging.info(f"Event Triggered (Prob: {probability:.2f}): {event_name}")
+def check_for_events(year):
+    """Retrieves the pre-generated events for the specified year."""
+    if 'full_event_sequence' not in st.session_state:
+        logging.error("check_for_events called but 'full_event_sequence' not found in session state.")
+        st.error("Internal Error: Event sequence not generated.")
+        return [] # Return empty list to prevent further errors
 
-    # --- Check Character Specific Events ---
-    if 'selected_character' in st.session_state: # Check if character selection has happened
-        character_name = st.session_state.selected_character
-        logging.debug(f"Checking character events for: {character_name}")
-        for event_name, event_data in CHARACTER_EVENTS.items():
-            if event_data.get("character") == character_name:
-                probability = event_data.get('probability', 0.0)
-                if random.random() < probability:
-                    triggered_events.append(event_name)
-                    logging.info(f"Character Event Triggered (Prob: {probability:.2f}): {event_name} for {character_name}")
-    else:
-        logging.warning("selected_character not found in session_state. Skipping character event checks.")
+    event_sequence = st.session_state.full_event_sequence
+    if year not in event_sequence:
+        logging.warning(f"Year {year} not found in pre-generated event sequence. Returning empty list.")
+        return []
 
-    # --- Resolve Contradictory Events ---
-    contradiction_sets = [
-        {"Global Recession", "Global Boom"},
-        {"Banking Sector Stress", "Banking Sector Calm"},
-        {"Financial Market Stress", "Financial Market Rally"},
-        {"Productivity Boom", "Productivity Bust"},
-        {"Credit Boom", "Credit Crunch"},
-        {"Infrastructure Investment Boom", "Natural Disaster"} # Assuming these are contradictory capital shocks
-        # Add more pairs if needed (e.g., based on new inflation events if they have opposites)
-    ]
-    resolved_events = list(triggered_events) # Work on a copy
-    for contradictory_pair in contradiction_sets:
-        present_in_pair = [event for event in resolved_events if event in contradictory_pair]
-        if len(present_in_pair) > 1:
-            # Contradiction found! Keep only one randomly.
-            keep_one = random.choice(present_in_pair)
-            logging.warning(f"Contradiction detected: {present_in_pair}. Keeping '{keep_one}'.")
-            # Remove all others from the pair that are in the resolved list
-            for event_to_remove in present_in_pair:
-                if event_to_remove != keep_one and event_to_remove in resolved_events:
-                    resolved_events.remove(event_to_remove)
-    triggered_events = resolved_events # Update the original list with resolved events
-    # --- End Contradiction Resolution ---
-
-
-    # Limit number of events per year? (Optional)
-    max_events_per_year = 2
-    if len(triggered_events) > max_events_per_year:
-        logging.info(f"Limiting triggered events from {len(triggered_events)} to {max_events_per_year}.")
-        triggered_events = random.sample(triggered_events, max_events_per_year)
-
+    triggered_events = event_sequence[year]
+    logging.debug(f"Retrieved pre-generated events for Year {year}: {triggered_events}")
     return triggered_events
 
 # --- Applying Effects (Revised Logic) ---

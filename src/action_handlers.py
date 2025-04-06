@@ -9,6 +9,7 @@ from src.config import INITIAL_HAND_SIZE, GAME_END_YEAR # Needed for character s
 try:
     from characters import CHARACTERS
     from game_mechanics import create_deck, draw_cards, apply_dilemma_choice
+    from events import generate_full_event_sequence # Added for event pre-generation
 except ImportError as e:
     # This is a critical error if components are missing
     logging.error(f"Failed to import game components in action_handlers.py: {e}")
@@ -26,6 +27,20 @@ def handle_character_selection_action(char_id):
 
     st.session_state.selected_character_id = char_id
     logging.info(f"Character '{CHARACTERS[char_id]['name']}' selected.")
+
+    # --- Generate Full Event Sequence ---
+    try:
+        st.session_state.full_event_sequence = generate_full_event_sequence(char_id)
+        logging.info(f"Generated full event sequence for character {char_id}.")
+        # Optional: Log the first few years for debugging
+        # logging.debug(f"Event sequence sample: { {k: v for k, v in st.session_state.full_event_sequence.items() if k <= 3} }")
+    except Exception as e:
+        logging.error(f"Error generating full event sequence for character {char_id}: {e}")
+        st.error("Failed to pre-generate the game's random events.")
+        # Decide how to handle this - maybe prevent game start? For now, log and continue.
+        st.session_state.full_event_sequence = {} # Set empty to avoid errors later
+    # --- End Event Sequence Generation ---
+
 
     # Set Game Objectives based on Character
     st.session_state.game_objectives = CHARACTERS[char_id].get('objectives', {})

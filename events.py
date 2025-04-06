@@ -190,3 +190,81 @@ CHARACTER_EVENTS = {
         "indirect_effects": "Short-term productivity dip might be offset by long-term morale boost (or not)."
     }
 }
+
+
+import random
+import logging
+from src.config import GAME_END_YEAR # Assuming GAME_END_YEAR is defined here or imported
+
+# Existing ECONOMIC_EVENTS and CHARACTER_EVENTS dictionaries...
+
+def generate_full_event_sequence(character_id):
+    """
+    Pre-generates the sequence of events for the entire game duration.
+
+    Args:
+        character_id (str): The ID of the selected character.
+
+    Returns:
+        dict: A dictionary where keys are years (1 to GAME_END_YEAR) and
+              values are lists of event names triggered for that year.
+    """
+    full_sequence = {}
+    max_events_per_year = 2 # Match the limit in check_for_events
+    contradiction_sets = [
+        {"Global Recession", "Global Boom"},
+        {"Banking Sector Stress", "Banking Sector Calm"},
+        {"Financial Market Stress", "Financial Market Rally"},
+        {"Productivity Boom", "Productivity Bust"},
+        {"Credit Boom", "Credit Crunch"},
+        {"Infrastructure Investment Boom", "Natural Disaster"}
+    ]
+
+    logging.info(f"Generating full event sequence for character '{character_id}' up to Year {GAME_END_YEAR}.")
+
+    for year in range(1, GAME_END_YEAR + 1):
+        triggered_this_year = []
+
+        # Check Economic Events
+        for event_name, event_data in ECONOMIC_EVENTS.items():
+            probability = event_data.get('probability', 0.0)
+            if random.random() < probability:
+                triggered_this_year.append(event_name)
+
+        # Check Character Specific Events
+        # Import CHARACTER_EVENTS locally if not already imported globally
+        from events import CHARACTER_EVENTS # Ensure it's accessible
+        if character_id: # Check if character_id is provided
+            for event_name, event_data in CHARACTER_EVENTS.items():
+                # Use character name from CHARACTERS dict based on ID
+                from characters import CHARACTERS # Import character data
+                character_name = CHARACTERS.get(character_id, {}).get('name')
+                if character_name and event_data.get("character") == character_name: # Match character name
+                    probability = event_data.get('probability', 0.0)
+                    if random.random() < probability:
+                        triggered_this_year.append(event_name)
+        else:
+             logging.warning(f"Year {year}: No character_id provided for character event check during pre-generation.")
+
+
+        # Resolve Contradictions
+        resolved_events = list(triggered_this_year) # Work on a copy
+        for contradictory_pair in contradiction_sets:
+            present_in_pair = [event for event in resolved_events if event in contradictory_pair]
+            if len(present_in_pair) > 1:
+                keep_one = random.choice(present_in_pair)
+                # Remove all others from the pair that are in the resolved list
+                for event_to_remove in present_in_pair:
+                    if event_to_remove != keep_one and event_to_remove in resolved_events:
+                        resolved_events.remove(event_to_remove)
+        triggered_this_year = resolved_events # Update with resolved list
+
+        # Limit number of events
+        if len(triggered_this_year) > max_events_per_year:
+            triggered_this_year = random.sample(triggered_this_year, max_events_per_year)
+
+        full_sequence[year] = triggered_this_year
+        logging.debug(f"Generated events for Year {year}: {triggered_this_year}")
+
+    logging.info("Finished generating full event sequence.")
+    return full_sequence

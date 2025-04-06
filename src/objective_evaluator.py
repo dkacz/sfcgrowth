@@ -5,6 +5,60 @@ import streamlit as st # Needed for session_state access
 import numpy as np
 import logging
 
+# --- KPI Calculation Helper Functions ---
+
+def calculate_gdp_index(results_dict, base_yk):
+    """Calculates the GDP Index."""
+    yk_val = results_dict.get('Yk')
+    if base_yk is not None and yk_val is not None and not np.isclose(float(base_yk), 0):
+        try:
+            return (float(yk_val) / float(base_yk)) * 100
+        except (TypeError, ValueError):
+            return None
+    return None
+
+def calculate_unemployment_rate(results_dict):
+    """Calculates the Unemployment Rate."""
+    er_val = results_dict.get('ER') # Employment Rate
+    if er_val is not None:
+        try:
+            return (1 - float(er_val)) * 100
+        except (TypeError, ValueError):
+            return None
+    return None
+
+def calculate_inflation_rate(results_dict):
+    """Calculates the Inflation Rate (as percentage)."""
+    pi_val = results_dict.get('PI') # Inflation Rate (already a rate)
+    if pi_val is not None:
+        try:
+            return float(pi_val) * 100
+        except (TypeError, ValueError):
+            return None
+    return None
+
+def calculate_debt_gdp_ratio(results_dict):
+    """Calculates the Government Debt to GDP ratio."""
+    gd_val = results_dict.get('GD') # Government Debt
+    y_val = results_dict.get('Y')  # GDP
+    if gd_val is not None and y_val is not None and not np.isclose(float(y_val), 0):
+        try:
+            return (float(gd_val) / float(y_val)) * 100
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def calculate_kpis(results_dict, base_yk):
+    """Calculates all standard KPIs and adds them to the results dictionary."""
+    results_dict['Yk_Index'] = calculate_gdp_index(results_dict, base_yk)
+    results_dict['Unemployment'] = calculate_unemployment_rate(results_dict)
+    results_dict['Inflation'] = calculate_inflation_rate(results_dict)
+    results_dict['GD_GDP'] = calculate_debt_gdp_ratio(results_dict)
+    # No return needed as it modifies the dict in-place
+
+
+# --- Main Evaluation Function ---
 def evaluate_objectives():
     """Evaluates if game objectives were met based on final results."""
     objectives = st.session_state.get('game_objectives', {})

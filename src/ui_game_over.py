@@ -5,15 +5,20 @@ import streamlit as st
 import pandas as pd
 import logging
 from urllib.parse import quote
+import smtplib # Added for SMTP
+from email.message import EmailMessage # Added for email construction
 
+import copy # For deep copying states
+from src.simulation_logic import run_baseline_simulation
 # Import project modules
 from matrix_display import ( # Assuming matrix_display.py is in the root
     display_balance_sheet_matrix, display_revaluation_matrix,
     display_transaction_flow_matrix
 )
+from .ui_policy_cards import render_policy_card_html # Use the new function
+from cards import POLICY_CARDS # Import from root cards.py
 
-# Consider moving this to config if used elsewhere
-RECIPIENT_EMAIL = "omareth@gmail.com"
+# RECIPIENT_EMAIL constant removed, will use st.secrets
 
 def display_game_over_screen(all_objectives_met, results_summary):
     """Renders the game over screen with results and feedback form."""
@@ -42,7 +47,304 @@ def display_game_over_screen(all_objectives_met, results_summary):
     else:
         st.error("Unfortunately, you did not meet all objectives.")
 
-    # Feedback Form
+    # --- Baseline Comparison Section ---
+    st.divider() # Separate from objective results
+    st.subheader("Policy Impact Assessment")
+    st.write("Run simulations to see how the economy would have performed without your policy changes from each year onwards.")
+
+    if st.button("Run Baseline Comparisons"):
+        # Check for necessary data in session state
+        if 'history' not in st.session_state or not st.session_state.history:
+            st.error("Main simulation history not found. Cannot run baselines.")
+            logging.error("Baseline run trigger failed: Main simulation history missing.")
+        elif 'full_event_sequence' not in st.session_state or not st.session_state.full_event_sequence:
+            st.error("Full event sequence not found. Cannot run baselines.")
+            logging.error("Baseline run trigger failed: Full event sequence missing.")
+        elif 'initial_state_dict' not in st.session_state:
+            st.error("Initial state dictionary ('initial_state_dict') not found. Cannot run baseline for Year 1.")
+            logging.error("Baseline run trigger failed: 'initial_state_dict' missing.")
+        elif 'persistent_effects' not in st.session_state:
+            st.error("Persistent effects tracking not found. Cannot run baselines accurately.")
+            logging.error("Baseline run trigger failed: 'persistent_effects' missing.")
+        elif 'temporary_effects' not in st.session_state:
+            st.error("Temporary effects tracking not found. Cannot run baselines accurately.")
+            logging.error("Baseline run trigger failed: 'temporary_effects' missing.")
+        elif 'selected_character_id' not in st.session_state:
+            st.error("Selected character ID not found. Cannot run baselines.")
+            logging.error("Baseline run trigger failed: 'selected_character_id' missing.")
+        else:
+            history = st.session_state.history
+            full_event_sequence_dict = st.session_state.full_event_sequence
+            initial_state_dict = st.session_state.initial_state_dict
+            # Retrieve other necessary state components
+            persistent_effects = st.session_state.persistent_effects
+            temporary_effects = st.session_state.temporary_effects
+            character_id = st.session_state.selected_character_id
+
+            if 'baseline_results' not in st.session_state:
+                st.session_state.baseline_results = {}
+
+            # Determine the number of years simulated in the main run
+            # Assuming history is a list where index = year - 1
+            num_years = len(history)
+            if num_years == 0:
+                st.warning("No simulation history found. Cannot run baselines.")
+                logging.warning("Baseline run trigger skipped: History is empty.")
+            else:
+                logging.info(f"Attempting baseline run. Checking state variables.")
+                logging.info(f"st.session_state.initial_game_state exists: {'initial_game_state' in st.session_state}")
+                if 'initial_game_state' in st.session_state:
+                    logging.info(f"Type of initial_game_state: {type(st.session_state.initial_game_state)}")
+                    # Avoid logging potentially large state objects directly
+                logging.info(f"st.session_state.history exists: {'history' in st.session_state}")
+                if 'history' in st.session_state:
+                    logging.info(f"Type of history: {type(st.session_state.history)}")
+                    logging.info(f"Length of history: {len(st.session_state.history)}")
+                    if st.session_state.history:
+                        logging.info(f"Type of history[0]: {type(st.session_state.history[0])}")
+
+
+                with st.spinner(f"Running {num_years} baseline simulations (Year 1-{num_years} to Year {num_years})... This may take a moment."):
+                    try:
+                        logging.info(f"Starting baseline simulation runs for {num_years} years.")
+                        all_successful = True
+                        for start_year in range(1, num_years + 1):
+                            st.write(f"Running baseline starting from Year {start_year}...") # Progress update
+                            logging.info(f"Running baseline for Year {start_year}...")
+
+                            # Get initial state for this baseline run
+                            if start_year == 1:
+                                # Use the very initial state of the game
+                                # For Year 1 baseline, use the initial dictionary
+                                current_initial_state_dict = copy.deepcopy(initial_state_dict)
+                                # History up to the start of year 1 is empty
+                                initial_history_slice = []
+                                # Effects at the start of year 1 are empty
+                                initial_persistent_effects_slice = {}
+                                initial_temporary_effects_slice = []
+                            else:
+                                # For Year N baseline, use state from the end of year N-1
+                                history_index = start_year - 2
+                                if history_index < len(history):
+                                    # Pass the result dictionary from the end of the previous year
+                                    current_initial_state_dict = copy.deepcopy(history[history_index])
+                                    # Pass history up to the end of the previous year
+                                    initial_history_slice = copy.deepcopy(history[:history_index+1])
+                                    # Retrieve the effects state from the end of the previous year's history entry
+                                    initial_persistent_effects_slice = copy.deepcopy(current_initial_state_dict.get('persistent_effects', {}))
+                                    initial_temporary_effects_slice = copy.deepcopy(current_initial_state_dict.get('temporary_effects', []))
+                                    logging.debug(f"Baseline Year {start_year}: Using persistent/temporary effects state from history entry for Year {start_year - 1}.")
+                                else:
+                                    error_msg = f"Cannot find history for year {start_year - 1} (index {start_year - 2}) to start baseline {start_year}. History length: {len(history)}."
+                                    st.error(error_msg)
+                                    logging.error(error_msg)
+                                    all_successful = False
+                                    break # Stop processing if history is inconsistent
+
+                            # The run_baseline_simulation function expects the full event sequence dictionary
+                            # and handles the year-by-year lookup internally.
+                            # No need to slice here.
+                            # Check if the event dictionary is available (already checked earlier, but good practice)
+                            if not full_event_sequence_dict:
+                                error_msg = "Full event sequence dictionary is empty. Cannot run baseline."
+                                st.error(error_msg)
+                                logging.error(error_msg)
+                                all_successful = False
+                                break # Stop processing if events are inconsistent
+
+                            # Run the baseline simulation
+                            # Assuming run_baseline_simulation handles its own logging for start/end
+                            # Call run_baseline_simulation with all required arguments
+                            # Note: Passing state dict instead of Model object for initial_model_state
+                            # Note: Passing potentially incorrect (final) effect states
+                            baseline_history = run_baseline_simulation(
+                                start_year=start_year,
+                                initial_state_dict=current_initial_state_dict, # Pass the dict using the correct arg name
+                                initial_history=initial_history_slice,
+                                full_event_sequence=full_event_sequence_dict,
+                                initial_persistent_effects=initial_persistent_effects_slice,
+                                initial_temporary_effects=initial_temporary_effects_slice,
+                                character_id=character_id
+                                # max_years is not needed by the baseline function itself
+                            )
+                            # Store the result
+                            st.session_state.baseline_results[start_year] = baseline_history
+                            logging.info(f"Completed and stored baseline for Year {start_year}.")
+
+                        if all_successful:
+                            st.success(f"All {num_years} baseline simulations completed successfully!")
+                            logging.info(f"Finished all {num_years} baseline simulation runs.")
+                        else:
+                            st.warning("Baseline simulation run completed with errors. Some baselines may be missing.")
+                            logging.warning("Baseline simulation run finished with errors.")
+
+                    except Exception as e:
+                        st.error(f"An unexpected error occurred during baseline simulations: {e}")
+                        logging.exception("Error running baseline simulations:")
+                        # Clear potentially partial results
+                        st.session_state.baseline_results = {}
+
+
+    # --- Display Baseline Analysis ---
+    if 'baseline_results' in st.session_state and st.session_state.baseline_results:
+        st.divider()
+        st.subheader("Year-by-Year Policy Impact Analysis")
+        st.caption("Comparing the final outcome (Year 10) of the actual game vs. a baseline simulation where policies from this year onwards were *not* played.")
+
+        history = st.session_state.history
+        baseline_results = st.session_state.baseline_results
+        num_years = len(history)
+
+        # Add logging to inspect history content
+        logging.debug("--- History content before analysis loop ---")
+        for idx, entry in enumerate(history):
+            year_num = idx + 1
+            cards = entry.get('played_cards', 'MISSING_KEY')
+            logging.debug(f"            History Year {year_num} (Index {idx}): played_cards = {cards}")
+        logging.debug("--- End History content ---")
+
+
+        # Ensure history is not empty and has the final year's data
+        if not history:
+            st.warning("Cannot display impact analysis: Main game history is empty.")
+        else:
+            actual_final_kpis = history[-1] # Get the final year's KPIs from the actual run
+
+            # Define KPIs to compare and their display names/units
+            kpi_keys = {
+                "Yk_Index": "GDP Index",
+                "PI": "Inflation",
+                "GD_GDP": "Gov Debt/GDP",
+                "Unemployment": "Unemployment"
+            }
+            kpi_units = {
+                "Yk_Index": " points",
+                "PI": "%",
+                "GD_GDP": "%",
+                "Unemployment": "%"
+            }
+
+            analysis_performed = False # Flag to check if any year's analysis was shown
+            for N in range(1, num_years + 1): # Iterate through years 1 to num_years
+                year_index = N - 1
+                if year_index >= len(history): continue # Safety check
+
+                # Get cards played in Year N from the main history
+                played_cards = history[year_index].get('played_cards', [])
+                logging.debug(f"        Year {N}: Played cards check. Found cards: {bool(played_cards)}. Cards: {played_cards}") # LOG ADDED
+
+                # Skip analysis if no cards were played this year
+                if not played_cards:
+                    continue
+
+                # Baseline corresponding to *after* year N's decisions were made starts in N
+                # FIX: Changed N + 1 to N based on how baselines are stored
+                baseline_key = N
+                # Add logging for validation
+                logging.debug(f"        Analysis Loop Year N={N}: Attempting to access baseline_key={baseline_key}")
+                logging.debug(f"        Available baseline keys: {list(baseline_results.keys())}")
+                baseline_history = baseline_results.get(baseline_key)
+                logging.debug(f"        Year {N}: Baseline history check for key {baseline_key}. Found: {bool(baseline_history)}. History length if found: {len(baseline_history) if baseline_history else 'N/A'}") # LOG ADDED
+
+                # Check if the required baseline exists and is not empty
+                if not baseline_history:
+                    logging.warning(f"        Baseline data for comparison (starting Year {baseline_key}) not found for Year {N} analysis.")
+                    continue # Skip this year if baseline is missing
+
+                try:
+                    baseline_final_kpis = baseline_history[-1] # Get the last entry (final year) of the baseline
+                except IndexError:
+                    logging.warning(f"        Year {N}: IndexError accessing baseline_history[-1] for key {baseline_key}.") # LOG ADDED
+                    logging.warning(f"        Baseline data for comparison (starting Year {baseline_key}) is empty for Year {N} analysis.")
+                    continue # Skip this year if baseline is empty
+
+                analysis_performed = True # Mark that we are showing at least one year
+                with st.expander(f"Impact of Year {N} Decisions"):
+                    # Display played cards (names only for now)
+                    st.markdown("**Policies Played:**")
+                    if played_cards:
+                        # Ensure max 4 columns for card display
+                        # Always create 4 columns to maintain consistent card width
+                        card_cols = st.columns(4)
+                        for idx, card_name in enumerate(played_cards):
+                            card_data = POLICY_CARDS.get(card_name)
+                            if card_data:
+                                # Use modulo to cycle through columns for correct wrapping
+                                # Place card in its direct index column (0 or 1)
+                                with card_cols[idx]:
+                                    # Render card HTML using the new function
+                                    card_html = render_policy_card_html(
+                                        card_name=card_name,
+                                        card_info=card_data,
+                                        is_selected=False,
+                                        is_disabled=True,
+                                        display_only=True,
+                                        boost_applied=False # Boost status not relevant/available here
+                                    )
+                                    st.markdown(card_html, unsafe_allow_html=True)
+                            else:
+                                # Use modulo here too for consistency, though less likely needed for error case
+                                # Place caption in its direct index column
+                                with card_cols[idx]:
+                                    st.caption(f"Card: {card_name} (Data not found)")
+                    else:
+                        st.markdown("- None")
+                    # TODO: Consider layout adjustments if many cards are played
+
+                    st.markdown("**Impact on Final KPIs (Year 10):**")
+                    impact_cols = st.columns(len(kpi_keys)) # Create columns for each KPI
+
+                    # --- LOGGING: Show the dictionaries being compared ---
+                    logging.debug(f"        Year {N} Comparison Data:")
+                    logging.debug(f"          Actual Final KPIs (Year 10): {actual_final_kpis}")
+                    logging.debug(f"          Baseline Final KPIs (Year 10 from baseline {baseline_key}): {baseline_final_kpis}")
+                    # --- END LOGGING ---
+
+                    for i, (kpi_key, kpi_name) in enumerate(kpi_keys.items()):
+                        actual_val = actual_final_kpis.get(kpi_key)
+                        baseline_val = baseline_final_kpis.get(kpi_key)
+                        # Determine correct unit for the *difference*
+                        if kpi_key in ['PI', 'Unemployment', 'GD_GDP']: # Use 'PI' key for Inflation
+                            diff_unit = " p.p."
+                        elif kpi_key == 'Yk_Index':
+                             diff_unit = "%" # Display as percentage change
+                        else:
+                             diff_unit = " units" # Fallback for any other KPIs
+                        logging.debug(f"            Year {N}, KPI {kpi_key}: Actual={actual_val}, Baseline={baseline_val}") # LOG ADDED
+
+                        with impact_cols[i]:
+                            if actual_val is not None and baseline_val is not None:
+                                try:
+                                    # Calculate impact based on KPI type
+                                    if kpi_key == 'Yk_Index':
+                                        # Calculate percentage change for GDP Index
+                                        if float(baseline_val) != 0: # Avoid division by zero
+                                            impact = ((float(actual_val) / float(baseline_val)) - 1) * 100
+                                        else:
+                                            impact = None # Or some indicator of undefined change
+                                    else:
+                                        # Calculate absolute difference (percentage points) for others
+                                        impact = float(actual_val) - float(baseline_val)
+
+                                    # Display the metric if impact calculation was successful
+                                    if impact is not None:
+                                        formatted_value = f"{(impact * 100) if diff_unit == ' p.p.' else impact:+.1f}{diff_unit}"
+                                        st.metric(label=f"{kpi_name}", value=formatted_value, delta=None)
+                                    else:
+                                        st.caption(f"{kpi_name}: Change Undefined")
+                                except (ValueError, TypeError) as e:
+                                    st.caption(f"{kpi_name}: Calc Error")
+                                    logging.error(f"Error calculating impact for {kpi_key} in Year {N}: {e}. Values: Actual={actual_val}, Baseline={baseline_val}")
+                            else:
+                                st.caption(f"{kpi_name}: N/A")
+                                logging.warning(f"Missing KPI data for {kpi_key} in Year {N} analysis. Actual: {actual_val}, Baseline: {baseline_val}")
+                                logging.debug(f"            Year {N}, KPI {kpi_key}: Missing actual or baseline value.") # LOG ADDED
+
+            logging.debug(f"--- Finished analysis loop. analysis_performed = {analysis_performed} ---") # LOG ADDED
+            if not analysis_performed:
+                 st.info("No policy cards were played during the game, or baseline data is missing for comparison.")
+
+    # --- Feedback Form ---
     st.divider()
     st.subheader("Feedback")
     st.write("We'd love your feedback to make this game better!")
@@ -62,18 +364,48 @@ def display_game_over_screen(all_objectives_met, results_summary):
             if len(body) > 5000: # Limit body length
                  st.error("Feedback is too long. Please shorten your comments.")
             else:
+                # --- SMTP Sending Logic ---
                 try:
-                    mailto_url = f"mailto:{RECIPIENT_EMAIL}?subject={quote(subject)}&body={quote(body)}"
-                    st.success("Feedback prepared! Click the link below to open your email client.")
-                    # Use target="_blank" to open in a new tab/window
-                    st.markdown(f'<a href="{mailto_url}" target="_blank" rel="noopener noreferrer">Click here to send feedback via email</a>', unsafe_allow_html=True)
-                    logging.info(f"Generated mailto link for feedback. User: {user_identity or 'Anonymous'}")
+                    # Retrieve SMTP configuration from secrets
+                    smtp_config = st.secrets.get("smtp", {})
+                    server = smtp_config.get("server")
+                    port = smtp_config.get("port")
+                    username = smtp_config.get("username")
+                    password = smtp_config.get("password")
+                    recipient = smtp_config.get("recipient_email")
+
+                    if not all([server, port, username, password, recipient]):
+                        st.error("SMTP configuration is incomplete in .streamlit/secrets.toml. Cannot send feedback.")
+                        logging.error("SMTP configuration incomplete in secrets.")
+                    else:
+                        # Construct the email message
+                        msg = EmailMessage()
+                        msg['Subject'] = subject
+                        msg['From'] = username # Using the login username as the sender
+                        msg['To'] = recipient
+                        msg.set_content(body)
+
+                        # Send the email
+                        with smtplib.SMTP(server, port) as smtp_server:
+                            smtp_server.starttls() # Secure the connection
+                            smtp_server.login(username, password)
+                            smtp_server.send_message(msg)
+
+                        st.success("Feedback sent successfully!")
+                        logging.info(f"Feedback sent via SMTP. User: {user_identity or 'Anonymous'}")
+
+                except smtplib.SMTPAuthenticationError:
+                    st.error("SMTP Authentication failed. Please check the username/password in your secrets file.")
+                    logging.error("SMTP Authentication failed.")
+                except smtplib.SMTPConnectError:
+                    st.error(f"Failed to connect to the SMTP server ({server}:{port}). Please check the server/port details.")
+                    logging.error(f"SMTP Connection failed for {server}:{port}")
                 except Exception as e:
-                    st.error("Could not generate feedback link.")
-                    logging.error(f"Error generating mailto link: {e}")
+                    st.error(f"An unexpected error occurred while sending feedback: {e}")
+                    logging.exception("Error sending feedback via SMTP:")
 
 
-    # Final SFC Matrices
+    # --- Final SFC Matrices ---
     st.divider()
     st.subheader("Final Economic State (SFC Matrices)")
     model_state = st.session_state.get('sfc_model_object')
@@ -99,3 +431,6 @@ def display_game_over_screen(all_objectives_met, results_summary):
             logging.error(f"Error during final matrix display: {e}")
     else:
         st.warning("Could not display final SFC matrices due to missing simulation data.")
+
+
+# (Code moved into display_game_over_screen function)

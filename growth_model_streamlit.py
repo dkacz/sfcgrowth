@@ -16,31 +16,10 @@ src_path = os.path.join(os.path.dirname(__file__), 'src')
 if src_path not in sys.path:
     sys.path.append(src_path)
 
-# --- Import Refactored Modules ---
-try:
-    from src.state_manager import initialize_game_state
-    from src.ui_sidebar import display_sidebar
-    from src.ui_main import display_title_logo # Only title logo remains here
-    from src.ui_css import display_css # Import from new location
-    from src.ui_credits import display_credits # Import from new location
-    from src.game_logic import run_game
-    # Config and Utils might be used implicitly by other modules, but import if needed directly.
-    # from src.config import GAME_END_YEAR # Example if needed
-    # from src.utils import format_percent # Example if needed
-except ImportError as e:
-    st.error(f"Fatal Error: Could not import necessary game modules: {e}")
-    st.error("Please ensure the 'src' directory and all required Python files exist.")
-    st.stop()
-except Exception as e:
-    st.error(f"An unexpected error occurred during module imports: {e}")
-    logging.exception("Error during module imports:")
-    st.stop()
-
-
 # --- Logging Setup ---
-# Configure logging (consider moving to a dedicated config/setup function if complex)
+# Configure logging early to capture import errors
 log_file = 'debug_session.log'
-# Clear the log file at the start of each session if desired
+# Clear the log file at the start of each session if desired (Keep commented for now)
 # if not st.session_state.get("log_initialized", False):
 #     try:
 #         with open(log_file, 'w') as f:
@@ -55,19 +34,50 @@ logging.basicConfig(level=logging.DEBUG,
                     filemode='a') # Use 'a' to append to the log file across runs/sessions
 
 logging.info("--- Streamlit App Start / Rerun ---")
+logging.info("Logging configured. Proceeding to imports.")
 
+
+# --- Import Refactored Modules ---
+try:
+    from src.state_manager import initialize_game_state
+    logging.info("After importing state_manager")
+    from src.ui_sidebar import display_sidebar
+    from src.ui_main import display_title_logo # Only title logo remains here
+    logging.info("After importing ui_sidebar")
+    from src.ui_css import display_css # Import from new location
+    from src.ui_credits import display_credits # Import from new location
+    logging.info("After importing ui_main")
+    from src.game_logic import run_game
+    # Config and Utils might be used implicitly by other modules, but import if needed directly.
+    logging.info("After importing ui_css")
+    # from src.config import GAME_END_YEAR # Example if needed
+    # from src.utils import format_percent # Example if needed
+    logging.info("After importing ui_credits")
+except ImportError as e:
+    st.error(f"Fatal Error: Could not import necessary game modules: {e}")
+    logging.info("After importing game_logic")
+    st.error("Please ensure the 'src' directory and all required Python files exist.")
+    st.stop()
+except Exception as e:
+    st.error(f"An unexpected error occurred during module imports: {e}")
+    logging.exception("Error during module imports:")
+    st.stop()
+
+
+# --- (Logging setup moved earlier) ---
 
 # --- Page Configuration ---
 # Set page config early, potentially using values from config.py if needed
-# Initialize year for title before config if possible, otherwise default
-page_title_year = st.session_state.get('current_year', 0)
-page_title = f"SFCGAME - Year {page_title_year}"
-st.set_page_config(page_title=page_title, layout="wide", initial_sidebar_state="expanded")
+# Set page config early with a static title
+logging.info("Attempting st.set_page_config")
+st.set_page_config(page_title="SFCGAME", layout="wide", initial_sidebar_state="expanded")
 
 # --- Initialize Game State ---
 # This function now handles the setup if it hasn't happened yet.
 # It includes the st.rerun() call if initialization occurs.
 initialize_game_state()
+
+# --- (Dynamic title display removed, handled by phase-specific headers) ---
 
 # --- Render UI Components ---
 display_css()
