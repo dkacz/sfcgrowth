@@ -51,21 +51,7 @@ def run_year_start_phase():
     # --- Step 1: Perform year start actions (draw cards, check events) only once per year ---
     if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != current_year:
         logging.debug(f"Processing year start actions for Year {current_year}")
-        # Draw cards
-        try:
-            st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
-                st.session_state.deck,
-                st.session_state.player_hand,
-                st.session_state.discard_pile,
-                CARDS_TO_DRAW_PER_YEAR
-            )
-            st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
-            logging.debug(f"Hand after draw: {st.session_state.player_hand}")
-        except Exception as e:
-             logging.error(f"Error drawing cards in year start phase: {e}")
-             st.error("Failed to draw cards for the new year.")
-             # Potentially transition to an error state or allow retry?
-
+        # Card draw moved to after dilemma check
         # Check for events based on the *previous* year's state
         previous_year_results = None
         if st.session_state.history:
@@ -129,6 +115,26 @@ def run_year_start_phase():
     else:
         logging.debug(f"No active dilemma, displaying KPIs/Events for Year {current_year}")
         display_kpi_and_events_section()
+        # --- Step 4: Draw cards if not already drawn this year (after dilemma) ---
+        if st.session_state.get('cards_drawn_for_year', -1) != current_year:
+            logging.debug(f"YEAR_START: Attempting to draw cards post-dilemma for Year {current_year}.")
+            try:
+                st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+                    st.session_state.deck,
+                    st.session_state.player_hand,
+                    st.session_state.discard_pile,
+                    CARDS_TO_DRAW_PER_YEAR
+                )
+                st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
+                logging.debug(f"Hand after draw: {st.session_state.player_hand}")
+                logging.debug(f"YEAR_START: Finished drawing cards for Year {current_year}. Hand size: {len(st.session_state.player_hand)}")
+                st.session_state.cards_drawn_for_year = current_year # Mark cards as drawn for this year
+            except Exception as e:
+                 logging.error(f"Error drawing cards in year start phase (post-dilemma): {e}")
+                 st.error("Failed to draw cards for the new year.")
+                 # Potentially transition to an error state or allow retry?
+
+
         logging.debug(f"Displaying policy selection UI for Year {current_year}")
         display_policy_selection_section()
         # Action processing (confirm policies) happens via st.rerun() triggered by button clicks

@@ -49,35 +49,46 @@ def get_generic_equivalent(policy_type):
     # e.g., if policy_type == "Contractionary Monetary" and card affects 'ADDbl' primarily -> "Quantitative Tightening"
     return mapping.get(policy_type)
 
-def find_card_in_locations(card_name, deck, discard_pile):
-    """Checks if a card exists in the deck or discard pile. Returns location ('deck' or 'discard') or None."""
+def find_card_in_locations(card_name, hand, deck, discard_pile):
+    """Checks if a card exists in the hand, deck, or discard pile. Returns location ('hand', 'deck', 'discard') or None."""
+    # Check hand first as it's the most immediate location
+    if card_name in hand:
+        return 'hand'
     if card_name in deck:
         return 'deck'
     if card_name in discard_pile:
         return 'discard'
     return None
 
-def replace_card_in_location(location, card_to_remove, card_to_add, deck, discard_pile):
-    """Replaces a card in the specified location."""
+def replace_card_in_location(location, card_to_remove, card_to_add, hand, deck, discard_pile):
+    """Replaces a card in the specified location (hand, deck, or discard). Adds the new card to the deck."""
     try:
-        if location == 'deck':
+        if location == 'hand':
+            hand.remove(card_to_remove)
+            deck.append(card_to_add) # Add the new card to the deck for shuffling
+            logging.info(f"Replaced '{card_to_remove}' (from hand) with '{card_to_add}' (added to deck).")
+            return True
+        elif location == 'deck':
             deck.remove(card_to_remove)
-            deck.append(card_to_add) # Add the new card
+            deck.append(card_to_add) # Add the new card to the deck
             logging.info(f"Replaced '{card_to_remove}' with '{card_to_add}' in deck.")
             return True
         elif location == 'discard':
             discard_pile.remove(card_to_remove)
-            # Decide where to add the new card - adding to deck is safer for shuffle
-            deck.append(card_to_add)
+            deck.append(card_to_add) # Add the new card to the deck
             logging.info(f"Replaced '{card_to_remove}' (from discard) with '{card_to_add}' (added to deck).")
             return True
     except ValueError:
         logging.error(f"Failed to remove '{card_to_remove}' from {location} during replacement.")
     return False
 
-def find_and_replace_random_by_type(policy_type, card_to_add, deck, discard_pile):
-    """Finds all cards of a specific policy_type, replaces one randomly."""
+def find_and_replace_random_by_type(policy_type, card_to_add, hand, deck, discard_pile):
+    """Finds all cards of a specific policy_type in hand, deck, or discard, replaces one randomly."""
     candidates = []
+    # Find all candidates in hand
+    for i, card_name in enumerate(hand):
+        if get_card_policy_type(card_name) == policy_type:
+            candidates.append({'name': card_name, 'location': 'hand', 'index': i})
     # Find all candidates in deck
     for i, card_name in enumerate(deck):
         if get_card_policy_type(card_name) == policy_type:
@@ -99,8 +110,8 @@ def find_and_replace_random_by_type(policy_type, card_to_add, deck, discard_pile
     logging.info(f"Randomly selected '{card_to_remove}' of type '{policy_type}' in {location} for replacement.")
 
     # Perform the replacement
-    # Perform the replacement and return the removed card's name on success
-    if replace_card_in_location(location, card_to_remove, card_to_add, deck, discard_pile):
+    # Perform the replacement (passing hand now) and return the removed card's name on success
+    if replace_card_in_location(location, card_to_remove, card_to_add, hand, deck, discard_pile):
         return card_to_remove # Return name of removed card
     else:
         return None # Return None if replacement failed
@@ -553,19 +564,20 @@ def select_dilemma(advisor_id, seen_dilemmas):
     return selected_dilemma_id, selected_dilemma_data
 
 # --- MODIFIED apply_dilemma_choice ---
-def apply_dilemma_choice(chosen_option, deck, discard_pile):
+def apply_dilemma_choice(chosen_option, hand, deck, discard_pile):
     """
-    Applies the effects of a chosen dilemma option to the deck and discard pile,
-    using the new replacement logic for added cards.
+    Applies the effects of a chosen dilemma option to the hand, deck, and discard pile,
+    searching all locations for replacements/removals.
 
     Args:
         chosen_option (dict): The dictionary representing the chosen option
                               (containing 'add_cards' and 'remove_cards' lists).
+        hand (list): The current hand list.
         deck (list): The current deck list.
         discard_pile (list): The current discard pile list.
 
     Returns:
-        tuple: (updated_deck, updated_discard_pile)
+        tuple: (updated_hand, updated_deck, updated_discard_pile, action_descriptions)
     """
     action_descriptions = [] # Initialize list to store descriptions
     cards_to_add_specific = chosen_option.get('add_cards', [])
@@ -576,7 +588,11 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
     logging.info(f"Attempting to add: {cards_to_add_specific}")
     logging.info(f"Attempting to remove: {cards_to_remove}")
     logging.debug(f"Initial deck size: {len(deck)}, discard size: {len(discard_pile)}")
-
+    # --- Roo Debug Log Start ---
+    logging.debug(f"State before ADD: Hand ({len(hand)} cards): {hand}")
+    logging.debug(f"State before ADD: Deck ({len(deck)} cards): {deck}")
+    logging.debug(f"State before ADD: Discard ({len(discard_pile)} cards): {discard_pile}")
+    # --- Roo Debug Log End ---
     # --- New Logic for Adding Cards ---
     for specific_card in cards_to_add_specific:
         policy_type = get_card_policy_type(specific_card)
@@ -584,27 +600,49 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
         replaced = False
 
         if policy_type and generic_equivalent:
-            logging.debug(f"Processing '{specific_card}' (Type: {policy_type}, Generic: {generic_equivalent})")
+            logging.debug(f"Processing ADD '{specific_card}' (Type: {policy_type}, Generic: {generic_equivalent})")
             # 1. Try replacing generic equivalent
-            generic_location = find_card_in_locations(generic_equivalent, deck, discard_pile)
+            # --- Roo Debug Log Start ---
+            logging.debug(f"Attempting to find generic '{generic_equivalent}' in hand/deck/discard for replacement.")
+            # --- Roo Debug Log End ---
+            generic_location = find_card_in_locations(generic_equivalent, hand, deck, discard_pile)
             if generic_location:
-                replaced = replace_card_in_location(generic_location, generic_equivalent, specific_card, deck, discard_pile)
+                # --- Roo Debug Log Start ---
+                logging.debug(f"Found generic '{generic_equivalent}' in '{generic_location}'. Attempting replacement.")
+                # --- Roo Debug Log End ---
+                replaced = replace_card_in_location(generic_location, generic_equivalent, specific_card, hand, deck, discard_pile)
                 if replaced:
                      logging.info(f"Successfully replaced generic '{generic_equivalent}' with specific '{specific_card}'.")
                      action_descriptions.append(f"Added '{specific_card}', replacing '{generic_equivalent}'")
                      replacement_made = True
                      break # Stop after first successful replacement
+                # --- Roo Debug Log Start ---
+                else:
+                    logging.warning(f"Replacement of generic '{generic_equivalent}' in '{generic_location}' FAILED.")
+                # --- Roo Debug Log End ---
             # 2. If generic not found or replacement failed, try replacing random of same type
             if not replaced:
+                # --- Roo Debug Log Start ---
                 logging.debug(f"Generic '{generic_equivalent}' not found or replacement failed. Trying random replacement of type '{policy_type}'.")
+                # --- Roo Debug Log End ---
+                logging.debug(f"Generic '{generic_equivalent}' not found in hand/deck/discard or replacement failed. Trying random replacement of type '{policy_type}'.")
                 # Now returns the name of the replaced card or None
-                replaced_card_name = find_and_replace_random_by_type(policy_type, specific_card, deck, discard_pile)
+                replaced_card_name = find_and_replace_random_by_type(policy_type, specific_card, hand, deck, discard_pile)
                 if replaced_card_name:
                     logging.info(f"Successfully replaced random card '{replaced_card_name}' of type '{policy_type}' with specific '{specific_card}'.")
                     action_descriptions.append(f"Added '{specific_card}', replacing '{replaced_card_name}' (random {policy_type})")
                     replacement_made = True
                     break # Stop after first successful replacement
-                # No 'else' needed, if replacement failed, loop continues or finishes
+                # --- Roo Debug Log Start ---
+                else:
+                    logging.debug(f"Random replacement of type '{policy_type}' for '{specific_card}' also failed.")
+                # --- Roo Debug Log End ---
+        # --- Roo Debug Log Start ---
+        elif not policy_type:
+             logging.warning(f"Could not determine policy type for card '{specific_card}'. Skipping replacement.")
+        elif not generic_equivalent:
+             logging.warning(f"Could not determine generic equivalent for policy type '{policy_type}' (Card: '{specific_card}'). Skipping replacement.")
+        # --- Roo Debug Log End ---
 
         # 3. If no replacement occurred (no generic, no same type, or invalid type), add directly
         # If loop completes without break, no replacement was made.
@@ -612,32 +650,55 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
 
     # --- Original Logic for Removing Cards ---
     # Process removals *after* additions/replacements to avoid conflicts if a removed card was also a replacement target
+    # --- Roo Debug Log Start ---
+    logging.debug(f"State before REMOVE: Hand ({len(hand)} cards): {hand}")
+    logging.debug(f"State before REMOVE: Deck ({len(deck)} cards): {deck}")
+    logging.debug(f"State before REMOVE: Discard ({len(discard_pile)} cards): {discard_pile}")
+    # --- Roo Debug Log End ---
     for card_to_remove in cards_to_remove:
+        removed_from_hand = False
         removed_from_deck = False
         removed_from_discard = False
-        # Try removing from deck first (important: check multiple times if card appears > once)
-        initial_deck_count = deck.count(card_to_remove)
-        if initial_deck_count > 0:
-            try:
-                deck.remove(card_to_remove)
-                logging.info(f"Removed card '{card_to_remove}' from deck.")
-                removed_from_deck = True
-            except ValueError:
-                 logging.error(f"Error removing '{card_to_remove}' from deck despite count > 0.") # Should not happen
+        logging.debug(f"Attempting to remove '{card_to_remove}' from hand/deck/discard.")
 
-        # If not removed from deck (or if multiple copies need removal), try removing from discard pile
-        if not removed_from_deck:
-             initial_discard_count = discard_pile.count(card_to_remove)
-             if initial_discard_count > 0:
+        # Try removing from hand first
+        if card_to_remove in hand:
+            try:
+                hand.remove(card_to_remove)
+                logging.info(f"Removed card '{card_to_remove}' from hand.")
+                removed_from_hand = True
+            except ValueError:
+                 logging.error(f"Error removing '{card_to_remove}' from hand despite check.") # Should not happen
+        else:
+            logging.debug(f"'{card_to_remove}' not found in hand.")
+
+        # If not removed from hand, try removing from deck
+        if not removed_from_hand:
+            if card_to_remove in deck:
+                try:
+                    deck.remove(card_to_remove)
+                    logging.info(f"Removed card '{card_to_remove}' from deck.")
+                    removed_from_deck = True
+                except ValueError:
+                     logging.error(f"Error removing '{card_to_remove}' from deck despite check.") # Should not happen
+            else:
+                logging.debug(f"'{card_to_remove}' not found in deck.")
+
+        # If not removed from hand or deck, try removing from discard pile
+        if not removed_from_hand and not removed_from_deck:
+             if card_to_remove in discard_pile:
                  try:
                      discard_pile.remove(card_to_remove)
                      logging.info(f"Removed card '{card_to_remove}' from discard pile.")
                      removed_from_discard = True
                  except ValueError:
-                     logging.error(f"Error removing '{card_to_remove}' from discard despite count > 0.") # Should not happen
+                     logging.error(f"Error removing '{card_to_remove}' from discard despite check.") # Should not happen
+             else:
+                 logging.debug(f"'{card_to_remove}' not found in discard either.")
 
-        if not removed_from_deck and not removed_from_discard:
-            logging.warning(f"Card '{card_to_remove}' specified for removal not found in deck or discard pile.")
+        # Log warning only if not found anywhere
+        if not removed_from_hand and not removed_from_deck and not removed_from_discard:
+            logging.warning(f"Card '{card_to_remove}' specified for removal not found in hand, deck, or discard pile.")
 
     # Shuffle the deck after all modifications
     random.shuffle(deck)
@@ -645,4 +706,5 @@ def apply_dilemma_choice(chosen_option, deck, discard_pile):
     logging.debug(f"Final deck size: {len(deck)}, discard size: {len(discard_pile)}")
     logging.info(f"--- Finished Applying Dilemma Choice ---")
 
-    return deck, discard_pile, action_descriptions # Return descriptions as well
+    # Return updated lists and descriptions
+    return hand, deck, discard_pile, action_descriptions

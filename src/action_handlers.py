@@ -89,9 +89,12 @@ def handle_dilemma_choice_action(choice):
 
     logging.info(f"Dilemma {dilemma_id} - Option {choice} ('{option.get('name', 'N/A')}') chosen.")
     try:
-        st.session_state.deck, st.session_state.discard_pile, action_descriptions = apply_dilemma_choice(
-            option, st.session_state.deck, st.session_state.discard_pile
+        # Pass player_hand, deck, discard and unpack player_hand, deck, discard
+        logging.debug(f"ACTION_HANDLER: Applying dilemma choice '{option.get('name', 'N/A')}'. Current hand size: {len(st.session_state.player_hand)}")
+        st.session_state.player_hand, st.session_state.deck, st.session_state.discard_pile, action_descriptions = apply_dilemma_choice(
+            option, st.session_state.player_hand, st.session_state.deck, st.session_state.discard_pile
         )
+        logging.debug(f"ACTION_HANDLER: Finished applying dilemma choice. New hand size: {len(st.session_state.player_hand)}")
     except Exception as e:
         logging.error(f"Error applying dilemma choice {choice} for dilemma {dilemma_id}: {e}")
         st.error("An error occurred while applying the dilemma effects.")
