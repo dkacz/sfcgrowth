@@ -75,6 +75,7 @@ PARAM_DESCRIPTIONS = {
     'omega1': 'Coefficient on expected inflation in wage Phillips curve',
     'omega2': 'Coefficient on unemployment gap in wage Phillips curve',
     'alpha2': 'Propensity to consume out of wealth',
+    'bot': 'Bottom value for bank net liquidity ratio',
     # Add others if needed by cards/events
     'eps': 'Sensitivity of exchange rate expectations to deviations',
 }
