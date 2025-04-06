@@ -4,13 +4,22 @@
 import streamlit as st
 
 def format_dilemma_option(option_data):
-    """Helper to format dilemma option details."""
+    """Helper to format dilemma option details clearly (1 add/1 remove)."""
     add_cards = option_data.get('add_cards', [])
     remove_cards = option_data.get('remove_cards', [])
-    details = ""
-    if add_cards: details += f"Adds: {', '.join(add_cards)}\n"
-    if remove_cards: details += f"Removes: {', '.join(remove_cards)}"
-    return details.strip()
+
+    # Get the first valid card name from each list, if available
+    first_add = next((card for card in add_cards if card), None)
+    first_remove = next((card for card in remove_cards if card), None)
+
+    parts = []
+    if first_add:
+        parts.append(f"Adds: {first_add}")
+    if first_remove:
+        parts.append(f"Removes: {first_remove}")
+
+    # Join the parts with a newline for better readability if both are present
+    return "\n".join(parts)
 
 def display_dilemma():
     """Renders the Advisor's Dilemma screen."""
@@ -32,7 +41,7 @@ def display_dilemma():
             st.rerun()
         if option_a.get('choice_flavour'):
             # Use markdown with unsafe_allow_html to ensure vertical expansion
-            st.markdown(f"<div style='height: auto; overflow-y: visible;'>*{option_a['choice_flavour']}*</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='height: auto; overflow-y: visible; margin-bottom: 1.5em;'>*{option_a['choice_flavour']}*</div>", unsafe_allow_html=True)
         option_a_details = format_dilemma_option(option_a)
         if option_a_details:
             st.markdown(option_a_details)
@@ -46,7 +55,7 @@ def display_dilemma():
             st.rerun()
         if option_b.get('choice_flavour'):
             # Use markdown with unsafe_allow_html to ensure vertical expansion
-            st.markdown(f"<div style='height: auto; overflow-y: visible;'>*{option_b['choice_flavour']}*</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='height: auto; overflow-y: visible; margin-bottom: 1.5em;'>*{option_b['choice_flavour']}*</div>", unsafe_allow_html=True)
         option_b_details = format_dilemma_option(option_b)
         if option_b_details:
             st.markdown(option_b_details)

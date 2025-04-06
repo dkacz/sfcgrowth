@@ -30,19 +30,62 @@ def format_value(value, precision=2):
     return f"{value:.{precision}f}"
 
 def format_effect(param, effect):
-    """Formats the effect value nicely based on typical parameter scales."""
-    if not isinstance(effect, (int, float)) or not np.isfinite(effect):
-        return "N/A"
-    # Rates, Ratios, Proportions shown as percentage points (p.p.)
-    if param in ['Rbbar', 'ADDbl', 'ro', 'NCAR', 'theta', 'NPLk', 'alpha1', 'delta', 'eta0', 'Rln', 'GRg', 'GRpr', 'gamma0']:
-        return f"{effect*100:+,.4f} p.p." # Use standard decimal format
-    # Speed of adjustment / Expectation parameters (unitless or specific scale)
-    elif param in ['etan', 'beta', 'omega3']:
-         return f"{effect:+.3g}" # Use general format for significant digits
-    # Other shocks (like RA) might be direct adjustments
+    """Formats the effect value nicely based on typical parameter scales.
+    Handles integers without decimals (e.g., +1) and decimals only when needed (e.g., +0.5).
+    """
+    # --- Start: Robust Input Handling ---
+    if effect is None:
+        return "N/A" # Handle None explicitly
+
+    try:
+        # Explicitly convert input to a standard Python float
+        numeric_effect = float(effect)
+    except (ValueError, TypeError):
+        # If conversion fails, log a warning and return the original value as a string
+        logging.warning(f"format_effect: Could not convert effect '{effect}' (type: {type(effect)}) to float. Returning as string.")
+        return str(effect)
+
+    # Check for non-finite values *after* successful conversion
+    if not np.isfinite(numeric_effect):
+         return "N/A"
+    # --- End: Robust Input Handling ---
+
+    # Check if the parameter requires percentage point formatting (uses original param name)
+    is_pp_param = param in ['Rbbar', 'ADDbl', 'ro', 'NCAR', 'theta', 'NPLk', 'alpha1', 'delta', 'eta0', 'Rln', 'GRg', 'GRpr', 'gamma0']
+
+    # Determine the value to format (scale by 100 for p.p.), using the converted numeric value
+    value_to_format = numeric_effect * 100 if is_pp_param else numeric_effect
+
+    # Check if the value_to_format is effectively an integer (using a small tolerance)
+    tolerance = 1e-9
+    is_integer = abs(value_to_format - round(value_to_format)) < tolerance
+
+    # --- Start: Robust Formatting ---
+    try:
+        # Determine the format specifier and the value to use in the final format string
+        if is_integer:
+            format_spec = ":+d"  # Correct integer format specifier
+            # Ensure we format the integer part after rounding
+            value_for_final_format = int(round(value_to_format))
+        else:
+            format_spec = ":+.4f" # Standard float format specifier
+            value_for_final_format = value_to_format # Use the float value directly
+
+        # Perform the actual formatting
+        formatted_number = f"{value_for_final_format:{format_spec}}"
+
+    except ValueError as e:
+        # Fallback if f-string formatting fails unexpectedly
+        logging.error(f"format_effect: Formatting failed for value '{value_for_final_format}' with spec '{format_spec}'. Error: {e}. Falling back to string representation of original scaled value.")
+        # Fallback to the original scaled value as a string
+        formatted_number = str(value_to_format)
+    # --- End: Robust Formatting ---
+
+    # Add units if necessary
+    if is_pp_param:
+        return f"{formatted_number} p.p."
     else:
-        # Default absolute change format
-        return f"{effect:+.3g}" # Use general format for significant digits
+        return formatted_number
 
 # --- Delta Calculation Functions ---
 def get_delta(current_val, prev_val):
