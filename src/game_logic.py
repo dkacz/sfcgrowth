@@ -116,9 +116,50 @@ def run_year_start_phase():
     current_year = st.session_state.current_year
     dilemma_already_processed_this_year = st.session_state.get('dilemma_processed_for_year', -1) == current_year
 
-    # --- Step 1: Check if a dilemma needs to be selected ---
+    # --- Step 1: Perform year start actions (draw cards, check events) only once per year ---
+    # This needs to happen regardless of whether a dilemma is shown or not.
+    if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != current_year:
+        logging.debug(f"Processing year start actions for Year {current_year}")
+        # Draw cards
+        st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
+            st.session_state.deck,
+            st.session_state.player_hand,
+            st.session_state.discard_pile,
+            CARDS_TO_DRAW_PER_YEAR
+        )
+        st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
+        logging.debug(f"Hand after draw: {st.session_state.player_hand}")
+
+        # Check for events based on the *previous* year's state
+        previous_year_results = None
+        if st.session_state.history:
+             previous_year_results = st.session_state.history[-1]
+        elif current_year == 1: # Special case for first event check
+             previous_year_results = st.session_state.get('initial_state_dict')
+             if not previous_year_results:
+                 logging.error("Initial state dict missing for Year 1 event check.")
+
+        if previous_year_results:
+            st.session_state.active_events_this_year = check_for_events(previous_year_results)
+            if st.session_state.active_events_this_year:
+                 st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
+                 logging.info(f"Active events for Year {current_year}: {st.session_state.active_events_this_year}")
+        else:
+             st.session_state.active_events_this_year = []
+             if current_year > 1:
+                 logging.error(f"History missing when checking events for Year {current_year}.")
+
+        st.session_state.year_start_processed = current_year
+        st.session_state.cards_selected_this_year = [] # Reset selected cards
+        # Don't rerun here yet, display UI first
+
+    # --- Step 2: Display the main year start UI (KPIs, events, card selection) ---
+    # This should always be displayed before the dilemma.
+    display_year_start_ui()
+
+    # --- Step 3: Check if a dilemma needs to be selected (only if not already processed) ---
     if not dilemma_already_processed_this_year and not st.session_state.current_dilemma:
-        if current_year > 0 and current_year < (GAME_END_YEAR - 1): # Dilemmas only in Years 1 to 9
+        if current_year > 0 and current_year < (GAME_END_YEAR - 1):
             advisor_id = st.session_state.get('selected_character_id')
             if advisor_id:
                 dilemma_id, dilemma_data = select_dilemma(advisor_id, st.session_state.seen_dilemmas)
@@ -126,59 +167,21 @@ def run_year_start_phase():
                     st.session_state.current_dilemma = {"id": dilemma_id, "data": dilemma_data}
                     st.session_state.seen_dilemmas.add(dilemma_id)
                     logging.info(f"Selected new dilemma: {dilemma_id} for year {current_year}")
-                    st.rerun() # Rerun immediately to display the new dilemma
+                    st.rerun() # Rerun to display the dilemma *after* the main UI
                 else:
                     logging.info(f"No unseen dilemmas available for advisor '{advisor_id}' in year {current_year}.")
             else:
                 logging.warning("Cannot select dilemma: advisor_id not found.")
 
-    # --- Step 2: If a dilemma is active, display it and handle choice ---
+    # --- Step 4: If a dilemma is active, display it ---
+    # This now happens *after* display_year_start_ui() has been called.
     if st.session_state.current_dilemma:
         display_dilemma()
-        # Action processing happens via st.rerun() triggered by button clicks
-    else:
-        # --- Step 3: NORMAL YEAR START LOGIC (No active dilemma) ---
-        # Perform year start actions (draw cards, check events) only once per year
-        if "year_start_processed" not in st.session_state or st.session_state.year_start_processed != current_year:
-            logging.debug(f"Processing year start actions for Year {current_year}")
-            # Draw cards
-            st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = draw_cards(
-                st.session_state.deck,
-                st.session_state.player_hand,
-                st.session_state.discard_pile,
-                CARDS_TO_DRAW_PER_YEAR
-            )
-            st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
-            logging.debug(f"Hand after draw: {st.session_state.player_hand}")
-
-            # Check for events based on the *previous* year's state
-            previous_year_results = None
-            if st.session_state.history:
-                 previous_year_results = st.session_state.history[-1]
-            elif current_year == 1: # Special case for first event check
-                 # Use initial state if history is empty (should only be year 1)
-                 previous_year_results = st.session_state.get('initial_state_dict')
-                 if not previous_year_results:
-                     logging.error("Initial state dict missing for Year 1 event check.")
-
-            if previous_year_results:
-                st.session_state.active_events_this_year = check_for_events(previous_year_results)
-                if st.session_state.active_events_this_year:
-                     st.warning(f"New Events Occurred: {', '.join(st.session_state.active_events_this_year)}")
-                     logging.info(f"Active events for Year {current_year}: {st.session_state.active_events_this_year}")
-            else:
-                 st.session_state.active_events_this_year = []
-                 if current_year > 1: # Log error if history missing after year 1
-                     logging.error(f"History missing when checking events for Year {current_year}.")
-
-
-            st.session_state.year_start_processed = current_year
-            st.session_state.cards_selected_this_year = [] # Reset selected cards
-            st.rerun() # Rerun to display updated events and hand
-
-        # Display the main year start UI (KPIs, events, card selection)
-        display_year_start_ui()
-        # Action processing (card toggle, confirm policies) happens via st.rerun()
+        # Action processing (dilemma choice) happens via st.rerun() triggered by button clicks
+    # else:
+        # The "Confirm Policies" button is part of display_year_start_ui,
+        # so its action processing is handled by the main run_game loop.
+        # No specific logic needed here when no dilemma is active.
 
 def run_simulation_phase():
     """Runs the simulation logic for the current year."""
