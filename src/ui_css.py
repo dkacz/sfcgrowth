@@ -22,6 +22,11 @@ def display_css():
             background-color: #e9e4d9 !important; /* Slightly darker cream for sidebar */
             border-right: 2px solid #000000 !important;
         }
+        /* Reduce default top padding in sidebar */
+        [data-testid="stSidebar"] > div:first-child {
+            padding-top: 0rem !important;
+            margin-top: 0rem !important; /* Added to remove potential margin */
+        }
         /* Hide default Streamlit header */
         [data-testid="stHeader"] {
             background-color: #F7F1E3 !important; /* Match background */

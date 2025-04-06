@@ -4,7 +4,7 @@ Character definitions for the SFC Economic Strategy Game.
 
 CHARACTERS = {
     "demand_side_devotee": {
-        "name": "The Demand Side Devotee",
+        "name": "Demand Side Devotee",
         "description": "Firm believer that demand creates its own supply—especially if the government foots the bill. Economic downturn? No worries, he's always ready to build another bridge to nowhere. His wallet is always open, and the printing press never stops spinning.",
         "image_path": "assets/characters/demand_side_devotee.png",
         "starting_deck": [
@@ -28,7 +28,7 @@ CHARACTERS = {
         }
     },
     "money_monk": {
-        "name": "The Money Monk",
+        "name": "Money Monk",
         "description": "Inflation keeps him awake at night, and nothing pleases him more than raising interest rates. Skeptical of government's fiscal escapades, he worships at the altar of stable money—usually by making everyone poorer first.",
         "image_path": "assets/characters/money_monk.png",
         "starting_deck": [
@@ -52,7 +52,7 @@ CHARACTERS = {
         }
     },
     "class_conscious_crusader": {
-        "name": "The Class-Conscious Crusader",
+        "name": "Class-Conscious Crusader",
         "description": "Understands that full employment isn't just an economic goal but a political battleground. Advocates for government intervention to maintain employment, fully aware that empowering workers might ruffle capitalist feathers. After all, a confident working class might start questioning who’s really in charge.",
         "image_path": "assets/characters/class_conscious_crusader.png",
         "starting_deck": [
@@ -73,7 +73,7 @@ CHARACTERS = {
         }
     },
     "austerity_apostle": {
-        "name": "The Austerity Apostle",
+        "name": "Austerity Apostle",
         "description": "His economic strategy is straightforward: if it hurts, it’s working. Proudly wears the badge of budget cuts and belt-tightening. In his perfect world, prosperity is achieved through collective misery—spending less, earning less, smiling less.",
         "image_path": "assets/characters/austerity_apostle.png",
         "starting_deck": [
