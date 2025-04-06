@@ -27,6 +27,23 @@ def display_css():
             padding-top: 0rem !important;
             margin-top: 0rem !important; /* Added to remove potential margin */
         }
+        /* Further reduce top space in sidebar content area */
+        [data-testid="stSidebar"] > div:first-child > div:first-child > div:first-child {
+            margin-top: -0.5rem !important; /* Adjust as needed, start with smaller negative margin */
+            padding-top: 0rem !important;
+        }
+
+        /* Target potential first headers directly */
+        [data-testid="stSidebar"] h1:first-of-type,
+        [data-testid="stSidebar"] h2:first-of-type,
+        [data-testid="stSidebar"] h3:first-of-type,
+        [data-testid="stSidebar"] h4:first-of-type,
+        [data-testid="stSidebar"] h5:first-of-type,
+        [data-testid="stSidebar"] h6:first-of-type {
+            margin-top: 0rem !important;
+            padding-top: 0rem !important;
+        }
+
         /* Hide default Streamlit header */
         [data-testid="stHeader"] {
             background-color: #F7F1E3 !important; /* Match background */
