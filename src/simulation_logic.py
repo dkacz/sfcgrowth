@@ -237,27 +237,27 @@ def run_simulation():
                     logging.debug(f"Baseline Year {next_year}: Deep copied model state for baseline. Original ID: {original_model_id}, Copied ID: {copied_model_id}")
                     event_seq = st.session_state.full_event_sequence
 
-#                    baseline_history_results = run_baseline_simulation(
-#                        start_year=next_year, # Baseline starts from the year we just simulated *to*
-#                        initial_model_state=baseline_start_model,
-#                        initial_history=baseline_start_history,
-#                        full_event_sequence=event_seq,
-#                        initial_persistent_effects=baseline_start_persistent,
-#                        initial_temporary_effects=baseline_start_temporary,
-#                        character_id=char_id
-#                    )
-#
-#                    if baseline_history_results is not None:
-#                        # Store results keyed by the year the baseline *starts* from
-#                        st.session_state.baseline_results[next_year] = baseline_history_results
-#                        logging.info(f"Successfully ran and stored baseline simulation starting from Year {next_year}.")
-#                        # Optional: Convert to DataFrame immediately if preferred
-#                        # st.session_state.baseline_results[next_year] = pd.DataFrame(baseline_history_results)
-#                        logging.debug(f"Baseline Year {next_year}: Storing results in st.session_state.baseline_results[{next_year}]")
-#                    else:
-#                        logging.error(f"Baseline simulation starting from Year {next_year} failed.")
-#                        # Store None or empty list to indicate failure?
-#                        st.session_state.baseline_results[next_year] = None
+                    baseline_history_results = run_baseline_simulation(
+                        start_year=next_year, # Baseline starts from the year we just simulated *to*
+                        initial_state_dict=baseline_start_model.solutions[-1] if baseline_start_model.solutions else None,
+                        initial_history=baseline_start_history,
+                        full_event_sequence=event_seq,
+                        initial_persistent_effects=baseline_start_persistent,
+                        initial_temporary_effects=baseline_start_temporary,
+                        character_id=char_id
+                    )
+
+                    if baseline_history_results is not None:
+                        # Store results keyed by the year the baseline *starts* from
+                        st.session_state.baseline_results[next_year] = baseline_history_results
+                        logging.info(f"Successfully ran and stored baseline simulation starting from Year {next_year}.")
+                        # Optional: Convert to DataFrame immediately if preferred
+                        # st.session_state.baseline_results[next_year] = pd.DataFrame(baseline_history_results)
+                        logging.debug(f"Baseline Year {next_year}: Storing results in st.session_state.baseline_results[{next_year}]")
+                    else:
+                        logging.error(f"Baseline simulation starting from Year {next_year} failed.")
+                        # Store None or empty list to indicate failure?
+                        st.session_state.baseline_results[next_year] = None
 
                 except Exception as baseline_err:
                     logging.exception(f"Unexpected error during baseline simulation setup or execution for start year {next_year}:")
@@ -291,7 +291,7 @@ def run_simulation():
         st.rerun() # Rerun to display the next phase or error state
 
 
-def run_baseline_simulation(start_year, initial_state_dict: dict, initial_history: list, full_event_sequence: dict, initial_persistent_effects: dict, initial_temporary_effects: list, character_id: str):
+def run_baseline_simulation(start_year, initial_state_dict, initial_history, full_event_sequence, initial_persistent_effects, initial_temporary_effects, character_id):
     """
     Runs a baseline simulation from a given start year to the end of the game,
     assuming no policy cards are played. Uses deep copies of initial states.
@@ -491,3 +491,176 @@ def run_baseline_simulation(start_year, initial_state_dict: dict, initial_histor
 
     logging.info(f"--- Finished Baseline Simulation from Year {start_year}. Recorded {len(baseline_run_history)} years. ---")
     return baseline_run_history
+
+
+def run_counterfactual_simulation(target_year, card_names_to_exclude):
+    """
+    Runs a counterfactual simulation starting from before the target year,
+    excluding the specified cards that were played in the target year.
+    
+    Args:
+        target_year (int): The year from which to exclude the specified cards
+        card_names_to_exclude (list): List of card names to exclude from the simulation
+        
+    Returns:
+        list: A list of result dictionaries for the counterfactual simulation years
+    """
+    logging.info(f"--- Starting Counterfactual Simulation excluding cards from Year {target_year} ---")
+    
+    # Find the history entry for the year before the target year
+    prev_year = target_year - 1
+    if prev_year < 1:
+        logging.error(f"Cannot run counterfactual for target year {target_year} as there is no previous year data.")
+        return None
+    
+    # Get history entries for the relevant years
+    history_df = pd.DataFrame(st.session_state.history)
+    prev_year_entry = history_df[history_df['year'] == prev_year].iloc[0].to_dict() if not history_df[history_df['year'] == prev_year].empty else None
+    target_year_entry = history_df[history_df['year'] == target_year].iloc[0].to_dict() if not history_df[history_df['year'] == target_year].empty else None
+    
+    if prev_year_entry is None or target_year_entry is None:
+        logging.error(f"Missing required history entries for counterfactual simulation (prev_year: {prev_year}, target_year: {target_year}).")
+        return None
+    
+    # Extract the cards played in the target year
+    cards_played_in_target_year = target_year_entry.get('played_cards', [])
+    
+    # Create a new list of cards to play, excluding the specified cards
+    counterfactual_cards = [card for card in cards_played_in_target_year if card not in card_names_to_exclude]
+    logging.info(f"Original cards played in Year {target_year}: {cards_played_in_target_year}")
+    logging.info(f"Cards being excluded: {card_names_to_exclude}")
+    logging.info(f"Counterfactual cards to play: {counterfactual_cards}")
+    
+    # Prepare for simulation
+    # Deep copy necessary states to isolate counterfactual run
+    initial_state_dict = copy.deepcopy(prev_year_entry)
+    
+    # Create a list to store the history of the counterfactual simulation
+    counterfactual_history = []
+    
+    # Initialize with the state from the year before the target year
+    counterfactual_history.append(initial_state_dict)
+    
+    # Deep copy persistent and temporary effects from the previous year
+    persistent_effects = copy.deepcopy(prev_year_entry.get('persistent_effects', {}))
+    temporary_effects = copy.deepcopy(prev_year_entry.get('temporary_effects', []))
+    
+    # Get character ID and event sequence
+    char_id = st.session_state.selected_character_id
+    event_seq = st.session_state.full_event_sequence
+    
+    # Run simulation from the previous year to the end of the game
+    for sim_year in range(prev_year + 1, GAME_END_YEAR + 1):
+        logging.debug(f"[Counterfactual Year {sim_year}] Starting simulation step.")
+        
+        # Get previous solution values
+        if sim_year == prev_year + 1:
+            prev_solution_values = initial_state_dict
+        else:
+            prev_solution_values = counterfactual_history[-1]
+        
+        # Determine cards to play for this year
+        if sim_year == target_year:
+            cards_to_play = counterfactual_cards
+        else:
+            # For years after the target year, use what was actually played
+            year_entry = history_df[history_df['year'] == sim_year].iloc[0].to_dict() if not history_df[history_df['year'] == sim_year].empty else None
+            cards_to_play = year_entry.get('played_cards', []) if year_entry is not None else []
+        
+        # Get active events for this year
+        events_active = event_seq.get(sim_year, [])
+        
+        # Calculate and apply parameters
+        base_numerical_params = copy.deepcopy(growth_parameters)
+        temp_model_for_param_check = create_growth_model()
+        defined_param_names = set(temp_model_for_param_check.parameters.keys())
+        for key, value in growth_exogenous:
+            if key in defined_param_names:
+                try: base_numerical_params[key] = float(value)
+                except: logging.warning(f"[Counterfactual Year {sim_year}] Could not convert exogenous parameter {key}={value} to float.")
+        
+        # Mock session state for apply_effects
+        original_temp_effects = st.session_state.get('temporary_effects')
+        original_pers_effects = st.session_state.get('persistent_effects')
+        st.session_state.temporary_effects = temporary_effects
+        st.session_state.persistent_effects = persistent_effects
+        
+        final_numerical_params = {}
+        try:
+            final_numerical_params = apply_effects(
+                base_params=base_numerical_params,
+                latest_solution=prev_solution_values,
+                cards_played=cards_to_play,
+                active_events=events_active,
+                character_id=char_id
+            )
+            # Update effects with the modified ones from session state
+            temporary_effects = st.session_state.temporary_effects
+            persistent_effects = st.session_state.persistent_effects
+        except Exception as e:
+            logging.error(f"[Counterfactual Year {sim_year}] Error during apply_effects: {e}")
+            st.session_state.temporary_effects = original_temp_effects
+            st.session_state.persistent_effects = original_pers_effects
+            return None
+        finally:
+            # Restore original session state effects
+            st.session_state.temporary_effects = original_temp_effects
+            st.session_state.persistent_effects = original_pers_effects
+        
+        # Initialize model and run simulation
+        model_to_simulate = create_growth_model()
+        old_stdout = sys.stdout
+        try:
+            # Set defaults
+            model_to_simulate.set_values(growth_parameters)
+            model_to_simulate.set_values(growth_exogenous)
+            model_to_simulate.set_values(growth_variables)
+            
+            # Set final parameters
+            model_to_simulate.set_values(final_numerical_params)
+            
+            # Set current solution
+            if prev_solution_values:
+                model_to_simulate.current_solution = prev_solution_values
+                model_to_simulate.solutions = [prev_solution_values]
+            
+            # Run simulation
+            sys.stdout = NullIO()
+            model_to_simulate.solve(iterations=1000, threshold=1e-6)
+            sys.stdout = old_stdout
+            
+            # Get solution and calculate KPIs
+            latest_sim_solution = model_to_simulate.solutions[-1]
+            game_base_yk = st.session_state.get('base_yk')
+            if game_base_yk is not None:
+                calculate_kpis(latest_sim_solution, game_base_yk)
+            else:
+                latest_sim_solution.setdefault('Yk_Index', None)
+                latest_sim_solution.setdefault('Unemployment', None)
+                latest_sim_solution.setdefault('Inflation', None)
+                latest_sim_solution.setdefault('GD_GDP', None)
+            
+            # Add metadata
+            latest_sim_solution['year'] = sim_year
+            latest_sim_solution['played_cards'] = list(cards_to_play)
+            latest_sim_solution['events'] = list(events_active)
+            latest_sim_solution['persistent_effects'] = copy.deepcopy(persistent_effects)
+            latest_sim_solution['temporary_effects'] = copy.deepcopy(temporary_effects)
+            
+            # Add to counterfactual history
+            counterfactual_history.append(latest_sim_solution)
+            
+        except SolutionNotFoundError as e:
+            sys.stdout = old_stdout
+            logging.error(f"[Counterfactual Year {sim_year}] Model failed to converge. Error: {str(e)}")
+            return None
+        except Exception as e:
+            sys.stdout = old_stdout
+            logging.error(f"[Counterfactual Year {sim_year}] Unexpected error: {str(e)}")
+            logging.exception(f"Unexpected error in counterfactual simulation (Year {sim_year}):")
+            return None
+        finally:
+            sys.stdout = old_stdout
+    
+    logging.info(f"--- Finished Counterfactual Simulation for cards from Year {target_year}. Recorded {len(counterfactual_history)} years. ---")
+    return counterfactual_history[1:]  # Skip the first entry which is the prev_year
