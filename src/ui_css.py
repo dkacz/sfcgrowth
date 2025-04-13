@@ -331,5 +331,49 @@ def display_css():
             margin-top: 1rem !important;
             margin-bottom: 1rem !important;
         }
+        /* Specific style for Fast Forward Debug button */
+        /* Target debug button specifically in credits section */
+        .stButton > button[data-testid="stButton-fast_forward_debug_year_start"] {
+            font-size: 0.95em !important;
+            color: #333 !important;
+            background: #f5f5f5 !important;
+            border: 2px solid red !important; /* TEMP: obvious border to confirm selector works */
+            font-weight: normal !important;
+            box-shadow: none !important;
+            padding: 0.5rem 1rem !important;
+            margin-top: 1rem !important;
+            display: block !important;
+        }
+        .stButton > button[data-testid="stButton-fast_forward_debug_year_start"]:hover {
+             background-color: #e0e0e0 !important; /* Slightly darker hover */
+             color: #333333 !important;
+             border-color: #999999 !important;
+        }
+        /* TEMP: Red border for Fast Forward to Game Over button if inside credits expander */
+        [data-testid="stExpander"] + div button[data-testid="stBaseButton-secondary"] {
+            font-size: 0.95rem !important;
+            background: #f5f5f5 !important;
+            color: #333 !important;
+            box-shadow: none !important;
+            border: 1px solid #cccccc !important;
+            font-weight: normal !important;
+            padding: 0.4rem 0.8rem !important;
+            margin-top: 0.5rem !important;
+            display: block !important;
+        }
+        [data-testid="stExpander"] + div button[data-testid="stBaseButton-secondary"] > div {
+            font-size: 0.95rem !important;
+        }
+        [data-testid="stExpander"] + div button[data-testid="stBaseButton-secondary"] p {
+            font-size: 0.95rem !important;
+        }
+        [data-testid="stExpander"] + div button[data-testid="stBaseButton-secondary"] [data-testid="stMarkdownContainer"] {
+            font-size: 0.95rem !important;
+        }
+        [data-testid="stExpander"] + div button[data-testid="stBaseButton-secondary"] [data-testid="stMarkdownContainer"] p {
+            font-size: 0.95rem !important;
+        }
+    
+    
     </style>
     """, unsafe_allow_html=True)
