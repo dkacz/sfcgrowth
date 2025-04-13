@@ -143,4 +143,7 @@ def display_character_selection():
             # Close the inner div used for border styling
             st.markdown('</div>', unsafe_allow_html=True)
 
+
+
+
     # No need to close grid container as st.columns handles it

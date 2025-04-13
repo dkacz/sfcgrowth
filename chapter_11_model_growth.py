@@ -349,7 +349,7 @@ def create_growth_model():
     model.add('Bcbd = Hs')                          # 11.82 : Central bankd
     model.add('Bcbs = Bcbd')                        # 11.83 : Supply of bills to Central bank
     model.add('Rb = Rbbar')                         # 11.84 : Interest rate on bills set exogenously
-    model.add('Rbl = Rb + ADDbl')                   # 11.85 : Long term interest rate
+    model.add('Rbl = max(Rb + ADDbl, 0.005)')          # 11.85 : Long term interest rate (ensure >= 0.005)
     model.add('Pbl = 1/Rbl')                        # 11.86 : Price of long-term bonds
 
     # Box 11.11 : Commercial Bank's equations
@@ -532,30 +532,30 @@ growth_variables = [('Bbd', 4388930),
                     ('Bcbd', 4655690),
                     ('Bcbs', 4655690),
                     ('Bhd', 33396900),
-                    ('Bhs', 'Bhd'),
+                    ('Bhs', 33396900), # Use Bhd numerical value
                     ('Bs', 42484800),
                     ('BLd', 840742),
-                    ('BLs', 'BLd'),
+                    ('BLs', 840742),   # Use BLd numerical value
                     ('GD', 57728700),
                     ('Ekd', 5112.6001),
-                    ('Eks', 'Ekd'),
+                    ('Eks', 5112.6001), # Initialize with the same float value as Ekd
                     ('Hbd', 2025540),
-                    ('Hbs', 'Hbd'),
+                    ('Hbs', 2025540),  # Use Hbd numerical value
                     ('Hhd', 2630150),
-                    ('Hhs', 'Hhd'),
+                    ('Hhs', 2630150),  # Use Hhd numerical value
                     ('Hs', 'Hbd + Hhd'),
                     ('IN', 11585400),
                     ('INk', 2064890),
                     ('INke', 2405660),
-                    ('INkt', 'INk'),
+                    ('INkt', 2064890), # Use INk numerical value
                     ('K', 127444000),
                     ('Kk', 17768900),
                     ('Lfd', 15962900),
-                    ('Lfs', 'Lfd'),
+                    ('Lfs', 15962900), # Use Lfd numerical value
                     ('Lhd', 21606600),
-                    ('Lhs', 'Lhd'),
+                    ('Lhs', 21606600), # Use Lhd numerical value
                     ('Md', 40510800),
-                    ('Ms', 'Md'),
+                    ('Ms', 40510800),  # Use Md numerical value
                     ('OFb', 3473280),
                     ('OFbe', 3782430),
                     ('OFbt', 3638100),

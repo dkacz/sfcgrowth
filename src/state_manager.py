@@ -75,6 +75,7 @@ def initialize_game_state():
         st.session_state.temporary_effects = [] # Initialize list to track temporary event effects
         st.session_state.persistent_effects = {} # Initialize dict to track cumulative persistent card effects
         st.session_state.baseline_results = {} # Initialize storage for baseline results
+        st.session_state.actual_played_cards_history = {} # Initialize dict to store cards played each year in the actual run
 
 
         st.session_state.seen_dilemmas = set() # Initialize set to track seen dilemmas

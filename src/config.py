@@ -4,6 +4,8 @@
 # --- Constants ---
 INITIAL_HAND_SIZE = 5
 CARDS_TO_DRAW_PER_YEAR = 4 # Draw 4 cards per year as requested
+MAX_CARDS_PLAYED_PER_YEAR = 2 # Max policies player can confirm
+
 MAX_CARDS_PER_ROW = 4 # For card display layout
 ICON_DIR = "assets/icons" # Define icon directory
 SPARKLINE_YEARS = 10 # Number of years for sparkline history

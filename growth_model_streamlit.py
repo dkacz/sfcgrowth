@@ -12,6 +12,10 @@ import os
 # --- Add src directory to Python path ---
 # This ensures that modules in the 'src' directory can be imported correctly.
 # It assumes the script is run from the project root directory ('growth').
+project_root = os.path.dirname(__file__)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root) # Add project root first
+
 src_path = os.path.join(os.path.dirname(__file__), 'src')
 if src_path not in sys.path:
     sys.path.append(src_path)
@@ -28,10 +32,13 @@ log_file = 'debug_session.log'
 #     except IOError as e:
 #         st.warning(f"Could not clear log file: {e}")
 
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO, # Set default level to INFO
                     format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
                     filename=log_file,
                     filemode='a') # Use 'a' to append to the log file across runs/sessions
+# Reduce verbosity from noisy libraries
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
 
 logging.info("--- Streamlit App Start / Rerun ---")
 logging.info("Logging configured. Proceeding to imports.")

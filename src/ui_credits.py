@@ -32,3 +32,10 @@ def display_credits():
         #### Model Structure
         Five sectors (households, firms, banks, central bank, government) interacting via production, consumption, investment, saving, wage/price setting, portfolio allocation, lending, fiscal operations.
         """)
+    # Fast Forward to Game Over button (always visible on main game screen, after credits dropdown)
+    if hasattr(st.session_state, 'game_phase') and st.session_state.game_phase in ("YEAR_START", "main_game"):
+        if st.button("Fast Forward to Game Over",
+                   key="fast_forward_debug_year_start",
+                   help="Simulates the game with random choices to quickly reach the end."):
+            st.session_state.action_trigger = ("fast_forward", None)
+            st.rerun()

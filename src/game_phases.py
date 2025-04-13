@@ -14,7 +14,7 @@ from src.ui_game_over import display_game_over_screen
 from src.objective_evaluator import evaluate_objectives
 # Import simulation logic - needs to exist or be handled gracefully
 try:
-    from src.simulation_logic import run_simulation
+    from src.simulation_logic import run_simulation_step
 except ImportError:
     # Define a placeholder if simulation_logic doesn't exist yet or handle error
     def run_simulation():
@@ -103,43 +103,49 @@ def run_year_start_phase():
             logging.warning("Cannot select dilemma: advisor_id not found.")
 
     # --- Step 3: Display Dilemma + KPIs/Events OR KPIs/Events + Policy Selection ---
-    if st.session_state.get('current_dilemma'):
-        logging.debug(f"Displaying active dilemma for Year {current_year}")
-        display_dilemma()
-        logging.debug(f"Displaying KPIs and Events below dilemma for Year {current_year}")
-        display_kpi_and_events_section()
-    else:
-        logging.debug(f"No active dilemma, displaying KPIs/Events for Year {current_year}")
-        display_kpi_and_events_section()
-        # --- Step 4: Draw cards if not already drawn this year (after dilemma) ---
-        if st.session_state.get('cards_drawn_for_year', -1) != current_year:
-            logging.debug(f"YEAR_START: Attempting to draw cards post-dilemma for Year {current_year}.")
-            try:
-                st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = game_mechanics.draw_cards(
-                    st.session_state.deck,
-                    st.session_state.player_hand,
-                    st.session_state.discard_pile,
-                    CARDS_TO_DRAW_PER_YEAR
-                )
-                st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
-                logging.debug(f"Hand after draw: {st.session_state.player_hand}")
-                logging.debug(f"YEAR_START: Finished drawing cards for Year {current_year}. Hand size: {len(st.session_state.player_hand)}")
-                st.session_state.cards_drawn_for_year = current_year # Mark cards as drawn for this year
-            except Exception as e:
-                 logging.error(f"Error drawing cards in year start phase (post-dilemma): {e}")
-                 st.error("Failed to draw cards for the new year.")
-                 # Potentially transition to an error state or allow retry?
+
+    # --- Display UI only if NOT fast-forwarding ---
+    if not st.session_state.get('_is_fast_forwarding', False):
+        if st.session_state.get('current_dilemma'):
+            logging.debug(f"Displaying active dilemma for Year {current_year}")
+            display_dilemma()
+            logging.debug(f"Displaying KPIs and Events below dilemma for Year {current_year}")
+            display_kpi_and_events_section()
+        else:
+            logging.debug(f"No active dilemma, displaying KPIs/Events for Year {current_year}")
+            display_kpi_and_events_section()
+            # --- Step 4: Draw cards if not already drawn this year (after dilemma) ---
+            # Card drawing logic should still run even if UI is skipped during fast forward,
+            # but it's handled within handle_fast_forward now.
+            # Let's ensure the original draw logic here only runs when not fast-forwarding.
+            if st.session_state.get('cards_drawn_for_year', -1) != current_year:
+                logging.debug(f"YEAR_START (UI): Attempting to draw cards post-dilemma for Year {current_year}.")
+                try:
+                    st.session_state.deck, st.session_state.player_hand, st.session_state.discard_pile = game_mechanics.draw_cards(
+                        st.session_state.deck,
+                        st.session_state.player_hand,
+                        st.session_state.discard_pile,
+                        CARDS_TO_DRAW_PER_YEAR
+                    )
+                    st.toast(f"Drew {CARDS_TO_DRAW_PER_YEAR} cards.")
+                    logging.debug(f"Hand after draw: {st.session_state.player_hand}")
+                    logging.debug(f"YEAR_START (UI): Finished drawing cards for Year {current_year}. Hand size: {len(st.session_state.player_hand)}")
+                    st.session_state.cards_drawn_for_year = current_year # Mark cards as drawn for this year
+                except Exception as e:
+                     logging.error(f"Error drawing cards in year start phase (UI, post-dilemma): {e}")
+                     st.error("Failed to draw cards for the new year.")
+                     # Potentially transition to an error state or allow retry?
 
 
-        logging.debug(f"Displaying policy selection UI for Year {current_year}")
-        display_policy_selection_section()
-        # Action processing (confirm policies) happens via st.rerun() triggered by button clicks
+            logging.debug(f"Displaying policy selection UI for Year {current_year}")
+            display_policy_selection_section()
+            # Action processing (confirm policies) happens via st.rerun() triggered by button clicks
 
 def run_simulation_phase():
     """Runs the simulation logic for the current year."""
     logging.info(f"Starting simulation for Year {st.session_state.current_year + 1}")
     try:
-        run_simulation() # This function handles simulation steps and state updates (including phase transition)
+        run_simulation_step() # This function handles simulation steps and state updates (including phase transition)
         logging.info(f"Simulation successful for Year {st.session_state.current_year}.") # Year has been incremented inside run_simulation
     except Exception as e:
         logging.exception(f"Exception during simulation phase for year {st.session_state.current_year + 1}:")

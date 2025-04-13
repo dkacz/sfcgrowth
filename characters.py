@@ -14,6 +14,8 @@ CHARACTERS = {
             "Raise Income Tax Rate",
             "Interest Rate Cut",
             "Interest Rate Hike",
+            "Make Tax System More Progressive",
+            "Make Tax System Less Progressive",
         ],
         "objectives": { # Objectives for Demand Side Devotee (Year 10)
             "gdp_index": {
@@ -38,6 +40,8 @@ CHARACTERS = {
             "Raise Income Tax Rate",
             "Interest Rate Cut",
             "Interest Rate Hike",
+            "Make Tax System More Progressive",
+            "Make Tax System Less Progressive",
         ],
         "objectives": { # Objectives for Money Monk (Year 10)
             "gdp_index": {
@@ -62,6 +66,8 @@ CHARACTERS = {
             "Raise Income Tax Rate",
             "Interest Rate Cut",
             "Interest Rate Hike",
+            "Make Tax System More Progressive",
+            "Make Tax System Less Progressive",
         ],
         "objectives": { # Objectives for Class-Conscious Crusader (Year 10)
             "gdp_index": {
@@ -83,6 +89,8 @@ CHARACTERS = {
             "Raise Income Tax Rate",
             "Interest Rate Cut",
             "Interest Rate Hike",
+            "Make Tax System More Progressive",
+            "Make Tax System Less Progressive",
         ],
         "objectives": { # Objectives for Austerity Apostle (Year 10)
             "gdp_index": {

@@ -273,92 +273,115 @@ def check_for_events(year):
 
 # --- Applying Effects (Revised Logic) ---
 
-def apply_effects(base_params, latest_solution, cards_played=None, active_events=None, character_id=None):
+# MODIFIED Signature: Added persistent_effects_state and temporary_effects_state arguments
+def apply_effects(base_params, latest_solution, persistent_effects_state, temporary_effects_state, cards_played=None, active_events=None, character_id=None):
     """
     Calculates the combined effects of persistent effects, temporary effects,
-    cards played this turn, and active events on parameters.
+    cards played this turn, and active events on parameters. Reads/writes persistent
+    and temporary effects from/to the provided state dictionaries/lists.
 
     Args:
         base_params (dict): Dictionary of base numerical parameters (model defaults + exogenous).
         latest_solution (dict): Dictionary of variable values from the previous turn's solution (used for context if needed, not as base).
+        persistent_effects_state (dict): The dictionary holding current persistent effects.
+        temporary_effects_state (list): The list holding current temporary effects.
         cards_played (list, optional): List of card names played this turn. Defaults to None.
         active_events (list, optional): List of event names active this turn. Defaults to None.
         character_id (str, optional): The ID of the selected character, used for applying bonuses. Defaults to None.
 
     Returns:
-        dict: A dictionary containing the final numerical parameter values for the current turn,
-              reflecting the applied effects.
+        tuple: (final_params, updated_persistent_effects, updated_temporary_effects)
+               - final_params (dict): Final parameters after all effects.
+               - updated_persistent_effects (dict): The modified persistent effects dictionary.
+               - updated_temporary_effects (list): The modified temporary effects list.
     """
     if cards_played is None:
         cards_played = []
     if active_events is None:
         active_events = []
 
-    # --- Initialize State Variables if Missing ---
-    if 'temporary_effects' not in st.session_state:
-        st.session_state.temporary_effects = []
-        logging.warning("Initialized st.session_state.temporary_effects in apply_effects.")
-    if 'persistent_effects' not in st.session_state:
-        st.session_state.persistent_effects = {}
-        logging.warning("Initialized st.session_state.persistent_effects in apply_effects.")
+    # Use the passed-in state directly, ensure they are mutable copies if needed upstream
+    current_persistent_effects = persistent_effects_state # This will be updated by new persistent cards
+    incoming_temporary_effects = temporary_effects_state # Effects active at the start of the turn
+    new_temporary_effects_this_turn = [] # Effects added by cards/events this turn
 
     # Start with a deep copy of the TRUE base parameters for this turn
     final_params = copy.deepcopy(base_params)
-    logging.debug(f"apply_effects started with base_params keys: {list(final_params.keys())}")
+    # We will apply effects in stages:
+    # 1. Process cards/events to update persistent state and collect new temporary effects. Apply instant event effects.
+    # 2. Apply cumulative persistent effects (now including new ones).
+    # 3. Apply all active temporary effects (old and new) and update durations for next turn.
+    # logging.debug(f"apply_effects started with base_params keys: {list(final_params.keys())}") # COMMENTED OUT FOR BREVITY
+    # Removed block that inherited parameters from latest_solution to fix double-counting.
+    # Calculations now start directly from base_params.
 
-    # --- 1. Apply Cumulative Persistent Card Effects ---
-    # These modify the baseline for the current turn calculation
-    persistent_effects_applied = {}
-    for param, cumulative_effect in st.session_state.persistent_effects.items():
+
+    # --- 2. Apply Active Temporary Effects and Update Durations ---
+    # --- Process Effects of Cards Played THIS Turn (Update State / Collect New Temp Effects) ---
+    # (Card processing loop - lines 366-456 - will modify state/collect effects)
+
+    # --- Process New Event Effects (Apply Instant / Collect Temp) ---
+    # (Event processing loop - lines 459-494 - will modify state/collect effects/apply instant)
+
+    # --- Apply Cumulative Persistent Card Effects (Now includes new cards) ---
+    # This loop now runs AFTER the card/event processing loops have updated current_persistent_effects
+    persistent_effects_applied = {} # Track what was applied
+    for param, cumulative_effect in current_persistent_effects.items():
         if param in final_params:
             try:
-                current_base = float(final_params[param])
-                new_val = current_base + cumulative_effect
+                # Apply cumulative effect to the current value in final_params
+                current_val_before_persist = float(final_params[param])
+                new_val = current_val_before_persist + cumulative_effect
                 final_params[param] = new_val
                 persistent_effects_applied[param] = cumulative_effect # Track what was applied
-                logging.info(f"[Persistent Effect] Applied cumulative effect for '{param}': {current_base:.4f} + {cumulative_effect:.4f} -> {new_val:.4f}")
+                logging.info(f"[Persistent Apply] Applied TOTAL cumulative effect for '{param}': {current_val_before_persist:.4f} + {cumulative_effect:.4f} -> {new_val:.4f}")
             except (TypeError, ValueError) as e:
-                logging.error(f"[Persistent Effect Error] Could not apply persistent effect for param '{param}'. Base Value: {final_params.get(param)}. Error: {e}")
+                logging.error(f"[Persistent Apply Error] Could not apply TOTAL persistent effect for param '{param}'. Current Value: {final_params.get(param)}. Error: {e}")
         else:
-            logging.warning(f"[Persistent Effect Warning] Param '{param}' from persistent_effects not found in base_params.")
+            logging.warning(f"[Persistent Apply Warning] Param '{param}' from persistent_effects not found in final_params.")
 
-    # --- 2. Process and Revert Expired Temporary Event Effects ---
-    # This adjusts the current state based on expiring *event* effects
-    expired_effects_to_revert = []
-    active_temporary_effects = [] # Keep track of non-expired ones
 
-    for temp_effect in st.session_state.temporary_effects:
+    # --- Apply Active Temporary Effects (Old and New) and Update Durations ---
+    next_turn_temporary_effects = [] # Build the list for the *next* turn
+    active_temp_effects_applied = {} # Track effects applied this turn
+
+    # Combine incoming effects and newly added temporary effects for processing this turn
+    all_temp_effects_to_process = incoming_temporary_effects + new_temporary_effects_this_turn
+    logging.debug(f"Processing {len(incoming_temporary_effects)} incoming temp effects and {len(new_temporary_effects_this_turn)} new temp effects.")
+
+    for temp_effect in all_temp_effects_to_process: # Iterate over combined list
+        param = temp_effect['param']
+        effect = temp_effect['effect']
+        source = temp_effect.get('source', 'Unknown Source')
+        remaining_duration = temp_effect['remaining_duration']
+
+        # Apply effect if it's still active (duration > 0)
+        if remaining_duration > 0:
+            if param in final_params:
+                try:
+                    current_val = float(final_params[param])
+                    new_val = current_val + effect
+                    final_params[param] = new_val
+                    active_temp_effects_applied[param] = active_temp_effects_applied.get(param, 0) + effect # Track cumulative application this turn
+                    logging.info(f"[Temp Apply Active] Applied effect from '{source}' to '{param}': {current_val:.4f} + {effect:.4f} -> {new_val:.4f} (Had {remaining_duration} turns left)")
+                except (TypeError, ValueError) as e:
+                    logging.error(f"[Temp Apply Active Error] Could not apply active temp effect for param '{param}' from '{source}'. Value: {final_params.get(param)}. Error: {e}")
+            else:
+                logging.warning(f"[Temp Apply Active Warning] Param '{param}' from active temporary effect ({source}) not found in final_params.")
+
+        # Decrement duration *after* applying the effect for this turn
         temp_effect['remaining_duration'] -= 1
-        if temp_effect['remaining_duration'] <= 0:
-            expired_effects_to_revert.append(temp_effect)
-            logging.info(f"[Temp Revert] Expired temporary effect from '{temp_effect.get('source', 'Unknown')}' on param '{temp_effect['param']}'.")
+
+        # Keep the effect for the next turn only if duration is still positive
+        if temp_effect['remaining_duration'] > 0:
+            next_turn_temporary_effects.append(temp_effect)
         else:
-            active_temporary_effects.append(temp_effect) # Keep active ones
+             logging.info(f"[Temp Expire] Temporary effect from '{source}' on param '{param}' expired.")
 
-    # Update session state *after* iteration
-    st.session_state.temporary_effects = active_temporary_effects
+    # Note: The state list `incoming_temporary_effects` is effectively replaced by `next_turn_temporary_effects` at the end.
 
-    # --- 2b. Apply Active Ongoing Temporary Effects ---
-    # Apply effects from temporary sources (cards/events from previous turns) that are still active
-    active_temp_effects_applied = {}
-    for active_effect in st.session_state.temporary_effects: # This list now only contains active effects
-        param = active_effect['param']
-        effect = active_effect['effect']
-        source = active_effect.get('source', 'Unknown Source')
-        remaining_duration = active_effect['remaining_duration']
-
-        if param in final_params:
-            try:
-                current_val = float(final_params[param])
-                new_val = current_val + effect
-                final_params[param] = new_val
-                active_temp_effects_applied[param] = active_temp_effects_applied.get(param, 0) + effect # Track cumulative application this turn
-                logging.info(f"[Temp Apply Active] Applied effect from '{source}' to '{param}': {current_val:.4f} + {effect:.4f} -> {new_val:.4f} ({remaining_duration} turns left)")
-            except (TypeError, ValueError) as e:
-                logging.error(f"[Temp Apply Active Error] Could not apply active temp effect for param '{param}' from '{source}'. Value: {final_params.get(param)}. Error: {e}")
-        else:
-            logging.warning(f"[Temp Apply Active Warning] Param '{param}' from active temporary effect ({source}) not found in final_params.")
-    # --- 3. Apply Effects of Cards Played THIS Turn ---
+    # --- Process Effects of Cards Played THIS Turn (Update State / Collect New Temp Effects) ---
+    # This section now primarily updates state dictionaries/lists
     for card_name in cards_played:
         if card_name not in POLICY_CARDS:
             logging.warning(f"Card '{card_name}' not found in POLICY_CARDS. Skipping.")
@@ -406,51 +429,42 @@ def apply_effects(base_params, latest_solution, cards_played=None, active_events
 
             # --- Handle Persistent vs Temporary Card Effects ---
             if card_duration is None: # PERSISTENT Card
-                # Update the *cumulative* persistent effect for this parameter
-                current_persistent_total = st.session_state.persistent_effects.get(param, 0.0)
+                # MODIFIED: Update the passed-in current_persistent_effects dictionary
+                current_persistent_total = current_persistent_effects.get(param, 0.0)
                 new_persistent_total = current_persistent_total + actual_effect
-                st.session_state.persistent_effects[param] = new_persistent_total
+                current_persistent_effects[param] = new_persistent_total # Update the dict directly
                 logging.info(f"[Persistent Update] Card '{card_name}' updated cumulative effect for '{param}' from {current_persistent_total:.4f} to {new_persistent_total:.4f} (added {actual_effect:.4f})")
 
-                # Apply the *new total* persistent effect relative to the original base
-                if param in base_params: # Check against original base
-                    try:
-                        current_base = float(base_params[param])
-                        # Apply the full new cumulative effect, overriding previous persistent application for this param
-                        new_val = current_base + new_persistent_total
-                        final_params[param] = new_val
-                        logging.info(f"{log_prefix} Card '{card_name}' (Persistent) set '{param}' to {new_val:.4f} (Base: {current_base:.4f}, Total Persist: {new_persistent_total:.4f})")
-                    except (TypeError, ValueError) as e:
-                        logging.error(f"[Persistent Apply Error] Card '{card_name}' failed for param '{param}'. Base Value: {base_params.get(param)}. Error: {e}")
-                else:
-                     logging.warning(f"[Persistent Apply Warning] Param '{param}' not found in base_params for persistent card '{card_name}'.")
+                # REMOVED: Direct application of incremental persistent effect.
+                # The total cumulative effect (including this card) will be applied later
+                # in the dedicated "Apply Cumulative Persistent Card Effects" block.
+                # Log the update to the persistent state only.
+                logging.info(f"{log_prefix} Card '{card_name}' (Persistent) updated state for '{param}'. Effect: {actual_effect:.4f}. New Total Persist State: {new_persistent_total:.4f}")
 
             else: # TEMPORARY Card
-                # Apply effect directly for this turn
-                if param in final_params:
-                    try:
-                        current_val = float(final_params[param])
-                        new_val = current_val + actual_effect
-                        final_params[param] = new_val
-                        logging.info(f"{log_prefix} Card '{card_name}' (Temp Duration: {card_duration}) changing '{param}' from {current_val:.4f} to {new_val:.4f} (Effect: {actual_effect:.4f})")
-
-                        # Add to temporary effects list for tracking/reversion
-                        st.session_state.temporary_effects.append({
-                            'source': f"Card: {card_name}",
-                            'param': param,
-                            'effect': actual_effect, # Store the applied effect
-                            'remaining_duration': card_duration
-                        })
-                        logging.info(f"[Temp Track] Tracking temporary effect from card '{card_name}' on '{param}' for {card_duration} turns.")
-
-                    except (TypeError, ValueError) as e:
-                        logging.error(f"[Temp Apply Error] Card '{card_name}' failed for param '{param}'. Value: {final_params.get(param)}. Error: {e}")
+                # Temporary Card: Collect effect, do not apply directly yet.
+                if param is not None and actual_effect is not None and card_duration is not None:
+                     # Add to the list of *new* temporary effects collected this turn
+                     new_effect_data = {
+                         'source': f"Card: {card_name}",
+                         'param': param,
+                         'effect': actual_effect, # Store the applied effect
+                         'remaining_duration': card_duration # Store original duration
+                     }
+                     new_temporary_effects_this_turn.append(new_effect_data)
+                     # Log collection, not application
+                     logging.info(f"{log_prefix} Card '{card_name}' (Temp Duration: {card_duration}) collecting new temporary effect for '{param}': {actual_effect:.4f}. Will be applied later.")
+                     logging.info(f"[Temp Collect] Collecting temporary effect from card '{card_name}' on '{param}' for {card_duration} turns.")
                 else:
-                    logging.warning(f"[Temp Apply Warning] Param '{param}' not found in final_params for temporary card '{card_name}'.")
+                    logging.warning(f"Skipping temporary effect collection for card '{card_name}' due to missing data (param/effect/duration).")
+
+                # Removed direct application block:
+                # if param in final_params:
+                #    try: ... final_params[param] = new_val ...
         # --- End of loop through effects list ---
 
-    # --- 4. Apply New Event Effects ---
-    # These apply on top of persistent and current temporary card effects
+    # --- Process New Event Effects (Apply Instant / Collect Temp) ---
+    # These are processed after cards.
     for event_name in active_events:
          if event_name in ECONOMIC_EVENTS:
             event = ECONOMIC_EVENTS[event_name]
@@ -462,33 +476,44 @@ def apply_effects(base_params, latest_solution, cards_played=None, active_events
                 logging.warning(f"Event '{event_name}' has missing param or effect. Skipping.")
                 continue
 
-            # Get current value *from the dictionary we are modifying*
-            current_value = final_params.get(param, base_params.get(param, 0.0))
-
-            # Ensure we are working with floats
-            try:
-                current_float = float(current_value)
-                new_value = current_float + effect
-                final_params[param] = new_value # Update the dictionary
-                logging.info(f"[Effect] Event '{event_name}' changing '{param}' from {current_float:.4f} to {new_value:.4f}")
-
-                # --- Check and Track New Temporary Event ---
-                if duration is not None and duration > 0:
-                    st.session_state.temporary_effects.append({
-                        'source': f"Event: {event_name}", # Use 'source' consistently
+            # Check if the event effect is temporary or instant
+            if duration is not None and duration > 0:
+                # Temporary Event: Collect it, don't apply directly yet.
+                if param is not None and effect is not None:
+                    new_effect_data = {
+                        'source': f"Event: {event_name}",
                         'param': param,
-                        'effect': effect, # Store the actual effect magnitude applied
+                        'effect': effect,
                         'remaining_duration': duration
-                    })
-                    logging.info(f"[Temp Track] Tracking temporary effect from event '{event_name}' on '{param}' for {duration} turns.")
+                    }
+                    new_temporary_effects_this_turn.append(new_effect_data)
+                    logging.info(f"[Temp Collect] Collecting temporary effect from event '{event_name}' on '{param}' for {duration} turns.")
+                else:
+                    logging.warning(f"Skipping temporary effect collection for event '{event_name}' due to missing data (param/effect).")
 
-            except (TypeError, ValueError) as e:
-                 logging.error(f"[Effect Error] Event '{event_name}' failed for param '{param}'. Value: {current_value}. Error: {e}")
+            else:
+                # Instant Event: Apply directly to final_params now.
+                if param in final_params:
+                    # Get current value *from the dictionary we are modifying*
+                    current_value = final_params.get(param) # Should exist if check passes
+
+                    # Ensure we are working with floats
+                    try:
+                        current_float = float(current_value) # Use current value from final_params
+                        new_value = current_float + effect
+                        final_params[param] = new_value # Update the dictionary
+                        logging.info(f"[Instant Effect] Event '{event_name}' changing '{param}' from {current_float:.4f} to {new_value:.4f}")
+                    except (TypeError, ValueError) as e:
+                         logging.error(f"[Instant Effect Error] Event '{event_name}' failed for param '{param}'. Value: {current_value}. Error: {e}")
+                else:
+                    logging.warning(f"[Instant Effect Warning] Param '{param}' not found in final_params for instant event '{event_name}'.")
          else:
              logging.warning(f"Event '{event_name}' not found in ECONOMIC_EVENTS.")
 
-    logging.debug(f"apply_effects finished. Returning final_params keys: {list(final_params.keys())}")
-    return final_params # Return the dictionary of modified parameters
+    # logging.debug(f"apply_effects finished. Returning final_params keys: {list(final_params.keys())}") # COMMENTED OUT FOR BREVITY
+    # MODIFIED: Return the updated state dictionaries/lists
+    # Return the calculated parameters and the updated state lists/dicts for the *next* turn
+    return final_params, current_persistent_effects, next_turn_temporary_effects
 
 
 def select_dilemma(advisor_id, seen_dilemmas, removed_cards_this_playthrough):

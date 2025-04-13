@@ -63,4 +63,8 @@ def display_title_logo():
 
 # (display_game_over_screen function moved to src/ui_game_over.py)
 
-# (display_credits function moved to src/ui_credits.py)
+
+# --- Main Game Phase UI ---
+if st.session_state.get('game_phase') == 'main_game':
+    # ... (other main game UI)
+    display_credits()

@@ -4,6 +4,7 @@
 import streamlit as st
 import logging
 
+
 # Import project modules & components
 from src.config import INITIAL_HAND_SIZE, GAME_END_YEAR # Needed for character selection logic
 try:
@@ -11,6 +12,7 @@ try:
     from game_mechanics import create_deck, draw_cards, apply_dilemma_choice
     from events import generate_full_event_sequence # Added for event pre-generation
 except ImportError as e:
+
     # This is a critical error if components are missing
     logging.error(f"Failed to import game components in action_handlers.py: {e}")
     # We can't use st.error here directly as it might not be in a Streamlit context always
@@ -181,3 +183,5 @@ def handle_confirm_policies_action():
         # but for now, let's assume linear progression and clean up.
         # Consider the implications if navigation becomes non-linear.
         pass # Keep dilemma_processed_for_year flag for now
+
+

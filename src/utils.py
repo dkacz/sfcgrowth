@@ -21,7 +21,7 @@ def format_percent(value):
     """Formats a float as a percentage string."""
     if not np.isfinite(value):
         return "N/A"
-    return f"{value*100:.2f}%"
+    return f"{value*100:.1f}%"
 
 def format_value(value, precision=2):
     """Formats a float or number to a specific precision string."""
@@ -125,7 +125,7 @@ def get_delta_percent(current_val, prev_val):
          return None
      delta = (current_val - prev_val) * 100
      # Format as percentage points, including sign
-     return f"{delta:+.2f} % pts" # More explicit label
+     return f"{delta:+.1f} % pts" # More explicit label
 
 def get_delta_points(current_val, prev_val):
     """ Helper to calculate absolute point delta string for st.metric """

@@ -108,6 +108,11 @@ def display_game_over_screen(all_objectives_met, results_summary):
                     try:
                         logging.info(f"Starting baseline simulation runs for {num_years} years.")
                         all_successful = True
+                        # Extract the history of cards played in the actual game run
+                        actual_played_cards_history = {entry['year']: entry.get('played_cards', []) for entry in history if 'year' in entry}
+                        logging.debug(f"Extracted actual played cards history: {actual_played_cards_history}")
+
+
                         for start_year in range(1, num_years + 1):
                             st.write(f"Running baseline starting from Year {start_year}...") # Progress update
                             logging.info(f"Running baseline for Year {start_year}...")
@@ -157,15 +162,15 @@ def display_game_over_screen(all_objectives_met, results_summary):
                             # Call run_baseline_simulation with all required arguments
                             # Note: Passing state dict instead of Model object for initial_model_state
                             # Note: Passing potentially incorrect (final) effect states
+                            # Updated call to the refactored baseline function
                             baseline_history = run_baseline_simulation(
                                 start_year=start_year,
-                                initial_state_dict=current_initial_state_dict, # Pass the dict using the correct arg name
-                                initial_history=initial_history_slice,
+                                actual_game_history=history, # Pass the full actual history list
+                                initial_game_state_dict=initial_state_dict, # Pass the game's initial state dict
                                 full_event_sequence=full_event_sequence_dict,
-                                initial_persistent_effects=initial_persistent_effects_slice,
-                                initial_temporary_effects=initial_temporary_effects_slice,
-                                character_id=character_id
-                                # max_years is not needed by the baseline function itself
+                                character_id=character_id,
+                                actual_played_cards_history=actual_played_cards_history,
+                                game_base_yk=st.session_state.base_yk # Pass base Yk for KPIs
                             )
                             # Store the result
                             st.session_state.baseline_results[start_year] = baseline_history
@@ -213,7 +218,7 @@ def display_game_over_screen(all_objectives_met, results_summary):
             # Define KPIs to compare and their display names/units
             kpi_keys = {
                 "Yk_Index": "GDP Index",
-                "PI": "Inflation",
+                "Inflation": "Inflation", # Use the calculated KPI key
                 "GD_GDP": "Gov Debt/GDP",
                 "Unemployment": "Unemployment"
             }
@@ -232,6 +237,30 @@ def display_game_over_screen(all_objectives_met, results_summary):
                 # Get cards played in Year N from the main history
                 played_cards = history[year_index].get('played_cards', [])
                 logging.debug(f"        Year {N}: Played cards check. Found cards: {bool(played_cards)}. Cards: {played_cards}") # LOG ADDED
+
+                # --- Roo Debug Log: Log actual state when neutralizing cards are played ---
+                neutralizing_pair_check = {'Increase Government Spending', 'Decrease Government Spending', 'Make Tax System More Progressive', 'Make Tax System Less Progressive'} # Add both pairs
+                actual_cards_set = set(played_cards)
+                is_neutralizing = (actual_cards_set == {'Increase Government Spending', 'Decrease Government Spending'} or
+                                   actual_cards_set == {'Make Tax System More Progressive', 'Make Tax System Less Progressive'})
+
+                if is_neutralizing:
+                    actual_state_at_N = history[year_index]
+                    log_subset_actual_N = {k: actual_state_at_N.get(k, 'N/A') for k in ['Yk_Index', 'Inflation', 'GD_GDP', 'Unemployment', 'alpha1', 'Rbbar', 'GRg', 'theta']}
+                    logging.debug(f'          ACTUAL_STEP_N_RESULT Year={N} (Neutralizing): {log_subset_actual_N}')
+                # --- End Roo Debug Log ---
+
+                # --- Roo Debug Log: Log actual state when neutralizing cards are played ---
+                neutralizing_pair_check = {'Increase Government Spending', 'Decrease Government Spending', 'Make Tax System More Progressive', 'Make Tax System Less Progressive'} # Add both pairs
+                actual_cards_set = set(played_cards)
+                is_neutralizing = (actual_cards_set == {'Increase Government Spending', 'Decrease Government Spending'} or
+                                   actual_cards_set == {'Make Tax System More Progressive', 'Make Tax System Less Progressive'})
+
+                if is_neutralizing:
+                    actual_state_at_N = history[year_index]
+                    log_subset_actual_N = {k: actual_state_at_N.get(k, 'N/A') for k in ['Yk_Index', 'Inflation', 'GD_GDP', 'Unemployment', 'alpha1', 'Rbbar', 'GRg', 'theta']}
+                    logging.debug(f'          ACTUAL_STEP_N_RESULT Year={N} (Neutralizing): {log_subset_actual_N}')
+                # --- End Roo Debug Log ---
 
                 # Skip analysis if no cards were played this year
                 if not played_cards:
@@ -295,22 +324,37 @@ def display_game_over_screen(all_objectives_met, results_summary):
                     impact_cols = st.columns(len(kpi_keys)) # Create columns for each KPI
 
                     # --- LOGGING: Show the dictionaries being compared ---
-                    logging.debug(f"        Year {N} Comparison Data:")
-                    logging.debug(f"          Actual Final KPIs (Year 10): {actual_final_kpis}")
-                    logging.debug(f"          Baseline Final KPIs (Year 10 from baseline {baseline_key}): {baseline_final_kpis}")
-                    # --- END LOGGING ---
+                    # --- Roo Debug Log: Log comparison data for ALL years ---
+                    log_subset_actual = {k: actual_final_kpis.get(k, 'N/A') for k in kpi_keys}
+                    log_subset_baseline = {k: baseline_final_kpis.get(k, 'N/A') for k in kpi_keys}
+                    logging.debug(f"        Year {N} Comparison (Baseline Key {baseline_key}):")
+                    logging.debug(f"          Actual KPIs: {log_subset_actual}")
+                    logging.debug(f"          Baseline KPIs: {log_subset_baseline}")
+                    # --- End Roo Debug Log ---
 
                     for i, (kpi_key, kpi_name) in enumerate(kpi_keys.items()):
+                        impact = None # Initialize impact for each KPI
+
                         actual_val = actual_final_kpis.get(kpi_key)
                         baseline_val = baseline_final_kpis.get(kpi_key)
                         # Determine correct unit for the *difference*
-                        if kpi_key in ['PI', 'Unemployment', 'GD_GDP']: # Use 'PI' key for Inflation
+                        if kpi_key in ['PI', 'Inflation', 'Unemployment', 'GD_GDP']: # Ensure Inflation uses p.p.
                             diff_unit = " p.p."
                         elif kpi_key == 'Yk_Index':
                              diff_unit = "%" # Display as percentage change
                         else:
                              diff_unit = " units" # Fallback for any other KPIs
-                        logging.debug(f"            Year {N}, KPI {kpi_key}: Actual={actual_val}, Baseline={baseline_val}") # LOG ADDED
+                        # --- LOGGING: Detailed Impact Calculation ---
+                        log_msg = f"            Year {N}, KPI {kpi_key}: Actual={actual_val}, Baseline={baseline_val}, DiffUnit={diff_unit}"
+                        if kpi_key == 'GD_GDP':
+                             actual_gd = actual_final_kpis.get('GD', 'N/A')
+                             actual_y = actual_final_kpis.get('Y', 'N/A')
+                             baseline_gd = baseline_final_kpis.get('GD', 'N/A')
+                             baseline_y = baseline_final_kpis.get('Y', 'N/A')
+                             log_msg += f"\n              Raw GD: Actual={actual_gd}, Baseline={baseline_gd}"
+                             log_msg += f"\n              Raw Y: Actual={actual_y}, Baseline={baseline_y}"
+                        logging.debug(log_msg)
+                        # --- END LOGGING ---
 
                         with impact_cols[i]:
                             if actual_val is not None and baseline_val is not None:
@@ -328,8 +372,12 @@ def display_game_over_screen(all_objectives_met, results_summary):
 
                                     # Display the metric if impact calculation was successful
                                     if impact is not None:
-                                        formatted_value = f"{(impact * 100) if diff_unit == ' p.p.' else impact:+.1f}{diff_unit}"
+                                        formatted_value = f"{impact:+.1f}{diff_unit}"
                                         st.metric(label=f"{kpi_name}", value=formatted_value, delta=None)
+                                        # Display raw values for comparison
+                                        actual_display = f"{float(actual_val):.1f}" if isinstance(actual_val, (int, float)) else str(actual_val)
+                                        baseline_display = f"{float(baseline_val):.1f}" if isinstance(baseline_val, (int, float)) else str(baseline_val)
+                                        st.caption(f"Actual: {actual_display} | Baseline: {baseline_display}")
                                     else:
                                         st.caption(f"{kpi_name}: Change Undefined")
                                 except (ValueError, TypeError) as e:
