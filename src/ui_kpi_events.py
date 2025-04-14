@@ -51,13 +51,20 @@ def display_kpi_and_events_section():
                     effect_str = f"Effect: {formatted_val} on {param_name} ({param_desc})"
                     effect_str = f'<small style="color: #888;"><i>{effect_str}</i></small>'
 
+                # Calculate duration string conditionally
+                duration_str = ""
+                duration = event_details.get('duration', 0)
+                if duration > 0:
+                    turn_suffix = 'turn' if duration == 1 else 'turns'
+                    duration_str = f'<small style="color: #888;"><i>Duration: {duration} {turn_suffix}</i></small>'
+
+                # Render event card
                 st.markdown(f"""
-                <div class="event-card" style="min-height: 100px; display: flex; flex-direction: column; justify-content: flex-start;">
-                    <div>
-                        <div class="event-card-title">{event_name}</div>
-                        <div class="event-card-desc">{event_desc}</div>
-                        {effect_str}
-                    </div>
+                <div class="event-card" style="min-height: 100px;">
+                    <div class="event-card-title">{event_name}</div>
+                    <div class="event-card-desc">{event_desc}</div>
+                    <div class="event-card-effect">{effect_str}</div>
+                    <div class="event-card-duration">{duration_str}</div>
                 </div>
                 """, unsafe_allow_html=True)
     else:

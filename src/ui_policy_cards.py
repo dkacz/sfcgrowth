@@ -72,7 +72,8 @@ def render_policy_card_html(card_name, card_info, is_selected=False, is_disabled
         </div>
         <div class="card-main-content">
             <div class="card-desc">
-                {card_info.get('desc', 'No description.')}<br>
+                {card_info.get('desc', 'No description.')}
+                {'<br><small><i>Duration: ' + str(card_info.get('duration')) + (' turn' if card_info.get('duration') == 1 else ' turns') + '</i></small>' if card_info.get('duration', 0) > 0 else ''}<br>
                 {effect_str}
             </div>
             {'<div class="card-stance-bar ' + card_stance + '-bar">' + card_stance.capitalize() + '</div>' if card_stance else ''}
