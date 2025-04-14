@@ -8,6 +8,7 @@ import numpy as np
 from src.ui_plotting import create_kpi_plot
 from src.config import PARAM_DESCRIPTIONS
 from src.utils import format_effect
+from events import ECONOMIC_EVENTS, CHARACTER_EVENTS # Assuming events.py is in the root
 from events import ECONOMIC_EVENTS # Assuming events.py is in the root
 
 def display_kpi_and_events_section():
@@ -35,9 +36,11 @@ def display_kpi_and_events_section():
     if active_events:
         num_event_cols = min(len(active_events), 3)
         event_cols = st.columns(num_event_cols)
+        # Combine both event dictionaries for easier lookup
+        all_events = {**ECONOMIC_EVENTS, **CHARACTER_EVENTS}
         for i, event_name in enumerate(active_events):
             with event_cols[i % num_event_cols]:
-                event_details = ECONOMIC_EVENTS.get(event_name, {})
+                event_details = all_events.get(event_name, {})
                 event_desc = event_details.get('desc', 'No description available.')
                 param_name = event_details.get('param')
                 effect_value = event_details.get('effect')

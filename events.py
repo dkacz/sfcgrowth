@@ -161,7 +161,7 @@ CHARACTER_EVENTS = {
     },
     "Surplus Surprise": {
         "character": "Austerity Apostle",
-        "desc": "You cut so much, the government accidentally ran a surplus! Markets are... confused, and autonomous investment sentiment dips.",
+        "desc": "Unexpectedly strong tax revenues or lower-than-anticipated government spending have resulted in a budget surplus.",
         "param": "gamma0",
         "effect": -0.01,
         "duration": 2,
@@ -171,7 +171,7 @@ CHARACTER_EVENTS = {
     },
     "Inflationary Epiphany": {
         "character": "Money Monk",
-        "desc": "Meditating on price stability, you briefly misjudged how strongly inflation expectations influence wages.",
+        "desc": "A sudden realization dawns that inflationary pressures are more persistent or widespread than previously thought, potentially requiring policy adjustments.",
         "param": "omega1",
         "effect": 0.025,
         "duration": 1,
