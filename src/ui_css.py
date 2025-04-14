@@ -269,7 +269,7 @@ def display_css():
         .expansionary-bar { background-color: #4CAF50; } /* Green */
         .contractionary-bar { background-color: #f44336; } /* Red */
         .Mixed-bar { background-color: #aaaaaa; } /* Grey for Mixed */
-        .Neutral-bar { background-color: #f5f5dc; } /* Beige */
+        .Neutral-bar { background-color: #bdbdbd; } /* Medium Grey for better contrast */
         /* --- Event Cards --- */
         .event-card {
             border: 1px solid #cccccc; /* Lighter border than policy cards */
