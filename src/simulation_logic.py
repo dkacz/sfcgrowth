@@ -61,6 +61,48 @@ def run_simulation_step():
     else:
         latest_solution_values = prev_model.solutions[-1]
 
+
+    # --- Process Temporary Effect Expiration and Reversal (Start of Turn) ---
+    current_temporary_effects = st.session_state.temporary_effects
+    next_turn_temporary_effects = []
+    reverted_params = set() # Track params reverted this turn
+    logging.debug(f"[Actual Run Y{next_year}] Processing {len(current_temporary_effects)} incoming temporary effects for expiration/reversal.")
+
+    for effect_data in current_temporary_effects:
+        param = effect_data['param']
+        delta = effect_data['effect']
+        remaining_duration = effect_data['remaining_duration']
+        source = effect_data.get('source', 'Unknown Source')
+
+        # Decrement duration first
+        remaining_duration -= 1
+        effect_data['remaining_duration'] = remaining_duration # Update the dict
+
+        if remaining_duration <= 0:
+            # Effect expired, revert its impact on the *previous* state
+            logging.info(f"[Temp Revert] Effect from '{source}' on '{param}' expired. Attempting to revert delta: {delta:.4f}")
+            if param in latest_solution_values:
+                try:
+                    current_val = float(latest_solution_values[param])
+                    reverted_val = current_val - delta # Apply inverse delta
+                    latest_solution_values[param] = reverted_val
+                    reverted_params.add(param)
+                    logging.info(f"[Temp Revert Success] Reverted '{param}' from {current_val:.4f} to {reverted_val:.4f} (due to expired '{source}')")
+                except (TypeError, ValueError, KeyError) as e:
+                    logging.error(f"[Temp Revert Error] Could not revert expired effect for param '{param}' from '{source}'. Current Value: {latest_solution_values.get(param)}. Error: {e}")
+            else:
+                logging.warning(f"[Temp Revert Warning] Param '{param}' from expired effect ({source}) not found in latest_solution_values. Cannot revert.")
+            # Do not add expired effect to next_turn_temporary_effects
+        else:
+            # Effect still active, keep it for the next turn's list
+            next_turn_temporary_effects.append(effect_data)
+
+    # Update the session state with the list of effects remaining for the *next* turn
+    st.session_state.temporary_effects = next_turn_temporary_effects
+    if reverted_params:
+        logging.debug(f"[Actual Run Y{next_year}] Parameters reverted due to expired effects: {reverted_params}")
+    logging.debug(f"[Actual Run Y{next_year}] {len(st.session_state.temporary_effects)} temporary effects remaining for next turn.")
+    # --- End Temporary Effect Expiration ---
     # --- Calculate and Apply Parameters ---
     # Initialize base parameters correctly depending on the year
     if current_year == 0:
@@ -345,11 +387,88 @@ def run_baseline_simulation(
              # Use the state from the *actual* run at the end of year baseline_year - 1
              history_index = baseline_year - 2 # -1 for 0-based, -1 for previous year
              if len(actual_game_history) > history_index:
-                 latest_solution_values = copy.deepcopy(actual_game_history[history_index])
-                 # Use the actual game history up to this point for the solver
-                 previous_solver_solutions = copy.deepcopy(actual_game_history[:history_index+1]) # Include the state we are starting from
-                 logging.debug(f"[Baseline Year {baseline_year}] Using actual history index {history_index} as previous state. Using actual history slice [: {history_index+1}] for solver.")
-             else:
+                  # Indentation level 3 (inside 'if baseline_year == start_year:' -> 'if len(...) > index:')
+                  latest_solution_values = copy.deepcopy(actual_game_history[history_index])
+                  # Use the actual game history up to this point for the solver
+                  previous_solver_solutions = copy.deepcopy(actual_game_history[:history_index+1]) # Include the state we are starting from
+                  logging.debug(f"[Baseline Year {baseline_year}] Using actual history index {history_index} as previous state. Using actual history slice [: {history_index+1}] for solver.")
+
+                  # --- Process Temporary Effect Expiration and Reversal (Start of Baseline Turn) ---
+                  # Indentation level 3
+                  # Operates on the local baseline_temporary_effects list and latest_solution_values for this step
+                  next_baseline_turn_temporary_effects = []
+                  reverted_params_baseline = set()
+                  logging.debug(f"[Baseline Year {baseline_year}] Processing {len(baseline_temporary_effects)} incoming temporary effects for expiration/reversal.")
+
+                  # Indentation level 3
+                  for effect_data in baseline_temporary_effects:
+                      # Indentation level 4
+                      param = effect_data['param']
+                      delta = effect_data['effect']
+                      remaining_duration = effect_data['remaining_duration']
+                      source = effect_data.get('source', 'Unknown Source')
+
+                      # Indentation level 4
+                      # Decrement duration first
+                      remaining_duration -= 1
+                      effect_data['remaining_duration'] = remaining_duration # Update the dict
+
+                      # Indentation level 4
+                      if remaining_duration <= 0:
+                          # Indentation level 5
+                          # Effect expired, revert its impact on the *previous* state for this baseline step
+                          logging.info(f"[Baseline Temp Revert Y{baseline_year}] Effect from '{source}' on '{param}' expired. Attempting to revert delta: {delta:.4f}")
+                          if param in latest_solution_values:
+                              # Indentation level 6
+                              try:
+                                  # Indentation level 7
+                                  current_val = float(latest_solution_values[param])
+                                  reverted_val = current_val - delta # Apply inverse delta
+                                  latest_solution_values[param] = reverted_val
+                                  reverted_params_baseline.add(param)
+                                  logging.info(f"[Baseline Temp Revert Success Y{baseline_year}] Reverted '{param}' from {current_val:.4f} to {reverted_val:.4f} (due to expired '{source}')")
+                              except (TypeError, ValueError, KeyError) as e:
+                                  # Indentation level 7
+                                  logging.error(f"[Baseline Temp Revert Error Y{baseline_year}] Could not revert expired effect for param '{param}' from '{source}'. Current Value: {latest_solution_values.get(param)}. Error: {e}")
+                          else:
+                              # Indentation level 6
+                              # Check if param exists with lag suffix (e.g., _Y__1)
+                              lagged_param = f"_{param}__{1}" # Simple lag-1 check, might need refinement
+                              if lagged_param in latest_solution_values:
+                                   # Indentation level 7
+                                   try:
+                                      # Indentation level 8
+                                      current_val = float(latest_solution_values[lagged_param])
+                                      reverted_val = current_val - delta
+                                      latest_solution_values[lagged_param] = reverted_val
+                                      reverted_params_baseline.add(lagged_param)
+                                      logging.info(f"[Baseline Temp Revert Success Y{baseline_year}] Reverted lagged '{lagged_param}' from {current_val:.4f} to {reverted_val:.4f} (due to expired '{source}')")
+                                   except (TypeError, ValueError, KeyError) as e:
+                                      # Indentation level 8
+                                      logging.error(f"[Baseline Temp Revert Error Y{baseline_year}] Could not revert expired effect for lagged param '{lagged_param}' from '{source}'. Current Value: {latest_solution_values.get(lagged_param)}. Error: {e}")
+                              else:
+                                  # Indentation level 7
+                                  logging.warning(f"[Baseline Temp Revert Warning Y{baseline_year}] Param '{param}' (and lagged '{lagged_param}') from expired effect ({source}) not found in latest_solution_values. Cannot revert.")
+                          # Indentation level 5 (aligned with the 'if param in ...' and 'else:')
+                          # Do not add expired effect to next_baseline_turn_temporary_effects
+                      else:
+                          # Indentation level 5 (aligned with 'if remaining_duration <= 0:')
+                          # Effect still active, keep it for the next turn's list
+                          next_baseline_turn_temporary_effects.append(effect_data)
+                  # End of for loop (Indentation level 3)
+
+                  # Indentation level 3
+                  # Update the local baseline list for the *next* iteration of this baseline run
+                  baseline_temporary_effects = next_baseline_turn_temporary_effects
+                  if reverted_params_baseline:
+                      # Indentation level 4
+                      logging.debug(f"[Baseline Year {baseline_year}] Parameters reverted due to expired effects: {reverted_params_baseline}")
+                  # Indentation level 3
+                  logging.debug(f"[Baseline Year {baseline_year}] {len(baseline_temporary_effects)} temporary effects remaining for next baseline step.")
+                  # --- End Baseline Temporary Effect Expiration ---
+
+             else: # This 'else' corresponds to 'if len(actual_game_history) > history_index:' (Indentation level 2)
+                 # Indentation level 3
                  logging.error(f"[Baseline Year {baseline_year}] Cannot get previous state: actual_game_history length ({len(actual_game_history)}) too short for index {history_index}.")
                  return None
         else: # Subsequent baseline steps use the previous baseline result

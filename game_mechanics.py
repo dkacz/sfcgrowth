@@ -428,40 +428,33 @@ def apply_effects(base_params, latest_solution, persistent_effects_state, tempor
             log_prefix = "[Effect Bonus]" if bonus_applied_log else "[Effect]"
 
             # --- Handle Persistent vs Temporary Card Effects ---
-            if card_duration is None: # PERSISTENT Card
-                # MODIFIED: Update the passed-in current_persistent_effects dictionary
+            if card_duration is None or card_duration <= 0: # PERSISTENT Card (or duration 0/invalid)
+                # Update the persistent effects state dictionary
                 current_persistent_total = current_persistent_effects.get(param, 0.0)
                 new_persistent_total = current_persistent_total + actual_effect
                 current_persistent_effects[param] = new_persistent_total # Update the dict directly
                 logging.info(f"[Persistent Update] Card '{card_name}' updated cumulative effect for '{param}' from {current_persistent_total:.4f} to {new_persistent_total:.4f} (added {actual_effect:.4f})")
-
-                # REMOVED: Direct application of incremental persistent effect.
-                # The total cumulative effect (including this card) will be applied later
-                # in the dedicated "Apply Cumulative Persistent Card Effects" block.
-                # Log the update to the persistent state only.
+                # Log the update to the persistent state. The cumulative effect will be applied later.
                 logging.info(f"{log_prefix} Card '{card_name}' (Persistent) updated state for '{param}'. Effect: {actual_effect:.4f}. New Total Persist State: {new_persistent_total:.4f}")
 
-            else: # TEMPORARY Card
-                # Temporary Card: Collect effect, do not apply directly yet.
-                if param is not None and actual_effect is not None and card_duration is not None:
-                     # Add to the list of *new* temporary effects collected this turn
-                     new_effect_data = {
-                         'source': f"Card: {card_name}",
-                         'param': param,
-                         'effect': actual_effect, # Store the applied effect
-                         'remaining_duration': card_duration # Store original duration
-                     }
-                     new_temporary_effects_this_turn.append(new_effect_data)
-                     # Log collection, not application
-                     logging.info(f"{log_prefix} Card '{card_name}' (Temp Duration: {card_duration}) collecting new temporary effect for '{param}': {actual_effect:.4f}. Will be applied later.")
-                     logging.info(f"[Temp Collect] Collecting temporary effect from card '{card_name}' on '{param}' for {card_duration} turns.")
+            elif card_duration > 0: # TEMPORARY Card
+                # Collect the effect details to be processed later in the temporary effects block
+                if param is not None and actual_effect is not None:
+                    new_effect_data = {
+                        'source': f"Card: {card_name}",
+                        'param': param,
+                        'effect': actual_effect, # Store the delta effect
+                        'remaining_duration': card_duration # Store the initial duration
+                    }
+                    new_temporary_effects_this_turn.append(new_effect_data)
+                    logging.info(f"{log_prefix} Card '{card_name}' (Temp Duration: {card_duration}) collecting new temporary effect for '{param}': {actual_effect:.4f}. Will be processed later.")
+                    logging.info(f"[Temp Collect] Collecting temporary effect from card '{card_name}' on '{param}' for {card_duration} turns.")
                 else:
-                    logging.warning(f"Skipping temporary effect collection for card '{card_name}' due to missing data (param/effect/duration).")
+                    logging.warning(f"Skipping temporary effect collection for card '{card_name}' due to missing data (param/effect).")
+            # else: card_duration is likely invalid (e.g., negative), treat as persistent or log warning?
+            # Current logic treats None or <= 0 as persistent.
 
-                # Removed direct application block:
-                # if param in final_params:
-                #    try: ... final_params[param] = new_val ...
-        # --- End of loop through effects list ---
+        # --- End of loop through effects list for a single card ---
 
     # --- Process New Event Effects (Apply Instant / Collect Temp) ---
     # These are processed after cards.
@@ -477,20 +470,19 @@ def apply_effects(base_params, latest_solution, persistent_effects_state, tempor
                 continue
 
             # Check if the event effect is temporary or instant
-            if duration is not None and duration > 0:
-                # Temporary Event: Collect it, don't apply directly yet.
+            if duration is not None and duration > 0: # Temporary Event
+                # Collect the effect details to be processed later in the temporary effects block
                 if param is not None and effect is not None:
                     new_effect_data = {
                         'source': f"Event: {event_name}",
                         'param': param,
-                        'effect': effect,
-                        'remaining_duration': duration
+                        'effect': effect, # Store the delta effect
+                        'remaining_duration': duration # Store the initial duration
                     }
                     new_temporary_effects_this_turn.append(new_effect_data)
-                    logging.info(f"[Temp Collect] Collecting temporary effect from event '{event_name}' on '{param}' for {duration} turns.")
+                    logging.info(f"[Temp Collect] Collecting temporary effect from event '{event_name}' on '{param}' for {duration} turns. Effect: {effect:.4f}")
                 else:
                     logging.warning(f"Skipping temporary effect collection for event '{event_name}' due to missing data (param/effect).")
-
             else:
                 # Instant Event: Apply directly to final_params now.
                 if param in final_params:
