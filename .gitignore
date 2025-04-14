@@ -71,3 +71,6 @@ scripts/split_characters.py
 altair_src/
 streamlit_src/
 libs/pylinsolve/
+
+# Streamlit secrets
+.streamlit/secrets.toml
