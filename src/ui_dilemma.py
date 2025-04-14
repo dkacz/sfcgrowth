@@ -41,7 +41,7 @@ def display_dilemma():
             st.rerun()
         if option_a.get('choice_flavour'):
             # Use markdown with unsafe_allow_html to ensure vertical expansion
-            st.markdown(f"<div style='height: auto; overflow-y: visible; margin-bottom: 1.5em;'>*{option_a['choice_flavour']}*</div>", unsafe_allow_html=True)
+            st.markdown(f"*{option_a['choice_flavour']}*")
         option_a_details = format_dilemma_option(option_a)
         if option_a_details:
             st.markdown(option_a_details)
@@ -55,7 +55,7 @@ def display_dilemma():
             st.rerun()
         if option_b.get('choice_flavour'):
             # Use markdown with unsafe_allow_html to ensure vertical expansion
-            st.markdown(f"<div style='height: auto; overflow-y: visible; margin-bottom: 1.5em;'>*{option_b['choice_flavour']}*</div>", unsafe_allow_html=True)
+            st.markdown(f"*{option_b['choice_flavour']}*")
         option_b_details = format_dilemma_option(option_b)
         if option_b_details:
             st.markdown(option_b_details)
