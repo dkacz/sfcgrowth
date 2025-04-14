@@ -82,4 +82,5 @@ PARAM_DESCRIPTIONS = {
     'eps': 'Sensitivity of exchange rate expectations to deviations',
     'gammar': 'Sensitivity of investment (capital growth) to the real interest rate',
 
+    'deltarep': 'Change in Political Reputation',
 }
