@@ -80,7 +80,7 @@ def format_effect(param, effect):
             float_value = value_to_format
             sign = "+" if float_value >= 0 else ""
             # Use abs() to avoid double negative sign, format to 1 decimal place for p.p., 4 otherwise
-            precision = 1 if is_pp_param else 4
+            precision = 2 if is_pp_param else 4 # Increased precision for p.p.
             formatted_number = f"{sign}{abs(float_value):.{precision}f}"
 
     except Exception as e: # Catch any potential formatting error
